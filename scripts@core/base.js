@@ -1,0 +1,148 @@
+import config from '../scripts@config/config.js';
+import {AirPlane, Sky, Sea} from '../scripts@core/customObject.js';
+//SCREEN & MOUSE VARIABLES
+
+var HEIGHT = window.innerHeight, WIDTH = window.innerWidth, // will be changed in window resize event
+    mousePos = { x: 0, y: 0 };
+
+//SCENE & CAMERA VARIABLES
+
+var scene = null,
+    camera = null,
+    renderer = null;
+
+// 3D Models in customObjects.js
+var sea = null, // createdBy new Sea()
+    airplane = null, // createdBy new AirPlane()
+    sky = null; // createdBy new Sky()
+
+///////////////////////////////////////////////////
+
+//INIT THREE JS, SCREEN AND MOUSE EVENTS
+window.addEventListener('load', ()=>{
+  document.addEventListener('mousemove', event => {
+    mousePos = {
+      x: -1 + (event.clientX / WIDTH) * 2,
+      y: 1 - (event.clientY / HEIGHT) * 2
+    };
+  }, {passive: true});
+  // HANDLE MOUSE EVENTS
+  createScene();
+  createLights();
+
+  createObjects();
+
+  (function renderLoop(){
+    // 循环函数，在每帧更新对象的位置和渲染场景
+    //TODO: 在renderLoop中完成粒子特效等的处理
+    updatePlane();
+    sea.mesh.rotation.z += config.speed_sea; // 大海的移动
+    sky.mesh.rotation.z += config.speed_sky; // 天空的移动
+    renderer.render(scene, camera);
+    requestAnimationFrame(renderLoop);
+  })() //NOTE: (function x(){})(): 一种直接调用函数的技巧，可在函数申明后直接调用它。 
+}, false);
+
+
+function createScene() {
+  scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0xf7d9aa, 100, 950);
+
+  const setting = config.cameraSetting;
+  camera = new THREE.PerspectiveCamera(
+      setting.fieldOfView,
+      setting.aspectRatio,
+      setting.nearPlane,
+      setting.farPlane
+    ); // PerspectiveCamera
+  camera.position.x = 0;
+  camera.position.z = 200;
+  camera.position.y = 100;
+
+  console.dir(camera.position)
+  renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer.setSize(WIDTH, HEIGHT);
+  renderer.shadowMap.enabled = true;
+
+  config.getContainer().appendChild(renderer.domElement);
+
+  window.addEventListener('resize', () => {
+    HEIGHT = window.innerHeight;
+    WIDTH = window.innerWidth;
+    renderer.setSize(WIDTH, HEIGHT);
+    camera.aspect = WIDTH / HEIGHT;
+    camera.updateProjectionMatrix();
+  }, {passive: true}); // HANDLE SCREEN EVENTS
+}
+
+// LIGHTS
+function createLights() {
+  let ambientLight, // 暂时未创建？
+    hemisphereLight, shadowLight;
+  
+  //NOTE: 这几种光源有什么区别？我们该将大部分注意力放在哪一个光源处？光源的颜色又该选择哪一个？
+
+  hemisphereLight = new THREE.HemisphereLight(0xaaaaaa,0x000000, .9);
+  scene.add(hemisphereLight);
+
+  shadowLight = new THREE.DirectionalLight(0xffffff, .9);
+  shadowLight.position.set(150, 350, 350);
+  shadowLight.castShadow = true;
+  shadowLight.shadow.camera.left = -400;
+  shadowLight.shadow.camera.right = 400;
+  shadowLight.shadow.camera.top = 400;
+  shadowLight.shadow.camera.bottom = -400;
+  shadowLight.shadow.camera.near = 1;
+  shadowLight.shadow.camera.far = 1000;
+  shadowLight.shadow.mapSize.width = 2048;
+  shadowLight.shadow.mapSize.height = 2048;
+
+  scene.add(shadowLight);
+
+  // ambientLight...
+}
+
+function createObjects() {
+  createPlane();
+  createSea();
+  createSky();
+  /*  
+  * 我们的函数: createPlane() && createobstacles()
+  */
+}
+
+function createPlane(){
+  airplane = new AirPlane();
+  airplane.mesh.scale.set(.25,.25,.25);
+  airplane.mesh.position.y = 100;
+  scene.add(airplane.mesh);
+}
+
+function createSea(){
+  sea = new Sea();
+  sea.mesh.position.y = -600;
+  scene.add(sea.mesh);
+}
+
+function createSky() {
+  sky = new Sky();
+  sky.mesh.position.y = -600;
+  scene.add(sky.mesh);
+}
+
+function updatePlane() {
+  const normalize = (v, vmin, vmax, tmin, tmax) => {
+    let nv = Math.max(Math.min(v, vmax), vmin);
+    let dv = vmax - vmin;
+    let pc = (nv - vmin) / dv;
+    let dt = tmax - tmin;
+    let tv = tmin + (pc * dt);
+    return tv;
+  }
+  airplane.mesh.position.y = normalize(mousePos.y,-.75,.75,25, 175);
+  airplane.mesh.position.x = normalize(mousePos.x,-.75,.75,-100, 100);
+  airplane.propeller.rotation.x += config.speed_airplane;
+}
+
+//FIX: THREE.Geometry: .applyMatrix() has been renamed to .applyMatrix4().
+//FIX: THREE.MeshPhongMaterial: .shading has been removed. Use the boolean .flatShading instead.

@@ -8,21 +8,38 @@
 
 ---
 
+### 特性描述
+
+*要做什么样的游戏？还能有什么样的功能？怎么做最易实现？*
+
+1. 粒子效果（喷气、得分）
+2. 光渲染
+3. 碰撞检测
+4. 
+
+![效果图](README/Screenshot_20200912-212610.png.webp)
+
+### To-do list
+
+*请自己添加、删改任务。*
+
+---
+
+All:
+- [ ] 找到适合的游戏图标(app)、网站图标。任何合适的都请放入/public/images/中
+- [ ] 找到适合的飞机的模型 .obj https://clara.io/library?query=drone
+- [ ] 浏览[Example](https://threejs.org/examples/)
+
+---
+
+z1042117441 & naiziguai: 
+
+- [ ] 完成01_学/学习任务.md
+
+---
 
 
-### Features - To-do list
-
-Z & N: 
-
-- [ ] Three.js
-    - scene
-    - perspective camera
-    - **light**
-    - **generate obstacles**
-    - **user control**
-- [ ] 飞机的模型 .obj https://clara.io/library?query=drone
-
-L: 
+cloudres: 
 
 Chores#1:
 
@@ -33,10 +50,9 @@ Chores#1:
     - console.error console.warn console.info console.log console.dir
     - const let var
     - commit规范写法
+    - markdown基础写法
 - [ ] 帮助使用部署
-    - github desktop配布此到本地，添加vs code workplace
-    - 尝试Live server
-- [ ] 基础框架写好
+- [ ] 基础框架写好(half done)
 
 Chores#2:
 
@@ -51,9 +67,11 @@ Maybe:
 
 - [ ] 支持Android及IOS端
 
+---
+
 ### Change log
 
-- 09-12 init.
+- 09-12 init. 完成基本框架建设，完成团队组织。
 
 ### Credits
 
@@ -61,3 +79,4 @@ Maybe:
 - [Inner Peace Studio](https://soundcloud.com/innerpeacestudio) - [Loner Game Soundtrack](https://soundcloud.com/innerpeacestudio/sets/loner-game-soundtrack) (Soundcloud)
 - [Three.js](https://github.com/mrdoob/three.js)
 - 
+

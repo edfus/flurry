@@ -1,4 +1,2 @@
-*.zip
-*.7z
-*.rar
 *.code-workspace
+*.ignore
