@@ -17,7 +17,7 @@
 3. 碰撞检测
 4. 
 
-![效果图](README/Screenshot_20200912-212610.png.webp)
+![效果图](0_参考/Screenshot_20200912-212610.png.webp)
 
 ### To-do list
 
