@@ -50,15 +50,14 @@ Chores#1:
     - console.error console.warn console.info console.log console.dir
     - const let var
     - commit message规范写法 
-        MINOR :checkered_flag:# 
-        :bug:BUG-REPORT :green_heart:BUG-FIX 
-        :sparkles:NEW-FEATURE :zap:IMPROVE :memo:DOC-UP
-        :construction:WORKING :lipstick:STYLE-UI
+      - MINOR :checkered_flag:#
+      - :bug:BUG-REPORT :green_heart:BUG-FIX 
+      - :sparkles:NEW-FEATURE :zap:IMPROVE :memo:DOC-UP
+      - :construction:WORKING :lipstick:STYLE-UI
     - markdown基础写法
     - 
 - [ ] 帮助使用部署
 - [ ] 基础框架写好(half done)
-- [ ] 
 
 Chores#2:
 
