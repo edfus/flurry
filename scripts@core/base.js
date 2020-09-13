@@ -60,7 +60,7 @@ window.addEventListener('load', ()=>{
 
 function createScene() {
   scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0xf7d9aa, 100, 950);
+  scene.fog = new THREE.Fog(0xf7d9aa, 100, 950); //NOTE： fog的效果是？
 
   const setting = config.cameraSetting;
   camera = new THREE.PerspectiveCamera(
@@ -130,7 +130,7 @@ function createObjects() {
 
 function createPlane(){
   airplane = new AirPlane();
-  airplane.mesh.scale.set(.25,.25,.25);
+  airplane.mesh.scale.set(.25, .25, .25);
   airplane.mesh.position.y = 100;
   scene.add(airplane.mesh);
 }
@@ -155,10 +155,10 @@ function updatePlane() {
     let dt = tmax - tmin;
     let tv = tmin + (pc * dt);
     return tv;
-  }
-  airplane.mesh.position.y = normalize(mousePos.y,-.75,.75,25, 175);
-  airplane.mesh.position.x = normalize(mousePos.x,-.75,.75,-100, 100);
-  airplane.propeller.rotation.x += config.speed_airplane;
+  } // 按比例移动plane，防止plane随着鼠标移动而越界。
+  airplane.mesh.position.y = normalize(mousePos.y, -.75, .75, 25,  175);
+  airplane.mesh.position.x = normalize(mousePos.x, -.75, .75, -100,  100);
+  airplane.propellerSpin();
 }
 
 //FIX: THREE.Geometry: .applyMatrix() has been renamed to .applyMatrix4().

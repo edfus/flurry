@@ -16,9 +16,9 @@ GetContainer = () => {
 },
 
 RotationSpeed_Sea = .005,
-RotationSpeed_Sky = .01,
-RotationSpeed_Airplane = .3
+RotationSpeed_Sky = .01
 
+;
 // ...
 
 export default {
@@ -27,6 +27,5 @@ export default {
     cameraSetting: PerspectiveCameraSetting,
     getContainer: GetContainer,
     speed_sea: RotationSpeed_Sea,
-    speed_sky: RotationSpeed_Sky,
-    speed_airplane: RotationSpeed_Airplane
+    speed_sky: RotationSpeed_Sky
 }
