@@ -1,5 +1,5 @@
 import config from '../scripts@config/config.js';
-import {AirPlane, Sky, Sea} from '../scripts@core/customObject.js';
+import {Airplane, Sky, Sea} from '../scripts@core/customObject.js';
 /////////////////////////////////
 {
   let mode = ['production', '#42c02e'];
@@ -27,7 +27,7 @@ var scene = null,
 
 // 3D Models in customObjects.js
 var sea = null, // createdBy new Sea()
-    airplane = null, // createdBy new AirPlane()
+    airplane = null, // createdBy new Airplane()
     sky = null; // createdBy new Sky()
 
 ///////////////////////////////////////////////////
@@ -129,7 +129,7 @@ function createObjects() {
 }
 
 function createPlane(){
-  airplane = new AirPlane();
+  airplane = new Airplane();
   airplane.mesh.scale.set(.25, .25, .25);
   airplane.mesh.position.y = 100;
   scene.add(airplane.mesh);

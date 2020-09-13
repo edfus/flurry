@@ -10,7 +10,7 @@ class name [extends otherName] {
 }
 */
 
-class AirPlane {
+class Airplane {
   constructor() {
     this.mesh = new THREE.Object3D();
     this.mesh.name = "airPlane";
@@ -164,4 +164,4 @@ class Cloud {
   }
 }
 
-export {AirPlane, Sky, Sea}
+export {Airplane, Sky, Sea}
