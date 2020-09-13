@@ -1,5 +1,19 @@
 import config from '../scripts@config/config.js';
 import {AirPlane, Sky, Sea} from '../scripts@core/customObject.js';
+/////////////////////////////////
+{
+  let mode = ['production', '#42c02e'];
+  if(config.testMode)
+    mode = ['development', '#f25346'];
+  const titleStyle = "padding: 1px; border-radius: 3px 0 0 3px; color: #fff; background: #606060;",
+        subStyle = "padding: 1px; border-radius: 0 3px 3px 0; color: #fff; background";
+
+  console.info(`%c Version %c ${config.version} `, titleStyle, `${subStyle}: #F5986E;`)
+  console.info(`%c Environment %c ${mode[0]} `, titleStyle, `${subStyle}: ${mode[1]};`)
+  console.info(`%c Browser %c ${navigator.userAgent.split(' (')[0]} `, titleStyle, `${subStyle}: #1475b2;`)
+  console.info(`%c Platform %c ${navigator.userAgent.split('(')[1].split(')')[0]} `, titleStyle, `${subStyle}: #1475b2;`)
+}
+////////////////////////////////
 //SCREEN & MOUSE VARIABLES
 
 var HEIGHT = window.innerHeight, WIDTH = window.innerWidth, // will be changed in window resize event
@@ -17,7 +31,7 @@ var sea = null, // createdBy new Sea()
     sky = null; // createdBy new Sky()
 
 ///////////////////////////////////////////////////
-
+          
 //INIT THREE JS, SCREEN AND MOUSE EVENTS
 window.addEventListener('load', ()=>{
   document.addEventListener('mousemove', event => {

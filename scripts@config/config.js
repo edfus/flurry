@@ -2,6 +2,8 @@
 // COLORS
 const TestMode = true,
 
+Version = '1.1.0' + '--dev',
+
 PerspectiveCameraSetting = {
     fieldOfView: 60,
     aspectRatio: window.innerWidth / window.innerHeight,
@@ -21,6 +23,7 @@ RotationSpeed_Airplane = .3
 
 export default {
     testMode: TestMode,
+    version: Version,
     cameraSetting: PerspectiveCameraSetting,
     getContainer: GetContainer,
     speed_sea: RotationSpeed_Sea,
