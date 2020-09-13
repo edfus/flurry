@@ -55,11 +55,14 @@ function createScene() {
       setting.nearPlane,
       setting.farPlane
     ); // PerspectiveCamera
-  camera.position.x = 0;
-  camera.position.z = 200;
-  camera.position.y = 100;
+  Object.assign(camera.position, new THREE.Vector3(0, 100, 200));
+  /*
+  *  Object.assign(target, source)
+  *  将一个原对象上的属性拷贝到另一个目标对象上，最终结果取两个对象的并集，如果有冲突的属性，则以原对象上属性为主，表现上就是直接覆盖过去
+  *  但很可惜的是，Object.assign 只是浅拷贝，它只处理第一层属性，如果属性是基本类型，则值拷贝，如果是对象类型，则引用拷贝，如果有冲突，则整个覆盖过去。
+  */
+  // 删除对象属性: delete result['xxx']
 
-  console.dir(camera.position)
   renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
   renderer.setSize(WIDTH, HEIGHT);
   renderer.shadowMap.enabled = true;

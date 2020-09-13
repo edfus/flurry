@@ -15,7 +15,11 @@
 1. 粒子效果（喷气、得分）
 2. 光渲染
 3. 碰撞检测
-4. 
+4. 障碍物（差集运算）
+    https://threejs.org/examples/#webgl_clipping_intersection
+    https://threejs.org/examples/#webgl_clipping_stencil
+    https://threejs.org/examples/#webgl_geometry_shapes
+5. 
 
 ![效果图](0_参考/Screenshot_20200912-212610.png.webp)
 
@@ -49,8 +53,15 @@ Chores#1:
     - Todo tree - BUG FIX等的具体
     - console.error console.warn console.info console.log console.dir
     - const let var
+      - 准则：能用const的地方就不要用let，能用let的地方就不要用var。const > let > var
+      - 尽量少给同一个变量赋予不同类型的值。
+      - JS中的对象变量是引用类型，因此可以在用const声明变量后修改其内部属性。const obj = {}; obj.aaa = 'aaa'; 但为了方便辨识，这种会在其后修改值的变量都不用const声明。不过在很多情况下，const声明的变量是作为three.js新建对象配置而存在，因此作为配置的对象声明也可以用const
+        如：  
+        const geometry = new THREE.CylinderGeometry(600, 600, 800, 40, 10);
+        geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+        this.mesh = new THREE.Mesh(geometry, material);
     - commit message规范写法 
-      - MINOR :checkered_flag:#
+      - MINOR #:checkered_flag:(在最后)
       - :bug:BUG-REPORT :green_heart:BUG-FIX 
       - :sparkles:NEW-FEATURE :zap:IMPROVE :memo:DOC-UP
       - :construction:WORKING :lipstick:STYLE-UI
