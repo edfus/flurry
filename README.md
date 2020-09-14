@@ -21,6 +21,8 @@
     https://threejs.org/examples/#webgl_geometry_shapes
 5. 相机位置等
     https://ldr1-18716f-1302358347.tcloudbaseapp.com/editor/ （可以用作布置layout时的可视化）
+6. 暂停接口 window blur
+7. 减少竞技性和难度，更偏向纯粹舒缓的视觉类游戏
 
 - scene、perspective camera
 - static objects(基础隧道场景建模，飞机建模构造)
