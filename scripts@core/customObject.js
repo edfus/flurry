@@ -1,4 +1,4 @@
-//NOTE: 调用方法： new AirPlane();
+// 调用方法： new AirPlane();
 import colors from '../scripts@config/colors.js';
 
 const numOfCloudsInSky = 20,
@@ -16,7 +16,7 @@ class Airplane {
     this.mesh.name = "airPlane";
 
     // Create the cabin *座舱
-    const geomCockpit = new THREE.BoxGeometry(60, 50, 50, 1, 1, 1); //NOTE: 参数意义
+    const geomCockpit = new THREE.BoxGeometry(60, 50, 50, 1, 1, 1); //NOTE: 参数意义？
     const matCockpit = new THREE.MeshPhongMaterial({ //FIX: THREE.MeshPhongMaterial: .shading has been removed. Use the boolean .flatShading instead.
       color: colors.red,
       shading: THREE.FlatShading

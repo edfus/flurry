@@ -73,7 +73,7 @@ cloudres:
 Chores#1:
 
 - [x] 下载[Loner Game Soundtrack](https://soundcloud.com/innerpeacestudio/sets/loner-game-soundtrack)并添加好meta tags
-- [ ] 完善文档规范
+- [x] 完善文档规范
 - [ ] 帮助使用部署
 - [ ] 基础框架写好(half done)
 
