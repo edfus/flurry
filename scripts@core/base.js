@@ -17,7 +17,7 @@ import {Airplane, Sky, Sea} from '../scripts@core/customObject.js';
 //SCREEN & MOUSE VARIABLES
 
 var HEIGHT = window.innerHeight, WIDTH = window.innerWidth, // will be changed in window resize event
-    mousePos = { x: 0, y: 0 };
+    mouseRelativePos = { x: 0, y: 0 };
 
 //SCENE & CAMERA VARIABLES
 
@@ -35,7 +35,7 @@ var sea = null, // createdBy new Sea()
 //INIT THREE JS, SCREEN AND MOUSE EVENTS
 window.addEventListener('load', ()=>{
   document.addEventListener('mousemove', event => {
-    mousePos = {
+    mouseRelativePos = {
       x: -1 + (event.clientX / WIDTH) * 2,
       y: 1 - (event.clientY / HEIGHT) * 2
     };
@@ -148,18 +148,18 @@ function createSky() {
 }
 
 function updatePlane() {
-  const normalize = (v, vmin, vmax, tmin, tmax) => {
-    let nv = Math.max(Math.min(v, vmax), vmin);
-    let dv = vmax - vmin;
-    let pc = (nv - vmin) / dv;
-    let dt = tmax - tmin;
-    let tv = tmin + (pc * dt);
-    return tv;
+  const normalize = (mouseRP, mouseRP_min, mouseRP_max, planePosition_min, planePosition_max) => {
+    let mouseRPinBox = Math.max(Math.min(mouseRP, mouseRP_max), mouseRP_min);
+    let mouseRPrange = mouseRP_max - mouseRP_min;
+    let ratio = (mouseRPinBox - mouseRP_min) / mouseRPrange;
+    let planePositionRange = planePosition_max - planePosition_min;
+    return planePosition_min + (ratio * planePositionRange);
   } // 按比例移动plane，防止plane随着鼠标移动而越界。
-  airplane.mesh.position.y = normalize(mousePos.y, -.75, .75, 25,  175);
-  airplane.mesh.position.x = normalize(mousePos.x, -.75, .75, -100,  100);
+  airplane.mesh.position.y = normalize(mouseRelativePos.y, -.75, .75, 25,  175);
+  airplane.mesh.position.x = normalize(mouseRelativePos.x, -.75, .75, -100,  100);
   airplane.propellerSpin();
 }
 
 //FIX: THREE.Geometry: .applyMatrix() has been renamed to .applyMatrix4().
 //FIX: THREE.MeshPhongMaterial: .shading has been removed. Use the boolean .flatShading instead.
+//TODO: 相机旋转跟随飞机旋转的延迟问题
