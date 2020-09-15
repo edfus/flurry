@@ -74,24 +74,6 @@ Chores#1:
 
 - [x] 下载[Loner Game Soundtrack](https://soundcloud.com/innerpeacestudio/sets/loner-game-soundtrack)并添加好meta tags
 - [ ] 完善文档规范
-    如：
-    - Todo tree - BUG FIX等的具体
-    - console.error console.warn console.info console.log console.dir
-    - const let var
-      - 准则：能用const的地方就不要用let，能用let的地方就不要用var。const > let > var
-      - 尽量少给同一个变量赋予不同类型的值。
-      - JS中的对象变量是引用类型，因此可以在用const声明变量后修改其内部属性。const obj = {}; obj.aaa = 'aaa'; 但为了方便辨识，这种会在其后修改值的变量都不用const声明。不过在很多情况下，const声明的变量是作为three.js新建对象配置而存在，因此作为配置的对象声明也可以用const
-        如：  
-        const geometry = new THREE.CylinderGeometry(600, 600, 800, 40, 10);
-        geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-        this.mesh = new THREE.Mesh(geometry, material);
-    - commit message规范写法 
-      - MINOR #:checkered_flag:(在最后)
-      - :bug:BUG-REPORT :green_heart:BUG-FIX 
-      - :sparkles:NEW-FEATURE :zap:IMPROVE :memo:DOC-UP
-      - :construction:WORKING :lipstick:STYLE-UI
-    - markdown基础写法
-    - 
 - [ ] 帮助使用部署
 - [ ] 基础框架写好(half done)
 
