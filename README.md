@@ -70,12 +70,16 @@ z1042117441 & naiziguai:
 
 cloudres: 
 
+- [ ] 完成web worker - audio开发
+- [ ] 完成暂停函数和界面，完成其他按钮
+- [ ] indexedDB存储音频
+
 Chores#1:
 
 - [x] 下载[Loner Game Soundtrack](https://soundcloud.com/innerpeacestudio/sets/loner-game-soundtrack)并添加好meta tags
 - [x] 完善文档规范
-- [ ] 帮助使用部署
-- [ ] 基础框架写好(half done)
+- [x] 帮助使用部署
+- [x] 基础框架写好
 
 Chores#2:
 
