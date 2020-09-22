@@ -46,6 +46,7 @@ function createScene() {
   renderer.shadowMap.enabled = true;
   container = document.getElementById('world');
   container.appendChild(renderer.domElement);
+
   window.addEventListener('resize', handleWindowResize, false);
 }
 
