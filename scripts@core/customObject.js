@@ -153,12 +153,15 @@ class Sky {
       this.clouds.push(newCloud = new Cloud());
 
       const angle = stepAngle * i; // rotation
-      const height = 750 + Math.random() * 200; //NOTE: 750 200 数值是怎么确定的？是否可更改以更好适应Mobile端和PC端？
+      const height = 750 + Math.random() * 200;
       newCloud.mesh.position.x = Math.cos(angle) * height;
       newCloud.mesh.position.y = Math.sin(angle) * height;
       newCloud.mesh.rotation.z = angle + Math.PI / 2; // rotation
-
-      newCloud.mesh.position.z = -400 - Math.random() * 400; // random z pos //NOTE: 400如何确定？
+      newCloud.mesh.position.z = -400 - Math.random() * 400; // random z pos
+      /*
+      * 确定height，position.z的参数时可以分别对这两个变量取值来找到最好的视觉效果的范围，然后得到函数
+      * 我们用three.js创建一个空间并将各个带属性的物体置于某个坐标处，故空间的相对位置与屏幕没有关系，可适用于Mobile等
+      */
 
       const scaleRatio = 1 + Math.random() * 2; // random scale
       newCloud.mesh.scale.set(scaleRatio, scaleRatio, scaleRatio);

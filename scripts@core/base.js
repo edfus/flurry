@@ -60,7 +60,12 @@ window.addEventListener('load', ()=>{
 
 function createScene() {
   scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0xf7d9aa, 100, 950); //NOTE： fog的效果是？
+  scene.fog = new THREE.Fog(0xf7d9aa, 100, 950);
+  /*
+  * Fog：添加浓度随距离线性增加的雾，达到使远处景物模糊化的效果，用法为 ** = new THREE.Fog(color, near, far);
+  * near和far表示与相机的距离，near默认为1，far默认为1000，far-near不能太小，否则会过于模糊或达不到渐变的效果
+  * 最近处物体为本身的颜色，雾中物体为物体与雾的混合颜色
+  */
 
   const setting = config.cameraSetting;
   camera = new THREE.PerspectiveCamera(
@@ -156,11 +161,10 @@ function createSky() {
 
 function updatePlane() {
   var targetY = normalize(mouseRelativePos.y,-.75,.75,25, 175);
-  airplane.mesh.position.y += (targetY-airplane.mesh.position.y)*0.1;
-  airplane.mesh.rotation.z = (targetY-airplane.mesh.position.y)*0.0128; // 飞机与x轴角度随鼠标上下移动而变化
-  airplane.mesh.rotation.x = (airplane.mesh.position.y-targetY)*0.0064; // 飞机与z轴角度随鼠标上下移动而变化
-  airplane.propeller.rotation.x += 0.3; // 加快螺旋桨旋转速度
-  airplane.propellerSpin();
+  airplane.mesh.position.y += (targetY-airplane.mesh.position.y) * 0.1;
+  airplane.mesh.rotation.z = (targetY-airplane.mesh.position.y) * 0.0128; // 飞机与x轴角度随鼠标上下移动而变化
+  airplane.mesh.rotation.x = (airplane.mesh.position.y-targetY) * 0.0064; // 飞机与z轴角度随鼠标上下移动而变化
+  airplane.propellerSpin(.6);
 }
 
 function updateBackground() {
