@@ -104,7 +104,7 @@ function createLights() {
   * AmbientLight：环境光，没有方向，照亮场景中的所有对象，不能投射阴影或反光
   * DirectionalLight：定向灯，从无限远处设向目标物体或位置的平行光，不能直接控制光线的方向，用法为new THREE.DirectionalLight(光色, 光强度);
   * DirectionalLight.position.set(x = 0, y = 0, z = 0);
-  * 可用scene.add(light.target)改变位置 //NOTE: scene.add不是向场景中添加光吗？为什么是改变位置？
+  * 可用scene.add(light.target)改变光源指向的位置
   * 或用如下代码使其射向某一有属性的物体
     var targetObject = new THREE.Object3D();
     scene.add(targetObject);
