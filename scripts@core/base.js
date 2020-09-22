@@ -51,6 +51,7 @@ window.addEventListener('load', ()=>{
     //TODO: 在renderLoop中完成粒子特效等的处理
     //TODO: 完成暂停函数的处理
     updatePlane();
+    sea.moveWaves();//海浪
     sea.mesh.rotation.z += config.speed_sea; // 大海的移动
     sky.mesh.rotation.z += config.speed_sky; // 天空的移动
     renderer.render(scene, camera);
@@ -102,7 +103,8 @@ function createLights() {
 
   hemisphereLight = new THREE.HemisphereLight(0xaaaaaa,0x000000, .9);
   scene.add(hemisphereLight);
-
+  ambientLight = new THREE.AmbientLight(0xdc8874, .5);
+  scene.add(ambientLight);
   shadowLight = new THREE.DirectionalLight(0xffffff, .9);
   shadowLight.position.set(150, 350, 350);
   shadowLight.castShadow = true;
