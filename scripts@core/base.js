@@ -94,10 +94,17 @@ function createScene() {
 
 // LIGHTS
 function createLights() {
+  /*
+  * HemisphereLight：半球光，在空中创造一个球形光源，无法投射出阴影，可以在物体上产生反光效果，用法为 ** = new THREE.HemisphereLight(天空颜色, 光的接地颜色, 光强度);
+  * AmbientLight：环境光，没有方向，照亮场景中的所有对象，不能投射阴影或反光，用法为 ** = new THREE.AmbientLight(光色, 光强度);
+  * DirectionalLight：定向灯，从无限远处设向目标物体或位置的平行光，不能直接控制光线的方向，用法为 ** = new THREE.DirectionalLight(光色, 光强度);
+  * DirectionalLight的位置通过set设置，其目标默认位置为(0, 0, 0)，也可以用scene.add( light.target );改变位置，或用如下代码使其射向某一有属性的物体
+    var targetObject = new THREE.Object3D();
+    scene.add(targetObject);
+    light.target = targetObject;
+  * 颜色均用16进制数表示，光强度默认为1
+  */
   let ambientLight, hemisphereLight, shadowLight;
-  
-  //NOTE: 这几种光源有什么区别？我们该将大部分注意力放在哪一个光源处？光源的颜色又该选择哪一个？
-  //
 
   hemisphereLight = new THREE.HemisphereLight(0xaaaaaa,0x000000, .9);
   scene.add(hemisphereLight);
