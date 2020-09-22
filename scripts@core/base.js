@@ -155,18 +155,16 @@ function createSky() {
 }
 
 function updatePlane() {
-  // airplane.mesh.position.y = normalize(mouseRelativePos.y, -.75, .75, 25, 175);
-  // airplane.mesh.position.x = normalize(mouseRelativePos.x, -.75, .75, -100, 100);
   var targetY = normalize(mouseRelativePos.y,-.75,.75,25, 175);
   airplane.mesh.position.y += (targetY-airplane.mesh.position.y)*0.1;
-  airplane.mesh.rotation.z = (targetY-airplane.mesh.position.y)*0.0128;
-  airplane.mesh.rotation.x = (airplane.mesh.position.y-targetY)*0.0064;
-  //NOTE: airplane.propeller.rotation.x += 0.3; 多余的语句？
+  airplane.mesh.rotation.z = (targetY-airplane.mesh.position.y)*0.0128; // 飞机与x轴角度随鼠标上下移动而变化
+  airplane.mesh.rotation.x = (airplane.mesh.position.y-targetY)*0.0064; // 飞机与z轴角度随鼠标上下移动而变化
+  airplane.propeller.rotation.x += 0.3; // 加快螺旋桨旋转速度
   airplane.propellerSpin();
 }
 
 function updateBackground() {
-  sea.moveWaves(); //海浪
+  sea.moveWaves(); // 海浪
   sea.move(config.speed_sea);
   sky.move(config.speed_sky); // 大海的移动 - 天空的移动
 }
@@ -178,13 +176,13 @@ function updateCameraFov(){
   camera.updateProjectionMatrix();
 }
 
-function normalize(mouseRP, mouseRP_min, mouseRP_max, Position_min, Position_max) {
+function normalize(mouseRP, mouseRP_min, mouseRP_max, position_min, position_max) {
   let mouseRPinBox = Math.max(Math.min(mouseRP, mouseRP_max), mouseRP_min);
   let mouseRPrange = mouseRP_max - mouseRP_min;
   let ratio = (mouseRPinBox - mouseRP_min) / mouseRPrange;
-  let PositionRange = Position_max - Position_min;
-  return Position_min + (ratio * PositionRange);
-}// 根据鼠标位置来返回飞机及相机位置
+  let positionRange = position_max - position_min;
+  return position_min + (ratio * positionRange);
+} // 根据鼠标位置来返回飞机及相机位置
 
 //FIX: THREE.Geometry: .applyMatrix() has been renamed to .applyMatrix4().
 //FIX: THREE.MeshPhongMaterial: .shading has been removed. Use the boolean .flatShading instead.
