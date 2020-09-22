@@ -123,10 +123,29 @@ class Sea {
     const geometry = new THREE.CylinderGeometry(600, 600, 800, 40, 10);
     geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2)); //NOTE: 这句话的用处是？
 
+
+  var l = geometry.vertices.length;
+
+  this.waves = [];
+
+  for (var i=0;i<l;i++){
+    var v = geometry.vertices[i];
+    this.waves.push({y:v.y,
+                     x:v.x,
+                     z:v.z,
+                     ang:Math.random()*Math.PI*2,
+                     amp:5 + Math.random()*15,
+                     speed:0.016 + Math.random()*0.032
+                    });
+  };
+
+
+
+
     const material = new THREE.MeshPhongMaterial({
       color: colors.blue,
       transparent: true,
-      opacity: .6,
+      opacity: .8,
       shading: THREE.FlatShading,
     });
 
@@ -134,6 +153,21 @@ class Sea {
     this.mesh.receiveShadow = true; // airplane cast shadow
   }
 }
+
+Sea.prototype.moveWaves = function (){
+  var verts = this.mesh.geometry.vertices;
+  var l = verts.length;
+  for (var i=0; i<l; i++){
+    var v = verts[i];
+    var vprops = this.waves[i];
+    v.x =  vprops.x + Math.cos(vprops.ang)*vprops.amp;
+    v.y = vprops.y + Math.sin(vprops.ang)*vprops.amp;
+    vprops.ang += vprops.speed;
+  }
+  this.mesh.geometry.verticesNeedUpdate=true;
+  this.mesh.rotation.z += .005;
+}
+//海浪
 
 class Cloud {
   constructor() {
