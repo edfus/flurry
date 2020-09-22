@@ -74,7 +74,7 @@ naiziguai:
 
 cloudres: 
 
-- [ ] 完成web worker - audio开发
+- [ ] 完成web worker - audio开发（如何播放音频？）
 - [ ] 完成暂停函数和界面，完成其他按钮
 - [ ] indexedDB存储音频
 

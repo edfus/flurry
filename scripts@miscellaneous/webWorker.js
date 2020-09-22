@@ -1,13 +1,14 @@
 {
   const work = () => {
+    const cdnName = 'https://cdn.jsdelivr.net/gh/FML-MLS/Flurry';
     const songs = [
       {
-        name: "",
-        url: ``,
-        type: ""
+        name: "Intro",
+        url: `${cdnName}/resource/audio/Loner%20Soundtrack/0_Intro.mp3`,
+        type: "audio/mpeg"
       }
     ];
-    
+    // https://blog.csdn.net/ML01010736/article/details/46422651 IIS6常用的MIME类型[rmvb,mp3,zip,exe等文件]
     const songObejectSample = {
       name: "",
       type: "",
@@ -57,7 +58,6 @@
                   { method: 'GET',
                     headers: new Headers(),
                     mode: 'cors',
-                    referrer: 'no-referrer',
                     redirect: 'follow' 
                   })
                 ).then(response => {
