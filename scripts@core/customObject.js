@@ -19,8 +19,8 @@ class Airplane {
     // Create the cabin *座舱
     const geomCockpit = new THREE.BoxGeometry(60, 50, 50, 1, 1, 1); 
     /*
-    *  BoxGeometry(width : Float, height : Float, depth : Float, widthSegments : Integer, heightSegments : Integer, depthSegments : Integer)
-    *  三个segments的默认参数是1，segments解释为沿着边的长(宽、高）度分段的矩形面的数量。简单来说segments设成1就行。
+    *  BoxGeometry(width, height, depth, widthSegments = 1, heightSegments = 1, depthSegments = 1)
+    *  segments解释为沿着边的长(宽、高）度分段的矩形面的数量。简单来说segments设成1就行。
     */
     const matCockpit = new THREE.MeshPhongMaterial({ //FIX: THREE.MeshPhongMaterial: .shading has been removed. Use the boolean .flatShading instead.
       color: colors.red,
@@ -183,13 +183,14 @@ class Sea {
 
     for (var i=0;i<l;i++){
       var v = geometry.vertices[i];
-      this.waves.push({y:v.y,
-                      x:v.x,
-                      z:v.z,
-                      ang:Math.random()*Math.PI*2,
-                      amp:5 + Math.random()*15,
-                      speed:0.016 + Math.random()*0.032
-                      });
+      this.waves.push({
+        y: v.y,
+        x: v.x,
+        z: v.z,
+        ang: Math.random()*Math.PI*2,
+        amp: 5 + Math.random()*15,
+        speed: 0.016 + Math.random()*0.032
+      });
     };
 
     const material = new THREE.MeshPhongMaterial({

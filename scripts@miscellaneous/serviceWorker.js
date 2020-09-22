@@ -1,7 +1,7 @@
 {
   const work = () => {
       const noCache = true;
-      const version = "6.4.2--rel";
+      const version = "1.1.2--dev";
       const cacheName = "cache-" + version;
       const cacheResources = [
         `/`, 
