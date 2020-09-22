@@ -49,13 +49,14 @@ window.addEventListener('load', ()=>{
   (function renderLoop(){
     // 循环函数，在每帧更新对象的位置和渲染场景
     //TODO: 在renderLoop中完成粒子特效等的处理
+    //TODO: 完成暂停函数的处理
     updatePlane();
     sea.mesh.rotation.z += config.speed_sea; // 大海的移动
     sky.mesh.rotation.z += config.speed_sky; // 天空的移动
     renderer.render(scene, camera);
     requestAnimationFrame(renderLoop);
-  })() //NOTE: (function x(){})(): 一种直接调用函数的技巧，可在函数申明后直接调用它。 
-}, false);
+  })() // (function x(){})(): 一种直接调用函数的技巧，可在函数申明后直接调用它。 
+}, {passive: true});
 
 
 function createScene() {

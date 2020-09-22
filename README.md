@@ -1,5 +1,3 @@
-
-
 # Project: Flurry
 
 ---
@@ -9,8 +7,6 @@
 ---
 
 ### 特性描述
-
-*要做什么样的游戏？还能有什么样的功能？怎么做最易实现？*
 
 1. 粒子效果（喷气、得分）
 2. 光渲染
@@ -61,21 +57,33 @@ All:
 
 ---
 
-z1042117441 & naiziguai: 
+z1042117441:
 
-- [ ] 看文件`学习任务.md`，完成之
+- [ ] 完成`任务-第二周`
+- [ ] 
+
+---
+
+naiziguai: 
+
+- [ ] 完成`任务-第二周`
+- [ ] 
 
 ---
 
 
 cloudres: 
 
+- [ ] 完成web worker - audio开发
+- [ ] 完成暂停函数和界面，完成其他按钮
+- [ ] indexedDB存储音频
+
 Chores#1:
 
 - [x] 下载[Loner Game Soundtrack](https://soundcloud.com/innerpeacestudio/sets/loner-game-soundtrack)并添加好meta tags
-- [ ] 完善文档规范
-- [ ] 帮助使用部署
-- [ ] 基础框架写好(half done)
+- [x] 完善文档规范
+- [x] 帮助使用部署
+- [x] 基础框架写好
 
 Chores#2:
 
@@ -95,6 +103,7 @@ Maybe:
 ### Change log
 
 - 09-12 init. 完成基本框架建设，完成团队组织。
+- 09-15 The Aviator part1.js学习完成。
 
 ### Credits
 

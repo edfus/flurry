@@ -1,8 +1,8 @@
-//NOTE: 全局设置，或者样式类的的东西需要写在这里。
+// 全局设置，或者样式类的的东西需要写在这里。
 // COLORS
 const TestMode = true,
 
-Version = '1.1.0' + '--dev',
+Version = '1.1.0' + '--dev', //NOTE: 添加功能后记得更改这个
 
 PerspectiveCameraSetting = {
     fieldOfView: 60,
