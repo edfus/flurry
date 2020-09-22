@@ -60,7 +60,12 @@ window.addEventListener('load', ()=>{
 
 function createScene() {
   scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0xf7d9aa, 100, 950); //NOTE： fog的效果是？
+  scene.fog = new THREE.Fog(0xf7d9aa, 100, 950);
+  /*
+  * Fog：添加浓度随距离线性增加的雾，达到使远处景物模糊化的效果，用法为 ** = new THREE.Fog(color, near, far);
+  * near和far表示与相机的距离，near默认为1，far默认为1000，far-near不能太小，否则会过于模糊或达不到渐变的效果
+  * 最近处物体为本身的颜色，雾中物体为物体与雾的混合颜色
+  */
 
   const setting = config.cameraSetting;
   camera = new THREE.PerspectiveCamera( //NOTE: PerspectiveCamera的设定参数？
@@ -99,7 +104,7 @@ function createLights() {
   * AmbientLight：环境光，没有方向，照亮场景中的所有对象，不能投射阴影或反光
   * DirectionalLight：定向灯，从无限远处设向目标物体或位置的平行光，不能直接控制光线的方向，用法为new THREE.DirectionalLight(光色, 光强度);
   * DirectionalLight.position.set(x = 0, y = 0, z = 0);
-  * 可用scene.add(light.target)改变位置 //NOTE: scene.add不是向场景中添加光吗？为什么是改变位置？
+  * 可用scene.add(light.target)改变光源指向的位置
   * 或用如下代码使其射向某一有属性的物体
     var targetObject = new THREE.Object3D();
     scene.add(targetObject);
