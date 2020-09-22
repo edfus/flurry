@@ -79,13 +79,20 @@ class Airplane {
       shading: THREE.FlatShading
     });
 
-    let blade = new THREE.Mesh(geomBlade, matBlade);
-    blade.position.set(8, 0, 0);
-    blade.castShadow = true;
-    blade.receiveShadow = true;
+    let blade1 = new THREE.Mesh(geomBlade, matBlade);
+    blade1.position.set(8, 0, 0);
+    blade1.castShadow = true;
+    blade1.receiveShadow = true;
 
-    this.propeller.add(blade);
-    this.propeller.position.set(50, 0, 0);
+    let blade2 = blade1.clone();
+    blade2.rotation.x = Math.PI/2;
+  
+    blade2.castShadow = true;
+    blade2.receiveShadow = true;
+
+    this.propeller.add(blade1);
+    this.propeller.add(blade2);
+    this.propeller.position.set(60, 0, 0);
     this.mesh.add(this.propeller); // propeller的旋转在updatePlane()中控制
   }
   propellerSpin(speed = rotationSpeedOfPropeller) { // 默认速度为rotationSpeedOfPropeller
