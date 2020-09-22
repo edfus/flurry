@@ -51,13 +51,11 @@ window.addEventListener('load', ()=>{
     //TODO: 在renderLoop中完成粒子特效等的处理
     //TODO: 完成暂停函数的处理
     updatePlane();
-    sea.mesh.rotation.z += config.speed_sea; // 大海的移动
-    sky.mesh.rotation.z += config.speed_sky; // 天空的移动
+    updateBackground();
     renderer.render(scene, camera);
     requestAnimationFrame(renderLoop);
   })() // (function x(){})(): 一种直接调用函数的技巧，可在函数申明后直接调用它。 
 }, {passive: true});
-
 
 function createScene() {
   scene = new THREE.Scene();
@@ -156,11 +154,15 @@ function updatePlane() {
     let planePositionRange = planePosition_max - planePosition_min;
     return planePosition_min + (ratio * planePositionRange);
   } // 按比例移动plane，防止plane随着鼠标移动而越界。
-  airplane.mesh.position.y = normalize(mouseRelativePos.y, -.75, .75, 25,  175);
-  airplane.mesh.position.x = normalize(mouseRelativePos.x, -.75, .75, -100,  100);
+  airplane.mesh.position.y = normalize(mouseRelativePos.y, -.75, .75, 25, 175);
+  airplane.mesh.position.x = normalize(mouseRelativePos.x, -.75, .75, -100, 100);
   airplane.propellerSpin();
 }
 
+function updateBackground() {
+  sea.move(config.speed_sea);
+  sky.move(config.speed_sky); // 大海的移动 - 天空的移动
+}
 //FIX: THREE.Geometry: .applyMatrix() has been renamed to .applyMatrix4().
 //FIX: THREE.MeshPhongMaterial: .shading has been removed. Use the boolean .flatShading instead.
 //TODO: 相机旋转跟随飞机旋转的延迟问题

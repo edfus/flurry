@@ -1,11 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta charset="UTF-8">
+		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin="anonymous">
+		<link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=auto">
 		<title>The Aviator</title>
-		<script type="text/javascript" src="lib/three.min.js"></script>
+		<link rel="modulepreload" href="scripts@core/base.js">
+		<link rel="modulepreload" href="scripts@miscellaneous/webWorker.js">
+  	<!-- https://web.dev/module-workers/ -->
+  	<link rel="prefetch" href="scripts@miscellaneous/webWorker.js" as="worker" crossorigin="anonymous">
+		<script async src="/webWorker.js"></script>
+		<script type="text/javascript" src="//cdn.jsdelivr.net/gh/FML-MLS/Flurry/lib/three.min.js"></script>
+		<script>try{THREE}catch(e){let script = document.createElement('SCRIPT'); script.src = "lib/three.min.js"; document.head.append(script)}</script>
 		<script type="module" src="scripts@core/base.js"></script>
+		<script async src="/serviceWorker.js"></script>
 		<style>
 			#world {
 				width: 100vw;
@@ -17,6 +26,12 @@
 				margin: 0;
 			}
 		</style>
+		<meta name="theme-color" content="#f7d9aa">
+	<!-- 
+		<link rel="icon" href="/favicon.ico">
+		<link rel="manifest" href="/manifest.webmanifest">
+		<meta name="msapplication-config" content="/browserconfig.xml"> 
+	-->
 	</head>
 	<body id="world"></body>
 </html>

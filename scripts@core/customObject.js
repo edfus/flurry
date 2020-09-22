@@ -11,9 +11,10 @@ class name [extends otherName] {
 */
 
 class Airplane {
+  #defaultPropellerSpeed = rotationSpeedOfPropeller;
   constructor() {
     this.mesh = new THREE.Object3D();
-    this.mesh.name = "airPlane";
+    this.mesh.name = "airplane";
 
     // Create the cabin *座舱
     const geomCockpit = new THREE.BoxGeometry(60, 50, 50, 1, 1, 1); //NOTE: 参数意义？
@@ -88,50 +89,17 @@ class Airplane {
     this.propeller.position.set(50, 0, 0);
     this.mesh.add(this.propeller); // propeller的旋转在updatePlane()中控制
   }
-  propellerSpin(speed = rotationSpeedOfPropeller) { // 默认速度为rotationSpeedOfPropeller
+  propellerSpin(speed = this.#defaultPropellerSpeed) { 
+    // 初始为rotationSpeedOfPropeller，可通过airplaneObj.defaultPropellerSpeed = xxx更改
     this.propeller.rotation.x += speed; // 螺旋桨旋转速度
   }
-}
-
-class Sky {
-  constructor() {
-    this.mesh = new THREE.Object3D();
-    this.nClouds = numOfCloudsInSky;
-    this.clouds = [];
-    const stepAngle = Math.PI * 2 / this.nClouds;
-    for (let i = 0, newCloud = {}; i < this.nClouds; i++) {
-      this.clouds.push(newCloud = new Cloud());
-
-      const angle = stepAngle * i; // rotation
-      const height = 750 + Math.random() * 200; //NOTE: 750 200 数值是怎么确定的？是否可更改以更好适应Mobile端和PC端？
-      newCloud.mesh.position.x = Math.cos(angle) * height;
-      newCloud.mesh.position.y = Math.sin(angle) * height;
-      newCloud.mesh.rotation.z = angle + Math.PI / 2; // rotation
-
-      newCloud.mesh.position.z = -400 - Math.random() * 400; // random z pos //NOTE: 400如何确定？
-
-      const scaleRatio = 1 + Math.random() * 2; // random scale
-      newCloud.mesh.scale.set(scaleRatio, scaleRatio, scaleRatio);
-
-      this.mesh.add(newCloud.mesh);
-    }
+  set defaultPropellerSpeed(newSpeed) {
+    if(!isNaN(newSpeed))
+      this.#defaultPropellerSpeed = newSpeed;
+    else throw 'Airplane Setter: new speed is Not a Number';
   }
-}
-
-class Sea {
-  constructor() {
-    const geometry = new THREE.CylinderGeometry(600, 600, 800, 40, 10);
-    geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2)); //NOTE: 这句话的用处是？
-
-    const material = new THREE.MeshPhongMaterial({
-      color: colors.blue,
-      transparent: true,
-      opacity: .6,
-      shading: THREE.FlatShading,
-    });
-
-    this.mesh = new THREE.Mesh(geometry, material);
-    this.mesh.receiveShadow = true; // airplane cast shadow
+  get defaultPropellerSpeed() {
+    return this.#defaultPropellerSpeed;
   }
 }
 
@@ -161,6 +129,54 @@ class Cloud {
       newCube.receiveShadow = true;
       this.mesh.add(newCube);
     }
+  }
+}
+
+class Sky {
+  constructor() {
+    this.mesh = new THREE.Object3D();
+    this.nClouds = numOfCloudsInSky;
+    this.clouds = [];
+    const stepAngle = Math.PI * 2 / this.nClouds;
+    for (let i = 0, newCloud = {}; i < this.nClouds; i++) {
+      this.clouds.push(newCloud = new Cloud());
+
+      const angle = stepAngle * i; // rotation
+      const height = 750 + Math.random() * 200; //NOTE: 750 200 数值是怎么确定的？是否可更改以更好适应Mobile端和PC端？
+      newCloud.mesh.position.x = Math.cos(angle) * height;
+      newCloud.mesh.position.y = Math.sin(angle) * height;
+      newCloud.mesh.rotation.z = angle + Math.PI / 2; // rotation
+
+      newCloud.mesh.position.z = -400 - Math.random() * 400; // random z pos //NOTE: 400如何确定？
+
+      const scaleRatio = 1 + Math.random() * 2; // random scale
+      newCloud.mesh.scale.set(scaleRatio, scaleRatio, scaleRatio);
+
+      this.mesh.add(newCloud.mesh);
+    }
+  }
+  move(rotateAngel = 0) { // no default
+    this.mesh.rotation.z += rotateAngel;
+  }
+}
+
+class Sea {
+  constructor() {
+    const geometry = new THREE.CylinderGeometry(600, 600, 800, 40, 10);
+    geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2)); //NOTE: 这句话的用处是？
+
+    const material = new THREE.MeshPhongMaterial({
+      color: colors.blue,
+      transparent: true,
+      opacity: .6,
+      shading: THREE.FlatShading,
+    });
+
+    this.mesh = new THREE.Mesh(geometry, material);
+    this.mesh.receiveShadow = true; // airplane cast shadow
+  }
+  move(rotateAngel = 0) { // no default
+    this.mesh.rotation.z += rotateAngel;
   }
 }
 
