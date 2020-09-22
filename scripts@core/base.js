@@ -51,6 +51,7 @@ window.addEventListener('load', ()=>{
     //TODO: 在renderLoop中完成粒子特效等的处理
     //TODO: 完成暂停函数的处理
     updatePlane();
+    updateCameraFov();
     sea.mesh.rotation.z += config.speed_sea; // 大海的移动
     sky.mesh.rotation.z += config.speed_sky; // 天空的移动
     renderer.render(scene, camera);
@@ -95,13 +96,16 @@ function createScene() {
 
 // LIGHTS
 function createLights() {
-  let ambientLight, // 暂时未创建？
-    hemisphereLight, shadowLight;
+  let ambientLight, hemisphereLight, shadowLight;
   
   //NOTE: 这几种光源有什么区别？我们该将大部分注意力放在哪一个光源处？光源的颜色又该选择哪一个？
+  //
 
   hemisphereLight = new THREE.HemisphereLight(0xaaaaaa,0x000000, .9);
   scene.add(hemisphereLight);
+
+  ambientLight = new THREE.AmbientLight(0xdc8874, .5);
+  scene.add(ambientLight);
 
   shadowLight = new THREE.DirectionalLight(0xffffff, .9);
   shadowLight.position.set(150, 350, 350);
@@ -114,10 +118,7 @@ function createLights() {
   shadowLight.shadow.camera.far = 1000;
   shadowLight.shadow.mapSize.width = 2048;
   shadowLight.shadow.mapSize.height = 2048;
-
   scene.add(shadowLight);
-
-  // ambientLight...
 }
 
 function createObjects() {
@@ -149,17 +150,26 @@ function createSky() {
 }
 
 function updatePlane() {
-  const normalize = (mouseRP, mouseRP_min, mouseRP_max, planePosition_min, planePosition_max) => {
-    let mouseRPinBox = Math.max(Math.min(mouseRP, mouseRP_max), mouseRP_min);
-    let mouseRPrange = mouseRP_max - mouseRP_min;
-    let ratio = (mouseRPinBox - mouseRP_min) / mouseRPrange;
-    let planePositionRange = planePosition_max - planePosition_min;
-    return planePosition_min + (ratio * planePositionRange);
-  } // 按比例移动plane，防止plane随着鼠标移动而越界。
-  airplane.mesh.position.y = normalize(mouseRelativePos.y, -.75, .75, 25,  175);
-  airplane.mesh.position.x = normalize(mouseRelativePos.x, -.75, .75, -100,  100);
+  var targetY = normalize(mouseRelativePos.y,-.75,.75,25, 175);
+  airplane.mesh.position.y += (targetY-airplane.mesh.position.y)*0.1;
+  airplane.mesh.rotation.z = (targetY-airplane.mesh.position.y)*0.0128;
+  airplane.mesh.rotation.x = (airplane.mesh.position.y-targetY)*0.0064;
+  airplane.propeller.rotation.x += 0.3;
   airplane.propellerSpin();
 }
+
+function updateCameraFov(){
+  camera.fov = normalize(mouseRelativePos.x,-1,1,40, 80);
+  camera.updateProjectionMatrix();
+}
+
+function normalize(mouseRP, mouseRP_min, mouseRP_max, Position_min, Position_max) {
+  let mouseRPinBox = Math.max(Math.min(mouseRP, mouseRP_max), mouseRP_min);
+  let mouseRPrange = mouseRP_max - mouseRP_min;
+  let ratio = (mouseRPinBox - mouseRP_min) / mouseRPrange;
+  let PositionRange = Position_max - Position_min;
+  return Position_min + (ratio * PositionRange);
+}// 根据鼠标位置来返回飞机及相机位置
 
 //FIX: THREE.Geometry: .applyMatrix() has been renamed to .applyMatrix4().
 //FIX: THREE.MeshPhongMaterial: .shading has been removed. Use the boolean .flatShading instead.
