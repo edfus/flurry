@@ -17,7 +17,11 @@ class Airplane {
     this.mesh.name = "airplane";
 
     // Create the cabin *座舱
-    const geomCockpit = new THREE.BoxGeometry(60, 50, 50, 1, 1, 1); //NOTE: 参数意义？
+    const geomCockpit = new THREE.BoxGeometry(60, 50, 50, 1, 1, 1); 
+    /*
+    *  BoxGeometry(width : Float, height : Float, depth : Float, widthSegments : Integer, heightSegments : Integer, depthSegments : Integer)
+    *  三个segments的默认参数是1，segments解释为沿着边的长(宽、高）度分段的矩形面的数量。简单来说segments设成1就行。
+    */
     const matCockpit = new THREE.MeshPhongMaterial({ //FIX: THREE.MeshPhongMaterial: .shading has been removed. Use the boolean .flatShading instead.
       color: colors.red,
       shading: THREE.FlatShading
@@ -80,13 +84,20 @@ class Airplane {
       shading: THREE.FlatShading
     });
 
-    let blade = new THREE.Mesh(geomBlade, matBlade);
-    blade.position.set(8, 0, 0);
-    blade.castShadow = true;
-    blade.receiveShadow = true;
+    let blade1 = new THREE.Mesh(geomBlade, matBlade);
+    blade1.position.set(8, 0, 0);
+    blade1.castShadow = true;
+    blade1.receiveShadow = true;
 
-    this.propeller.add(blade);
-    this.propeller.position.set(50, 0, 0);
+    let blade2 = blade1.clone();
+    blade2.rotation.x = Math.PI/2;
+  
+    blade2.castShadow = true;
+    blade2.receiveShadow = true;
+
+    this.propeller.add(blade1);
+    this.propeller.add(blade2);
+    this.propeller.position.set(60, 0, 0);
     this.mesh.add(this.propeller); // propeller的旋转在updatePlane()中控制
   }
   propellerSpin(speed = this.#defaultPropellerSpeed) { 
@@ -165,10 +176,26 @@ class Sea {
     const geometry = new THREE.CylinderGeometry(600, 600, 800, 40, 10);
     geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2)); //NOTE: 这句话的用处是？
 
+
+    var l = geometry.vertices.length;
+
+    this.waves = [];
+
+    for (var i=0;i<l;i++){
+      var v = geometry.vertices[i];
+      this.waves.push({y:v.y,
+                      x:v.x,
+                      z:v.z,
+                      ang:Math.random()*Math.PI*2,
+                      amp:5 + Math.random()*15,
+                      speed:0.016 + Math.random()*0.032
+                      });
+    };
+
     const material = new THREE.MeshPhongMaterial({
       color: colors.blue,
       transparent: true,
-      opacity: .6,
+      opacity: .8,
       shading: THREE.FlatShading,
     });
 
@@ -177,6 +204,48 @@ class Sea {
   }
   move(rotateAngel = 0) { // no default
     this.mesh.rotation.z += rotateAngel;
+  }
+  moveWaves() { //海浪
+    let verts = this.mesh.geometry.vertices;
+    let l = verts.length;
+    for (let i=0; i<l; i++){
+      let v = verts[i];
+      let vprops = this.waves[i];
+      v.x =  vprops.x + Math.cos(vprops.ang)*vprops.amp;
+      v.y = vprops.y + Math.sin(vprops.ang)*vprops.amp;
+      vprops.ang += vprops.speed;
+    }
+    this.mesh.geometry.verticesNeedUpdate=true;
+    this.mesh.rotation.z += .005;
+  }
+}
+
+class Cloud {
+  constructor() {
+    this.mesh = new THREE.Object3D();
+    this.mesh.name = "cloud";
+
+    const geometry = new THREE.CubeGeometry(20, 20, 20);
+    const material = new THREE.MeshPhongMaterial({
+      color: colors.white,
+    });
+
+    const nBlocks = 3 + Math.floor(Math.random() * 3); // 该Cloud由多少个cube组成
+
+    for (let i = 0; i < nBlocks; i++) {
+      let newCube = new THREE.Mesh(geometry.clone(), material);
+      newCube.position.x = i * 15;
+      newCube.position.y = Math.random() * 10;
+      newCube.position.z = Math.random() * 10;
+      newCube.rotation.z = Math.random() * Math.PI * 2;
+      newCube.rotation.y = Math.random() * Math.PI * 2;
+
+      const scaleRatio = .1 + Math.random() * .9; // random scale
+      newCube.scale.set(scaleRatio, scaleRatio, scaleRatio);
+      newCube.castShadow = true;
+      newCube.receiveShadow = true;
+      this.mesh.add(newCube);
+    }
   }
 }
 
