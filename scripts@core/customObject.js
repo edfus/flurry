@@ -114,34 +114,34 @@ class Airplane {
   }
 }
 
-class Cloud {
-  constructor() {
-    this.mesh = new THREE.Object3D();
-    this.mesh.name = "cloud";
+// class Cloud {
+//   constructor() {
+//     this.mesh = new THREE.Object3D();
+//     this.mesh.name = "cloud";
 
-    const geometry = new THREE.CubeGeometry(20, 20, 20);
-    const material = new THREE.MeshPhongMaterial({
-      color: colors.white,
-    });
+//     const geometry = new THREE.CubeGeometry(20, 20, 20);
+//     const material = new THREE.MeshPhongMaterial({
+//       color: colors.white,
+//     });
 
-    const nBlocks = 3 + Math.floor(Math.random() * 3); // 该Cloud由多少个cube组成
+//     const nBlocks = 3 + Math.floor(Math.random() * 3); // 该Cloud由多少个cube组成
 
-    for (let i = 0; i < nBlocks; i++) {
-      let newCube = new THREE.Mesh(geometry.clone(), material);
-      newCube.position.x = i * 15;
-      newCube.position.y = Math.random() * 10;
-      newCube.position.z = Math.random() * 10;
-      newCube.rotation.z = Math.random() * Math.PI * 2;
-      newCube.rotation.y = Math.random() * Math.PI * 2;
+//     for (let i = 0; i < nBlocks; i++) {
+//       let newCube = new THREE.Mesh(geometry.clone(), material);
+//       newCube.position.x = i * 15;
+//       newCube.position.y = Math.random() * 10;
+//       newCube.position.z = Math.random() * 10;
+//       newCube.rotation.z = Math.random() * Math.PI * 2;
+//       newCube.rotation.y = Math.random() * Math.PI * 2;
 
-      const scaleRatio = .1 + Math.random() * .9; // random scale
-      newCube.scale.set(scaleRatio, scaleRatio, scaleRatio);
-      newCube.castShadow = true;
-      newCube.receiveShadow = true;
-      this.mesh.add(newCube);
-    }
-  }
-}
+//       const scaleRatio = .1 + Math.random() * .9; // random scale
+//       newCube.scale.set(scaleRatio, scaleRatio, scaleRatio);
+//       newCube.castShadow = true;
+//       newCube.receiveShadow = true;
+//       this.mesh.add(newCube);
+//     }
+//   }
+// }
 
 class Sky {
   constructor() {
@@ -219,6 +219,7 @@ class Sea {
     this.mesh.rotation.z += .005;
   }
 }
+
 
 class Cloud {
   constructor() {
