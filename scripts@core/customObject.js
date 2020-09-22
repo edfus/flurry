@@ -16,7 +16,11 @@ class Airplane {
     this.mesh.name = "airPlane";
 
     // Create the cabin *座舱
-    const geomCockpit = new THREE.BoxGeometry(60, 50, 50, 1, 1, 1); //NOTE: 参数意义？
+    const geomCockpit = new THREE.BoxGeometry(60, 50, 50, 1, 1, 1); 
+    /*
+    *  BoxGeometry(width : Float, height : Float, depth : Float, widthSegments : Integer, heightSegments : Integer, depthSegments : Integer)
+    *  三个segments的默认参数是1，segments解释为沿着边的长(宽、高）度分段的矩形面的数量。简单来说segments设成1就行。
+    */
     const matCockpit = new THREE.MeshPhongMaterial({ //FIX: THREE.MeshPhongMaterial: .shading has been removed. Use the boolean .flatShading instead.
       color: colors.red,
       shading: THREE.FlatShading
