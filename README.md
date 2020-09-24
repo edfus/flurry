@@ -77,26 +77,9 @@ cloudres:
 - [ ] 完成web worker - audio开发（如何播放音频？）
 - [ ] 完成暂停函数和界面，完成其他按钮
 - [ ] indexedDB存储音频
-
-Chores#1:
-
-- [x] 下载[Loner Game Soundtrack](https://soundcloud.com/innerpeacestudio/sets/loner-game-soundtrack)并添加好meta tags
-- [x] 完善文档规范
-- [x] 帮助使用部署
-- [x] 基础框架写好
-
-Chores#2:
-
-- [ ] 使用service worker缓存lib等，达成PWA
-- [ ] 使用web worker及indexedDB存储obj、音乐、字体
-- [ ] 发布到github pages
+- [ ] cloudflare更改foobar123.tk，添加flurry.ml
 - [ ] 增加google流量分析等
-- [ ] 使用免费域名Flurry.tk
 - [ ] manifest.webmanifest - shortcuts by location.search
-
-Maybe:
-
-- [ ] 支持Android及IOS端
 
 ---
 
@@ -104,6 +87,7 @@ Maybe:
 
 - 09-12 init. 完成基本框架建设，完成团队组织。
 - 09-15 The Aviator part1.js学习完成。
+- 09-
 
 ### Credits
 
