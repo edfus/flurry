@@ -177,7 +177,7 @@ class Sky {
 class Sea {
   constructor() {
     const geometry = new THREE.CylinderGeometry(600, 600, 800, 40, 10);
-    geometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2)); //NOTE: 这句话的用处是？
+    geometry.applyMatrix4(new THREE.Matrix4().makeRotationX(-Math.PI / 2)); //NOTE: 这句话的用处是？
 
 
     var l = geometry.vertices.length;

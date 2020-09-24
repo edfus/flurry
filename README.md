@@ -60,14 +60,14 @@ All:
 z1042117441:
 
 - [ ] 完成`任务-第二周`
-- [ ] 
+- [ ] console.dir(light, light.target) 
 
 ---
 
 naiziguai: 
 
-- [ ] 完成`任务-第二周`
-- [ ] 
+- [x] 完成`任务-第二周`
+- [ ] 看懂改写moveWaves() 
 
 ---
 
