@@ -99,22 +99,26 @@ function createScene() {
 
 // LIGHTS
 function createLights() {
-  /*
-  * HemisphereLight：半球光，在空中创造一个球形光源，无法投射出阴影，可在物体上产生反光效果
-  * AmbientLight：环境光，没有方向，照亮场景中的所有对象，不能投射阴影或反光
-  * DirectionalLight：定向灯，从无限远处设向目标物体或位置的平行光，不能直接控制光线的方向，用法为new THREE.DirectionalLight(光色, 光强度);
-  * DirectionalLight.position.set(x = 0, y = 0, z = 0);
-  * 可用scene.add(light.target)改变光源指向的位置
-  * 或用如下代码使其射向某一有属性的物体
-    var targetObject = new THREE.Object3D();
-    scene.add(targetObject);
-    light.target = targetObject;
+  /* 
+  * HemisphereLight(天空颜色, 光的接地颜色, 光强度 = 1)：
+        半球光，在空中创造一个球形光源，无法投射阴影，可反光
+  * AmbientLight(光色, 光强度 = 1)：
+        环境光，没有方向，照亮场景中的所有对象，不能投射阴影或反光
+  * DirectionalLight(光色, 光强度 = 1)：
+        定向光，射向目标物体或位置的平行光
+    * Its direction is calculated as pointing from the light's position to the target's position
+    * light.position.set() -> light.target.position.set() & scene.add(light.target)
+    * Setting the rotation has no effect // light.rotation.set()
+    * 或用如下代码使其射向某一有属性的物体
+      const targetObject = new THREE.Object3D();
+      light.target = targetObject;
+      scene.add(targetObject); // scene.add(light.target) has same effect
+    * https://threejs.org/docs/#api/en/lights/DirectionalLight
   * 颜色均用16进制数表示（0x000为黑色，0xfff为白色（所有颜色的混合即为白）。可参照scripts@config/color.js）
-  * 光强度默认为1 
   */
   let ambientLight, hemisphereLight, shadowLight;
 
-  hemisphereLight = new THREE.HemisphereLight(0xaaaaaa,0x000000, .9);
+  hemisphereLight = new THREE.HemisphereLight(0xaaaaaa, 0x000000, .9);
                  // new THREE.HemisphereLight(天空颜色, 光的接地颜色, 光强度 = 1);
   scene.add(hemisphereLight);
 
@@ -122,8 +126,10 @@ function createLights() {
               // new THREE.AmbientLight(光色, 光强度 = 1);
   scene.add(ambientLight);
 
-  shadowLight = new THREE.DirectionalLight(0xffffff, .9);
+  shadowLight = new THREE.DirectionalLight(0xffffff, .9); // 白色
+             // new THREE.DirectionalLight(光色, 光强度 = 1)
   shadowLight.position.set(150, 350, 350);
+  // default target 0 0 0
   shadowLight.castShadow = true;
   shadowLight.shadow.camera.left = -400;
   shadowLight.shadow.camera.right = 400;
@@ -182,17 +188,26 @@ function updateBackground() {
 }
 
 function updateCameraFov(){
-  camera.fov = normalize(mouseRelativePos.x,-1,1,40, 80);
+  camera.fov = normalize(mouseRelativePos.x, -1, 1, 40, 80);
   camera.updateProjectionMatrix();
 }
-
+/**
+ * 根据鼠标相对位置返回映射后的绝对位置（飞机及相机)
+ * RP: Relative Position, 取值范围为-1到1
+ * @param {number} mouseRP mouseRelativePos.x | .y
+ * @param {number} mouseRP_min
+ * @param {number} mouseRP_max
+ * @param {number} position_min
+ * @param {number} position_max
+ * @return {number} 在屏幕上的绝对位置
+ */
 function normalize(mouseRP, mouseRP_min, mouseRP_max, position_min, position_max) {
   let mouseRPinBox = Math.max(Math.min(mouseRP, mouseRP_max), mouseRP_min);
   let mouseRPrange = mouseRP_max - mouseRP_min;
   let ratio = (mouseRPinBox - mouseRP_min) / mouseRPrange;
   let positionRange = position_max - position_min;
   return position_min + (ratio * positionRange);
-} // 根据鼠标位置来返回飞机及相机位置
+} 
 
 //FIX: THREE.Geometry: .applyMatrix() has been renamed to .applyMatrix4().
 //FIX: THREE.MeshPhongMaterial: .shading has been removed. Use the boolean .flatShading instead.

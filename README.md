@@ -77,9 +77,11 @@ cloudres:
 - [ ] 完成web worker - audio开发（如何播放音频？）
 - [ ] 完成暂停函数和界面，完成其他按钮
 - [ ] indexedDB存储音频
-- [ ] cloudflare更改foobar123.tk，添加flurry.ml
 - [ ] 增加google流量分析等
-- [ ] manifest.webmanifest - shortcuts by location.search
+- [ ] manifest.webmanifest - shortcuts by location.search lighthouse
+- [ ] 设计进入画面（加载动画（Loading...线下杀clip-path @keyframes）、帮助、Credit、全屏）
+- [ ] user-scalable - false 
+- [ ] document.unload - 存储分数
 
 ---
 
