@@ -26,6 +26,15 @@ class Airplane {
       color: colors.red,
       shading: THREE.FlatShading
     });
+    //几何体里面有一个vertices数组变量，可以用来存放点。
+    geomCockpit.vertices[4].y -= 10;
+    geomCockpit.vertices[4].z += 20;
+    geomCockpit.vertices[5].y -= 10;
+    geomCockpit.vertices[5].z -= 20;
+    geomCockpit.vertices[6].y += 30;
+    geomCockpit.vertices[6].z += 20;
+    geomCockpit.vertices[7].y += 30;
+    geomCockpit.vertices[7].z -= 20;
     let cockpit = new THREE.Mesh(geomCockpit, matCockpit);
     cockpit.castShadow = true;
     cockpit.receiveShadow = true;
@@ -38,7 +47,7 @@ class Airplane {
       shading: THREE.FlatShading
     });
     let engine = new THREE.Mesh(geomEngine, matEngine);
-    engine.position.x = 40;
+    engine.position.x = 50;
     engine.castShadow = true;
     engine.receiveShadow = true;
     this.mesh.add(engine);
@@ -50,19 +59,19 @@ class Airplane {
       shading: THREE.FlatShading
     });
     let tailPlane = new THREE.Mesh(geomTailPlane, matTailPlane);
-    tailPlane.position.set(-35, 25, 0);
+    tailPlane.position.set(-40, 20, 0);
     tailPlane.castShadow = true;
     tailPlane.receiveShadow = true;
     this.mesh.add(tailPlane);
 
     // Create Wing *机翼
-    const geomSideWing = new THREE.BoxGeometry(40, 8, 150, 1, 1, 1);
+    const geomSideWing = new THREE.BoxGeometry(30, 5, 120, 1, 1, 1);
     const matSideWing = new THREE.MeshPhongMaterial({
       color: colors.red,
       shading: THREE.FlatShading
     });
     let sideWing = new THREE.Mesh(geomSideWing, matSideWing);
-    sideWing.position.set(0, 0, 0);
+    sideWing.position.set(0, 15, 0);
     sideWing.castShadow = true;
     sideWing.receiveShadow = true;
     this.mesh.add(sideWing);
@@ -175,24 +184,22 @@ class Sky {
 }
 
 class Sea {
+  #length = 0; // 海浪的数量
   constructor() {
     const geometry = new THREE.CylinderGeometry(600, 600, 800, 40, 10);
+    console.log(geometry.vertices);
     geometry.applyMatrix4(new THREE.Matrix4().makeRotationX(-Math.PI / 2)); //NOTE: 这句话的用处是？
-
-
-    var l = geometry.vertices.length;
-
+    this.#length  = geometry.vertices.length;
     this.waves = [];
-
-    for (var i=0;i<l;i++){
-      var v = geometry.vertices[i];
+    for (let i = 0; i < this.#length; i++){
+      let verticesOnObj = geometry.vertices[i];
       this.waves.push({
-        y: v.y,
-        x: v.x,
-        z: v.z,
-        ang: Math.random()*Math.PI*2,
-        amp: 5 + Math.random()*15,
-        speed: 0.016 + Math.random()*0.032
+        x: verticesOnObj.x,
+        y: verticesOnObj.y,
+        z: verticesOnObj.z,
+        ang: Math.random()  * Math.PI * 2, // 海浪的角度angle
+        amp: 5 + Math.random() * 15, // 海浪高度amplitude
+        speed: 0.016 + Math.random() * 0.032, // angle的变化速度
       });
     };
 
@@ -209,17 +216,16 @@ class Sea {
   move(rotateAngel = 0) { // no default
     this.mesh.rotation.z += rotateAngel;
   }
-  moveWaves() { //海浪
-    let verts = this.mesh.geometry.vertices;
-    let l = verts.length;
-    for (let i=0; i<l; i++){
-      let v = verts[i];
-      let vprops = this.waves[i];
-      v.x =  vprops.x + Math.cos(vprops.ang)*vprops.amp;
-      v.y = vprops.y + Math.sin(vprops.ang)*vprops.amp;
-      vprops.ang += vprops.speed;
+  moveWaves() { //海浪  
+    const vertices = this.mesh.geometry.vertices;
+    for (let i = 0; i < this.#length; i++){
+      let verticesOnObj = vertices[i];
+      let vpropertys = this.waves[i];
+      verticesOnObj.x =  vpropertys.x + Math.cos(vpropertys.ang) * vpropertys.amp;
+      verticesOnObj.y = vpropertys.y + Math.sin(vpropertys.ang) * vpropertys.amp;
+      vpropertys.ang += vpropertys.speed;
     }
-    this.mesh.geometry.verticesNeedUpdate=true;
+    this.mesh.geometry.verticesNeedUpdate = true;
     this.mesh.rotation.z += .005;
   }
 }
