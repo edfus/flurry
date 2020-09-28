@@ -184,21 +184,19 @@ class Sky {
 }
 
 class Sea {
-  #length = 0; // 海浪的数量
+  #length = 0; // sea对象的vertices个数，waves数组的length
   constructor() {
     const geometry = new THREE.CylinderGeometry(600, 600, 800, 40, 10);
-    console.log(geometry.vertices);
     geometry.applyMatrix4(new THREE.Matrix4().makeRotationX(-Math.PI / 2)); //NOTE: 这句话的用处是？
     this.#length  = geometry.vertices.length;
     this.waves = [];
     for (let i = 0; i < this.#length; i++){
-      let verticesOnObj = geometry.vertices[i];
       this.waves.push({
-        x: verticesOnObj.x,
-        y: verticesOnObj.y,
-        z: verticesOnObj.z,
-        ang: Math.random()  * Math.PI * 2, // 海浪的角度angle
-        amp: 5 + Math.random() * 15, // 海浪高度amplitude
+        x: geometry.vertices[i].x,
+        y: geometry.vertices[i].y,
+        z: geometry.vertices[i].z,
+        ang: Math.random()  * Math.PI * 2, // 海浪的角度 angle
+        amp: 5 + Math.random() * 15, // 海浪高度 amplitude
         speed: 0.016 + Math.random() * 0.032, // angle的变化速度
       });
     };
@@ -216,14 +214,13 @@ class Sea {
   move(rotateAngel = 0) { // no default
     this.mesh.rotation.z += rotateAngel;
   }
-  moveWaves() { //海浪  
+  moveWaves() { // 海浪
     const vertices = this.mesh.geometry.vertices;
     for (let i = 0; i < this.#length; i++){
-      let verticesOnObj = vertices[i];
-      let vpropertys = this.waves[i];
-      verticesOnObj.x =  vpropertys.x + Math.cos(vpropertys.ang) * vpropertys.amp;
-      verticesOnObj.y = vpropertys.y + Math.sin(vpropertys.ang) * vpropertys.amp;
-      vpropertys.ang += vpropertys.speed;
+      const waveProperties = this.waves[i];
+      vertices[i].x =  waveProperties.x + Math.cos(waveProperties.ang) * waveProperties.amp;
+      vertices[i].y = waveProperties.y + Math.sin(waveProperties.ang) * waveProperties.amp;
+      waveProperties.ang += waveProperties.speed;
     }
     this.mesh.geometry.verticesNeedUpdate = true;
     this.mesh.rotation.z += .005;
