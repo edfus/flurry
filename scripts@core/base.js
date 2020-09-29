@@ -216,6 +216,4 @@ function normalize(mouseRP, mouseRP_min, mouseRP_max, position_min, position_max
   return position_min + (ratio * positionRange);
 } 
 
-//FIX: THREE.Geometry: .applyMatrix() has been renamed to .applyMatrix4().
-//FIX: THREE.MeshPhongMaterial: .shading has been removed. Use the boolean .flatShading instead.
 //TODO: 相机旋转跟随飞机旋转的延迟问题

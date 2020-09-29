@@ -192,8 +192,10 @@ class Sky {
 class Sea {
   #length = 0; // sea对象的vertices个数，waves数组的length
   constructor() {
-    const geometry = new THREE.CylinderGeometry(600, 600, 800, 40, 10);
-    geometry.applyMatrix4(new THREE.Matrix4().makeRotationX(-Math.PI / 2)); //NOTE: 这句话的用处是？
+    const geometry = new THREE.CylinderGeometry(600, 600, 800, 40, 10); 
+    // CylinderGeometry( radiusTop : Float, radiusBottom : Float, height : Float, radialSegments : Integer, heightSegments : Integer, openEnded : Boolean, thetaStart : Float, thetaLength : Float )
+    geometry.applyMatrix4(new THREE.Matrix4().makeRotationX(-Math.PI / 2)); 
+     // .applyMatrix4 ( m : Matrix4 ) :  Multiplies this vector (with an implicit 1 in the 4th dimension) and m, and divides by perspective.简单来说参数用-Math.PI / 2可以让圆柱体最接近球体
     this.#length  = geometry.vertices.length;
     this.waves = [];
     for (let i = 0; i < this.#length; i++){
