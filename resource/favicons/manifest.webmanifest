@@ -23,12 +23,15 @@
     ],
     "background_color": "#000",
     "theme_color": "#000",
-    "display": "standalone",
+    "display": "fullscreen",
+    "orientation": "landscape",
     "shortcuts": [
         {
             "name": "Play",
             "url": "https://flurry.ml/",
-            "icons": []
+            "icons": [
+                {"src": "https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/maskable-192-transparent.png", "sizes": "192x192"}
+            ]
         }
     ]     
 }

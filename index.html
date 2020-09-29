@@ -2,10 +2,12 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
+		<!-- meta & preload -->
 		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin="anonymous">
 		<link rel="dns-prefetch" href="//cdn.jsdelivr.net">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=auto">
 		<title>The Aviator</title>
+		<meta name="description" content="Flurry - A Three.js based web game imitating mobile game 'Loner'">
 		<link rel="modulepreload" href="scripts@core/base.js">
 		<link rel="modulepreload" href="scripts@miscellaneous/webWorker.js">
   	<link rel="prefetch" href="scripts@miscellaneous/webWorker.js" as="worker" crossorigin="anonymous">
@@ -14,7 +16,19 @@
 		<script type="text/javascript" src="//cdn.jsdelivr.net/gh/FML-MLS/Flurry/lib/three.min.js"></script>
 		<script>try{THREE}catch(e){let script = document.createElement('SCRIPT'); script.src = "lib/three.min.js"; document.head.append(script)}</script>
 		<script type="module" src="scripts@core/base.js"></script>
-		<script async src="scripts@miscellaneous/invokeSW.js"></script>
+		<script type="module" async>
+			if("caches" in window && "serviceWorker" in navigator){
+				window.addEventListener("load", ()=>{
+					navigator.serviceWorker.register('serviceWorker.js', { scope: '/' }).then(reg => {
+						if(reg.installing){
+							console.log('[ServiceWorker] installing');
+						}
+					}).catch(error => {
+						console.log('Registration failed with ' + error);
+					})
+				}, {passive: true, once: true});
+			}
+		</script>
 		<!-- Global site tag (gtag.js) - Google Analytics -->
 		<script async src="https://www.googletagmanager.com/gtag/js?id=UA-179239422-1"></script>
 		<script>
@@ -27,6 +41,7 @@
 		<link rel="icon" href="/favicon.ico">
 		<meta name="theme-color" content="#f7d9aa">
 		<link rel="mask-icon" href="https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/safari-pinned-tab.svg">
+		<link rel="apple-touch-icon" sizes="180x180" href="https://cdn.jsdelivr.net/gh/Flurry/resource/favicons/apple-touch-icon-180.png">
 		<link rel="manifest" href="https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/manifest.webmanifest">
 		<meta name="msapplication-config" content="https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/browserconfig.xml">
 		<!-- styles -->
@@ -40,12 +55,21 @@
 			body {
 				margin: 0;
 			}
+			#fallback-content {
+				display: flex;
+				align-items: flex-start;
+				flex-direction: column;
+				height: 60px;
+				font-size: 24px;
+				width: 220px;
+				margin: 40vh calc(50vw - 110px);
+			}
 		</style>
-	<!-- 
-		<link rel="icon" href="/favicon.ico">
-		<link rel="manifest" href="/manifest.webmanifest">
-		<meta name="msapplication-config" content="/browserconfig.xml"> 
-	-->
 	</head>
-	<body id="world"></body>
+	<body id="world">
+		<div id="fallback-content">
+			<span>Oops,</span>
+			<span>some errors occurred.</span>
+		</div>
+	</body>
 </html>

@@ -2,11 +2,12 @@
 // COLORS
 const TestMode = true,
 
-themeColor = '#000',
+themeColor = '#000', // used in , webmanifest
 
-// used in index.html/meta, webmanifest
+BackgroundColor = '#f7d9aa', // used in index.html/meta-themeColor, style-background
 
-Version = '1.1.0' + '--dev', //NOTE: 添加功能后记得更改这个
+
+Version = '1.2.0' + '--dev', //NOTE: 添加功能后记得更改这个
 
 PerspectiveCameraSetting = {
     fieldOfView: 60,
@@ -17,6 +18,10 @@ PerspectiveCameraSetting = {
 
 GetContainer = () => {
   return document.getElementById('world')
+},
+
+GetFallbackEle = () => {
+  return document.getElementById('fallback-content') // fallback content when error occurred
 },
 
 RotationSpeed_Sea = .005,
@@ -30,6 +35,7 @@ export default {
     version: Version,
     cameraSetting: PerspectiveCameraSetting,
     getContainer: GetContainer,
+    getFallbackEle: GetFallbackEle,
     speed_sea: RotationSpeed_Sea,
     speed_sky: RotationSpeed_Sky
 }

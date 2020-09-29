@@ -7,11 +7,11 @@ import {Airplane, Sky, Sea} from '../scripts@core/customObject.js';
     mode = ['development', '#f25346'];
   const titleStyle = "padding: 1px; border-radius: 3px 0 0 3px; color: #fff; background: #606060;",
         subStyle = "padding: 1px; border-radius: 0 3px 3px 0; color: #fff; background";
-
+  const ua = navigator.userAgent.toString();
   console.info(`%c Version %c ${config.version} `, titleStyle, `${subStyle}: #F5986E;`)
   console.info(`%c Environment %c ${mode[0]} `, titleStyle, `${subStyle}: ${mode[1]};`)
-  console.info(`%c Browser %c ${navigator.userAgent.split(' (')[0]} `, titleStyle, `${subStyle}: #1475b2;`)
-  console.info(`%c Platform %c ${navigator.userAgent.split('(')[1].split(')')[0]} `, titleStyle, `${subStyle}: #1475b2;`)
+  console.info(`%c Browser %c ${ua.slice(ua.lastIndexOf(') ') + 2, ua.length)} `, titleStyle, `${subStyle}: #1475b2;`)
+  console.info(`%c Platform %c ${ua.match(/(?<=\().*?(?=;)/)[0]} `, titleStyle, `${subStyle}: #1475b2;`)
 }
 ////////////////////////////////
 //SCREEN & MOUSE VARIABLES
@@ -85,6 +85,9 @@ function createScene() {
   renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
   renderer.setSize(WIDTH, HEIGHT);
   renderer.shadowMap.enabled = true;
+
+  config.getFallbackEle().remove(); 
+  // provide fallback content when JavaScript is not available or whatever
 
   config.getContainer().appendChild(renderer.domElement);
 
