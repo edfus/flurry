@@ -4,17 +4,32 @@
 		<meta charset="UTF-8">
 		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin="anonymous">
 		<link rel="dns-prefetch" href="//cdn.jsdelivr.net">
-		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=auto">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=auto">
 		<title>The Aviator</title>
 		<link rel="modulepreload" href="scripts@core/base.js">
 		<link rel="modulepreload" href="scripts@miscellaneous/webWorker.js">
-  	<!-- https://web.dev/module-workers/ -->
   	<link rel="prefetch" href="scripts@miscellaneous/webWorker.js" as="worker" crossorigin="anonymous">
+		<!-- scripts -->
 		<script async src="scripts@miscellaneous/webWorker.js"></script>
 		<script type="text/javascript" src="//cdn.jsdelivr.net/gh/FML-MLS/Flurry/lib/three.min.js"></script>
 		<script>try{THREE}catch(e){let script = document.createElement('SCRIPT'); script.src = "lib/three.min.js"; document.head.append(script)}</script>
 		<script type="module" src="scripts@core/base.js"></script>
 		<script async src="scripts@miscellaneous/invokeSW.js"></script>
+		<!-- Global site tag (gtag.js) - Google Analytics -->
+		<script async src="https://www.googletagmanager.com/gtag/js?id=UA-179239422-1"></script>
+		<script>
+			window.dataLayer = [
+				['js', new Date()],
+				['config', 'UA-179239422-1']
+			];
+		</script>
+		<!-- favicons -->
+		<link rel="icon" href="/favicon.ico">
+		<meta name="theme-color" content="#f7d9aa">
+		<link rel="mask-icon" href="https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/safari-pinned-tab.svg">
+		<link rel="manifest" href="https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/manifest.webmanifest">
+		<meta name="msapplication-config" content="https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/browserconfig.xml">
+		<!-- styles -->
 		<style>
 			#world {
 				width: 100vw;
@@ -26,7 +41,6 @@
 				margin: 0;
 			}
 		</style>
-		<meta name="theme-color" content="#f7d9aa">
 	<!-- 
 		<link rel="icon" href="/favicon.ico">
 		<link rel="manifest" href="/manifest.webmanifest">

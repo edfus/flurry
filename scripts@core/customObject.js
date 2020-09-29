@@ -23,7 +23,8 @@ class Airplane {
     *  segments解释为沿着边的长(宽、高）度分段的矩形面的数量。简单来说segments设成1就行。
     */
     const matCockpit = new THREE.MeshPhongMaterial({
-      color: colors.red
+      color: colors.red,
+      flatShading: THREE.FlatShading
     });
     /*
     * 材质的着色有flatShading和smoothShading两种
@@ -48,7 +49,8 @@ class Airplane {
     // Create Engine
     const geomEngine = new THREE.BoxGeometry(20, 50, 50, 1, 1, 1);
     const matEngine = new THREE.MeshPhongMaterial({
-      color: colors.white
+      color: colors.white,
+      flatShading: THREE.FlatShading
     });
     let engine = new THREE.Mesh(geomEngine, matEngine);
     engine.position.x = 50;
@@ -59,7 +61,8 @@ class Airplane {
     // Create Tailplane *横尾翼
     const geomTailPlane = new THREE.BoxGeometry(15, 20, 5, 1, 1, 1);
     const matTailPlane = new THREE.MeshPhongMaterial({
-      color: colors.red
+      color: colors.red,
+      flatShading: THREE.FlatShading
     });
     let tailPlane = new THREE.Mesh(geomTailPlane, matTailPlane);
     tailPlane.position.set(-40, 20, 0);
@@ -70,7 +73,8 @@ class Airplane {
     // Create Wing *机翼
     const geomSideWing = new THREE.BoxGeometry(30, 5, 120, 1, 1, 1);
     const matSideWing = new THREE.MeshPhongMaterial({
-      color: colors.red
+      color: colors.red,
+      flatShading: THREE.FlatShading
     });
     let sideWing = new THREE.Mesh(geomSideWing, matSideWing);
     sideWing.position.set(0, 15, 0);
@@ -81,7 +85,8 @@ class Airplane {
     // Propeller *螺旋桨杆
     const geomPropeller = new THREE.BoxGeometry(20, 10, 10, 1, 1, 1);
     const matPropeller = new THREE.MeshPhongMaterial({
-      color: colors.brown
+      color: colors.brown,
+      flatShading: THREE.FlatShading
     });
     this.propeller = new THREE.Mesh(geomPropeller, matPropeller);
     this.propeller.castShadow = true;
@@ -90,7 +95,8 @@ class Airplane {
     // Blades *叶片
     const geomBlade = new THREE.BoxGeometry(1, 100, 20, 1, 1, 1);
     const matBlade = new THREE.MeshPhongMaterial({
-      color: colors.brownDark
+      color: colors.brownDark,
+      flatShading: THREE.FlatShading
     });
 
     let blade1 = new THREE.Mesh(geomBlade, matBlade);
@@ -184,19 +190,17 @@ class Sky {
 }
 
 class Sea {
-  #length = 0; // 海浪的数量
+  #length = 0; // sea对象的vertices个数，waves数组的length
   constructor() {
     const geometry = new THREE.CylinderGeometry(600, 600, 800, 40, 10);
-    console.log(geometry.vertices);
     geometry.applyMatrix4(new THREE.Matrix4().makeRotationX(-Math.PI / 2)); //NOTE: 这句话的用处是？
     this.#length  = geometry.vertices.length;
     this.waves = [];
     for (let i = 0; i < this.#length; i++){
-      let verticesOfSea = geometry.vertices[i];
       this.waves.push({
-        x: verticesOfSea.x,
-        y: verticesOfSea.y,
-        z: verticesOfSea.z,
+        x: geometry.vertices[i].x,
+        y: geometry.vertices[i].y,
+        z: geometry.vertices[i].z,
         ang: Math.random()  * Math.PI * 2, // 海浪的角度 angle
         amp: 5 + Math.random() * 15, // 海浪高度 amplitude
         speed: 0.016 + Math.random() * 0.032, // angle的变化速度
@@ -207,6 +211,7 @@ class Sea {
       color: colors.blue,
       transparent: true,
       opacity: .8,
+      flatShading: THREE.FlatShading,
     });
 
     this.mesh = new THREE.Mesh(geometry, material);
@@ -215,14 +220,13 @@ class Sea {
   move(rotateAngel = 0) { // no default
     this.mesh.rotation.z += rotateAngel;
   }
-  moveWaves() { //海浪  
+  moveWaves() { // 海浪
     const vertices = this.mesh.geometry.vertices;
     for (let i = 0; i < this.#length; i++){
-      let verticesOfSea = vertices[i];
-      let v_properties = this.waves[i]; // v_properties: vertices properties
-      verticesOfSea.x =  v_properties.x + Math.cos(v_properties.ang) * v_properties.amp;
-      verticesOfSea.y = v_properties.y + Math.sin(v_properties.ang) * v_properties.amp;
-      v_properties.ang += v_properties.speed;
+      const waveProperties = this.waves[i];
+      vertices[i].x =  waveProperties.x + Math.cos(waveProperties.ang) * waveProperties.amp;
+      vertices[i].y = waveProperties.y + Math.sin(waveProperties.ang) * waveProperties.amp;
+      waveProperties.ang += waveProperties.speed;
     }
     this.mesh.geometry.verticesNeedUpdate = true;
     this.mesh.rotation.z += .005;
