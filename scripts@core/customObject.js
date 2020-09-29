@@ -22,10 +22,16 @@ class Airplane {
     *  BoxGeometry(width, height, depth, widthSegments = 1, heightSegments = 1, depthSegments = 1)
     *  segments解释为沿着边的长(宽、高）度分段的矩形面的数量。简单来说segments设成1就行。
     */
-    const matCockpit = new THREE.MeshPhongMaterial({ 
+    const matCockpit = new THREE.MeshPhongMaterial({
       color: colors.red,
       flatShading: THREE.FlatShading
-    }); // MeshPhongMaterial：一种具有镜面高光的发亮表面的材料，可以模拟具有镜面高光的光泽表面，使用Phong阴影模型计算阴影。参数：Object
+    });
+    /*
+    * 材质的着色有flatShading和smoothShading两种
+    * flatShading能显示出组成图形的各个平面的轮廓，smoothShading使整个图形浑然一体
+    * 用法为flatShading: THREE.FlatShading 或 smoothShading: THREE.SmoothShading
+    * flatShading: THREE.SmoothShading的效果为flatShading
+    */
     //几何体里面有一个vertices数组变量，可以用来存放点。
     geomCockpit.vertices[4].y -= 10;
     geomCockpit.vertices[4].z += 20;
@@ -186,8 +192,10 @@ class Sky {
 class Sea {
   #length = 0; // sea对象的vertices个数，waves数组的length
   constructor() {
-    const geometry = new THREE.CylinderGeometry(600, 600, 800, 40, 10);
-    geometry.applyMatrix4(new THREE.Matrix4().makeRotationX(-Math.PI / 2)); //NOTE: 这句话的用处是？
+    const geometry = new THREE.CylinderGeometry(600, 600, 800, 40, 10); 
+    // CylinderGeometry( radiusTop : Float, radiusBottom : Float, height : Float, radialSegments : Integer, heightSegments : Integer, openEnded : Boolean, thetaStart : Float, thetaLength : Float )
+    geometry.applyMatrix4(new THREE.Matrix4().makeRotationX(-Math.PI / 2)); 
+     // .applyMatrix4 ( m : Matrix4 ) :  Multiplies this vector (with an implicit 1 in the 4th dimension) and m, and divides by perspective.简单来说参数用-Math.PI / 2可以让圆柱体最接近球体
     this.#length  = geometry.vertices.length;
     this.waves = [];
     for (let i = 0; i < this.#length; i++){
