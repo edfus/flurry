@@ -192,13 +192,13 @@ class Sea {
     this.#length  = geometry.vertices.length;
     this.waves = [];
     for (let i = 0; i < this.#length; i++){
-      let verticesOnObj = geometry.vertices[i];
+      let verticesOfSea = geometry.vertices[i];
       this.waves.push({
-        x: verticesOnObj.x,
-        y: verticesOnObj.y,
-        z: verticesOnObj.z,
-        ang: Math.random()  * Math.PI * 2, // 海浪的角度angle
-        amp: 5 + Math.random() * 15, // 海浪高度amplitude
+        x: verticesOfSea.x,
+        y: verticesOfSea.y,
+        z: verticesOfSea.z,
+        ang: Math.random()  * Math.PI * 2, // 海浪的角度 angle
+        amp: 5 + Math.random() * 15, // 海浪高度 amplitude
         speed: 0.016 + Math.random() * 0.032, // angle的变化速度
       });
     };
@@ -219,11 +219,11 @@ class Sea {
   moveWaves() { //海浪  
     const vertices = this.mesh.geometry.vertices;
     for (let i = 0; i < this.#length; i++){
-      let verticesOnObj = vertices[i];
-      let vpropertys = this.waves[i];
-      verticesOnObj.x =  vpropertys.x + Math.cos(vpropertys.ang) * vpropertys.amp;
-      verticesOnObj.y = vpropertys.y + Math.sin(vpropertys.ang) * vpropertys.amp;
-      vpropertys.ang += vpropertys.speed;
+      let verticesOfSea = vertices[i];
+      let v_properties = this.waves[i]; // v_properties: vertices properties
+      verticesOfSea.x =  v_properties.x + Math.cos(v_properties.ang) * v_properties.amp;
+      verticesOfSea.y = v_properties.y + Math.sin(v_properties.ang) * v_properties.amp;
+      v_properties.ang += v_properties.speed;
     }
     this.mesh.geometry.verticesNeedUpdate = true;
     this.mesh.rotation.z += .005;
