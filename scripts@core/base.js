@@ -46,6 +46,8 @@ window.addEventListener('load', ()=>{
 
   createObjects();
 
+  config.gameStartCallback();
+  
   (function renderLoop(){
     // 循环函数，在每帧更新对象的位置和渲染场景
     //TODO: 在renderLoop中完成粒子特效等的处理
@@ -92,9 +94,6 @@ function createScene() {
   renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
   renderer.setSize(WIDTH, HEIGHT);
   renderer.shadowMap.enabled = true;
-
-  config.getFallbackEle().remove(); 
-  // provide fallback content when JavaScript is not available or whatever
 
   config.getContainer().appendChild(renderer.domElement);
 

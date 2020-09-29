@@ -1,5 +1,4 @@
-// 全局设置，或者样式类的的东西需要写在这里。
-// COLORS
+// export
 const TestMode = true,
 
 themeColor = '#000', // used in , webmanifest
@@ -17,11 +16,21 @@ PerspectiveCameraSetting = {
 },
 
 GetContainer = () => {
-  return document.getElementById('world')
+  return document.getElementById('canvas')
 },
 
-GetFallbackEle = () => {
-  return document.getElementById('fallback-content') // fallback content when error occurred
+GameStartCallback = async () => { // asynchronous 异步的，非同时的
+  const loadSection = document.getElementById('loading-section');
+  const loader = document.getElementById('loader');
+  const fadeOut = (num1, num2, speed) => {
+    (loadSection.style.opacity = num1) <= .1
+        ? loadSection.hidden = true 
+        : (loader.style.opacity = num2) 
+          && setTimeout(()=>fadeOut(num1 - .06, num2 - .09, speed), speed) // speed单位：毫秒
+  }
+  setTimeout(()=>{
+    fadeOut(1, 1, 75)
+  }, 400)
 },
 
 RotationSpeed_Sea = .005,
@@ -35,7 +44,7 @@ export default {
     version: Version,
     cameraSetting: PerspectiveCameraSetting,
     getContainer: GetContainer,
-    getFallbackEle: GetFallbackEle,
+    gameStartCallback: GameStartCallback,
     speed_sea: RotationSpeed_Sea,
     speed_sky: RotationSpeed_Sky
 }

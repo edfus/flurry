@@ -38,37 +38,25 @@
 			];
 		</script>
 		<!-- favicons -->
-		<link rel="icon" href="/favicon.ico">
+		<link rel="icon" href="favicon.ico">
 		<meta name="theme-color" content="#f7d9aa">
 		<link rel="mask-icon" href="https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/safari-pinned-tab.svg">
 		<link rel="apple-touch-icon" sizes="180x180" href="https://cdn.jsdelivr.net/gh/Flurry/resource/favicons/apple-touch-icon-180.png">
 		<link rel="manifest" href="https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/manifest.webmanifest">
 		<meta name="msapplication-config" content="https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/browserconfig.xml">
 		<!-- styles -->
-		<style>
-			#world {
-				width: 100vw;
-				height: 100vh;
-				overflow: hidden;
-				background: linear-gradient(#e4e0ba, #f7d9aa);
-			}
-			body {
-				margin: 0;
-			}
-			#fallback-content {
-				display: flex;
-				align-items: flex-start;
-				flex-direction: column;
-				height: 60px;
-				font-size: 24px;
-				width: 220px;
-				margin: 40vh calc(50vw - 110px);
-			}
-		</style>
+		<link href="resource/styles/style.css" rel="stylesheet" type="text/css">
 	</head>
-	<body id="world">
-		<div id="fallback-content">
-			<span>Loading...</span>
-		</div>
+	<body>
+		<section id="loading-section" style="opacity: 1;">
+			<div id="loader">
+				<svg class="circular" viewBox="25 25 50 50">
+					<circle class="path" cx="50" cy="50" r="20" fill="none" stroke-width="2" stroke-miterlimit="10"/>
+				</svg>
+			</div>
+		</section>
+		<section id="canvas">
+
+		</section>
 	</body>
 </html>
