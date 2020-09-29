@@ -1,0 +1,34 @@
+{
+    "name": "flurry.",
+    "short_name": "Flurry",
+    "start_url": "https://flurry.ml/",
+    "scope": "https://flurry.ml/",
+    "icons": [
+        {
+            "src": "https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose":"maskable"
+        },
+        {
+            "src": "https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/favicon-192.jpg",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/favicon-512.jpg",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ],
+    "background_color": "#000",
+    "theme_color": "#000",
+    "display": "standalone",
+    "shortcuts": [
+        {
+            "name": "Play",
+            "url": "https://flurry.ml/",
+            "icons": []
+        }
+    ]     
+}

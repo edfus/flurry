@@ -2,6 +2,10 @@
 // COLORS
 const TestMode = true,
 
+themeColor = '#000',
+
+// used in index.html/meta, webmanifest
+
 Version = '1.1.0' + '--dev', //NOTE: 添加功能后记得更改这个
 
 PerspectiveCameraSetting = {
