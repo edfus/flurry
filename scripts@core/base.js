@@ -68,12 +68,19 @@ function createScene() {
   */
 
   const setting = config.cameraSetting;
-  camera = new THREE.PerspectiveCamera( //NOTE: PerspectiveCamera的设定参数？
+  camera = new THREE.PerspectiveCamera(
       setting.fieldOfView,
       setting.aspectRatio,
       setting.nearPlane,
       setting.farPlane
     );
+    /*
+    * PerspectiveCamera为透视相机，new THREE.PerspectiveCamera(fov, aspect, near, far)
+    * fov为纵向视角，默认为50°
+    * aspect为摄像机的纵横比，默认为1，即近远平面均为正方形
+    * near为近平面与透视顶点的距离，默认为0.1，应大于0
+    * far为远平面与透视顶点的距离，默认为2000，应大于near
+    */
   Object.assign(camera.position, new THREE.Vector3(0, 100, 200));
   /*
   *  Object.assign(target, source)
@@ -178,7 +185,7 @@ function updatePlane() {
   // 0.1 0.0128 0.0064的选取机制不大清楚……
   airplane.propellerSpin(.6); // 加快螺旋桨旋转速度 (默认速度0.3)
   // 可通过airplane.defaultPropellerSpeed = 0.6直接修改默认速度
-  //NOTE: 为什么这里要加快速度？是否需要直接更改 rotationSpeedOfPropeller (customObjects.js)来进一步封装？
+  // 通过airplane.propellerSpin()可以在外部实现更改螺旋桨转速，在需要设置函数以达到螺旋桨转速改变时有用
 }
 
 function updateBackground() {

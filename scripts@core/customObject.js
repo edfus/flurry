@@ -22,10 +22,15 @@ class Airplane {
     *  BoxGeometry(width, height, depth, widthSegments = 1, heightSegments = 1, depthSegments = 1)
     *  segments解释为沿着边的长(宽、高）度分段的矩形面的数量。简单来说segments设成1就行。
     */
-    const matCockpit = new THREE.MeshPhongMaterial({ //FIX: THREE.MeshPhongMaterial: .shading has been removed. Use the boolean .flatShading instead.
-      color: colors.red,
-      shading: THREE.FlatShading
+    const matCockpit = new THREE.MeshPhongMaterial({
+      color: colors.red
     });
+    /*
+    * 材质的着色有flatShading和smoothShading两种
+    * flatShading能显示出组成图形的各个平面的轮廓，smoothShading使整个图形浑然一体
+    * 用法为flatShading: THREE.FlatShading 或 smoothShading: THREE.SmoothShading
+    * flatShading: THREE.SmoothShading的效果为flatShading
+    */
     //几何体里面有一个vertices数组变量，可以用来存放点。
     geomCockpit.vertices[4].y -= 10;
     geomCockpit.vertices[4].z += 20;
@@ -43,8 +48,7 @@ class Airplane {
     // Create Engine
     const geomEngine = new THREE.BoxGeometry(20, 50, 50, 1, 1, 1);
     const matEngine = new THREE.MeshPhongMaterial({
-      color: colors.white,
-      shading: THREE.FlatShading
+      color: colors.white
     });
     let engine = new THREE.Mesh(geomEngine, matEngine);
     engine.position.x = 50;
@@ -55,8 +59,7 @@ class Airplane {
     // Create Tailplane *横尾翼
     const geomTailPlane = new THREE.BoxGeometry(15, 20, 5, 1, 1, 1);
     const matTailPlane = new THREE.MeshPhongMaterial({
-      color: colors.red,
-      shading: THREE.FlatShading
+      color: colors.red
     });
     let tailPlane = new THREE.Mesh(geomTailPlane, matTailPlane);
     tailPlane.position.set(-40, 20, 0);
@@ -67,8 +70,7 @@ class Airplane {
     // Create Wing *机翼
     const geomSideWing = new THREE.BoxGeometry(30, 5, 120, 1, 1, 1);
     const matSideWing = new THREE.MeshPhongMaterial({
-      color: colors.red,
-      shading: THREE.FlatShading
+      color: colors.red
     });
     let sideWing = new THREE.Mesh(geomSideWing, matSideWing);
     sideWing.position.set(0, 15, 0);
@@ -79,8 +81,7 @@ class Airplane {
     // Propeller *螺旋桨杆
     const geomPropeller = new THREE.BoxGeometry(20, 10, 10, 1, 1, 1);
     const matPropeller = new THREE.MeshPhongMaterial({
-      color: colors.brown,
-      shading: THREE.FlatShading
+      color: colors.brown
     });
     this.propeller = new THREE.Mesh(geomPropeller, matPropeller);
     this.propeller.castShadow = true;
@@ -89,8 +90,7 @@ class Airplane {
     // Blades *叶片
     const geomBlade = new THREE.BoxGeometry(1, 100, 20, 1, 1, 1);
     const matBlade = new THREE.MeshPhongMaterial({
-      color: colors.brownDark,
-      shading: THREE.FlatShading
+      color: colors.brownDark
     });
 
     let blade1 = new THREE.Mesh(geomBlade, matBlade);
@@ -207,7 +207,6 @@ class Sea {
       color: colors.blue,
       transparent: true,
       opacity: .8,
-      shading: THREE.FlatShading,
     });
 
     this.mesh = new THREE.Mesh(geometry, material);
