@@ -186,9 +186,7 @@ function updatePlane() {
   airplane.mesh.rotation.z = (targetY - airplane.mesh.position.y) * 0.0128; // 飞机与x轴角度随鼠标上下移动而变化
   airplane.mesh.rotation.x = (airplane.mesh.position.y - targetY) * 0.0064; // 飞机与z轴角度随鼠标上下移动而变化
   // 0.1 0.0128 0.0064的选取机制不大清楚……
-  airplane.propellerSpin(.6); // 加快螺旋桨旋转速度 (默认速度0.3)
-  // 可通过airplane.defaultPropellerSpeed = 0.6直接修改默认速度
-  // 通过airplane.propellerSpin()可以在外部实现更改螺旋桨转速，在需要设置函数以达到螺旋桨转速改变时有用
+  airplane.propellerSpin(.6); // 螺旋桨旋转(默认速度0.6)
 }
 
 function updateBackground() {

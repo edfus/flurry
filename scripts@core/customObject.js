@@ -2,7 +2,7 @@
 import colors from '../scripts@config/colors.js';
 
 const numOfCloudsInSky = 20,
-      rotationSpeedOfPropeller = .3;
+      rotationSpeedOfPropeller = .6;
 
 /*
 class name [extends otherName] {
