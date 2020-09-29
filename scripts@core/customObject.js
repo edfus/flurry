@@ -4,14 +4,10 @@ import colors from '../scripts@config/colors.js';
 const numOfCloudsInSky = 20,
       rotationSpeedOfPropeller = .6;
 
-/*
-class name [extends otherName] {
-  // class body
-}
-*/
-
 class Airplane {
-  #defaultPropellerSpeed = rotationSpeedOfPropeller;
+  #defaultPropellerSpeed = rotationSpeedOfPropeller; 
+  // #varName : private field，仅能通过class的内置函数访问
+  // 不能通过如airplane.#defaultPropellerSpeed的方式访问（注意airplane开头为小写，表示变量）
   constructor() {
     this.mesh = new THREE.Object3D();
     this.mesh.name = "airplane";
@@ -30,7 +26,8 @@ class Airplane {
     * 材质的着色有flatShading和smoothShading两种
     * flatShading能显示出组成图形的各个平面的轮廓，smoothShading使整个图形浑然一体
     * 用法为flatShading: THREE.FlatShading 或 smoothShading: THREE.SmoothShading
-    * flatShading: THREE.SmoothShading的效果为flatShading
+    * 将flatShading设置为THREE.SmoothShading，其效果仍为flatShading。
+    * 默认着色为smoothShading。
     */
     //几何体里面有一个vertices数组变量，可以用来存放点。
     geomCockpit.vertices[4].y -= 10;
@@ -119,8 +116,8 @@ class Airplane {
     // 初始为rotationSpeedOfPropeller，可通过airplaneObj.defaultPropellerSpeed = xxx更改
     this.propeller.rotation.x += speed; // 螺旋桨旋转速度
   }
-  set defaultPropellerSpeed(newSpeed) {
-    if(!isNaN(newSpeed))
+  set defaultPropellerSpeed(newSpeed) { // 对每个Aiplane类的对象都可单独设置默认旋转速度
+    if(!isNaN(newSpeed)) // NaN: Not a Number
       this.#defaultPropellerSpeed = newSpeed;
     else throw 'Airplane Setter: new speed is Not a Number';
   }
@@ -193,9 +190,17 @@ class Sea {
   #length = 0; // sea对象的vertices个数，waves数组的length
   constructor() {
     const geometry = new THREE.CylinderGeometry(600, 600, 800, 40, 10); 
-    // CylinderGeometry( radiusTop : Float, radiusBottom : Float, height : Float, radialSegments : Integer, heightSegments : Integer, openEnded : Boolean, thetaStart : Float, thetaLength : Float )
+    // CylinderGeometry(radiusTop, radiusBottom, height, radialSegments, heightSegments, openEnded: Boolean, thetaStart, thetaLength)
     geometry.applyMatrix4(new THREE.Matrix4().makeRotationX(-Math.PI / 2)); 
-     // .applyMatrix4 ( m : Matrix4 ) :  Multiplies this vector (with an implicit 1 in the 4th dimension) and m, and divides by perspective.简单来说参数用-Math.PI / 2可以让圆柱体最接近球体
+    // .applyMatrix4 ( m : Matrix4 ) :  Multiplies this vector (with an implicit 1 in the 4th dimension) and m, and divides by perspective.
+    // 简单来说参数用-Math.PI / 2可以让圆柱体最接近球体
+
+    //NOTE: 那为什么要先建立圆柱体再把其切为球体呢？为何不直接new一个球体？是否因为Three.js中无相关api？
+    // 另外，一句注释过长请分段
+    // 还有，如CylinderGeometry(radiusTop : float中的float大可去掉以方便查看
+    // 最后，请在注释下方附上官网链接来源，如：https://threejs.org/docs/#api/en/geometries/CylinderGeometry
+    // api注释并非必须，一切都只是为了方便他人和未来的自己理解。
+    // 因此，请站在实用性的角度去处理api注释，而非单纯复制粘贴。Create, not work.
     this.#length  = geometry.vertices.length;
     this.waves = [];
     for (let i = 0; i < this.#length; i++){
