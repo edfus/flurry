@@ -27,10 +27,10 @@
     "orientation": "landscape",
     "shortcuts": [
         {
-            "name": "Play",
+            "name": "new voyage.",
             "url": "https://flurry.ml/",
             "icons": [
-                {"src": "https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/maskable-192-transparent.png", "sizes": "192x192"}
+                {"src": "https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/start.png", "sizes": "192x192"}
             ]
         }
     ]     

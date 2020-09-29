@@ -2,12 +2,15 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<!-- meta & preload -->
 		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin="anonymous">
 		<link rel="dns-prefetch" href="//cdn.jsdelivr.net">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=auto">
+		<!-- meta -->
 		<title>The Aviator</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=auto">
 		<meta name="description" content="Flurry - A Three.js based web game imitating mobile game 'Loner'">
+		<meta name="google" content="notranslate">
+		<meta name="format-detection" content="telphone=no, email=no">
+		<!-- Preload -->
 		<link rel="modulepreload" href="scripts@core/base.js">
 		<link rel="modulepreload" href="scripts@miscellaneous/webWorker.js">
   	<link rel="prefetch" href="scripts@miscellaneous/webWorker.js" as="worker" crossorigin="anonymous">
@@ -29,13 +32,18 @@
 				}, {passive: true, once: true});
 			}
 		</script>
-		<!-- Global site tag (gtag.js) - Google Analytics -->
+		<!-- Google Analytics -->
 		<script async src="https://www.googletagmanager.com/gtag/js?id=UA-179239422-1"></script>
 		<script>
 			window.dataLayer = [
 				['js', new Date()],
 				['config', 'UA-179239422-1']
 			];
+			window.throwError = function(...args) {
+				document.getElementById('show-error').removeAttribute('hidden')
+				document.getElementById('errorLog').innerText = args.join('\n');
+				console.error.apply(this, arguments);
+			};
 		</script>
 		<!-- favicons -->
 		<link rel="icon" href="favicon.ico">
@@ -48,15 +56,44 @@
 		<link href="resource/styles/style.css" rel="stylesheet" type="text/css">
 	</head>
 	<body>
-		<section id="loading-section" style="opacity: 1;">
+		<section id="loading-section">
+			<script>
+				if(!document.cookie.includes("loaded=true")) {
+					const date = new Date();
+					date.setTime(date.getTime() + 5 * 86400000);
+					document.cookie = `loaded=true; expires=${date.toUTCString()}; Secure=true; HostOnly=true; path=/; SameSite=Strict;`;
+				} else {
+					document.getElementById("loading-section").hidden = "true";
+				}
+			</script>
 			<div id="loader">
-				<svg class="circular" viewBox="25 25 50 50">
-					<circle class="path" cx="50" cy="50" r="20" fill="none" stroke-width="2" stroke-miterlimit="10"/>
+				<svg id="circular" viewBox="25 25 50 50">
+					<circle id="path" cx="50" cy="50" r="20" fill="none" stroke-width="2" stroke-miterlimit="10"/>
 				</svg>
 			</div>
 		</section>
-		<section id="canvas">
-
+		<section class="info">
+				<div id="show-error" hidden>
+					<div>Oops, an error occurred:</div>
+					<span id="errorLog"></span>
+				</div>
+				<noscript>
+					JavaScript is required for processing...😔
+					<style>
+						#loading-section {
+							display: none;
+						}
+					</style>
+				</noscript>
+				<script>
+					setTimeout(()=>{
+						if(document.getElementById('loading-section').hidden !== true){
+							document.getElementById('loading-section').hidden = true;
+							throwError('Network Error😥 - Loading takes too long.')
+						}
+					}, 30000)
+				</script>
 		</section>
+		<main id="canvas"></main>
 	</body>
 </html>

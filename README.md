@@ -47,38 +47,28 @@
 
 *请自己添加、删改任务。*
 
----
-
-All:
-- [ ] 找到适合的游戏图标(app)、网站图标。任何合适的都请放入/public/images/中
-- [ ] 找到适合的飞机的模型 .obj https://clara.io/library?query=drone
-      - 是否直接使用简单的，现有的无需加载外部文件的airplane模型？
-- [ ] 浏览[Example](https://threejs.org/examples/)
 
 ---
 
 z1042117441:
 
-- [ ] 完成`任务-第二周`
-- [ ] console.dir(light, light.target) 
 
 ---
 
 naiziguai: 
 
-- [x] 完成`任务-第二周`
-- [ ] 看懂改写moveWaves() 
+- [ ] 安装Document this插件，查看`规范.md`内的相关内容。
 
 ---
 
 
 cloudres: 
 
-- [ ] 完成web worker - audio开发（如何播放音频？）
-- [ ] 完成暂停函数和界面，完成其他按钮
+- [ ] 完成web worker - audio开发 https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
 - [ ] indexedDB存储音频
-- [ ] 设计进入画面（加载动画（Loading...线下杀clip-path @keyframes）、帮助、Credit、全屏） fallback-content
+- [ ] 帮助、Credit、全屏、暂停函数和界面
 - [ ] document.unload - 存储分数
+- [ ] 强制横屏(maybe)
 
 ---
 

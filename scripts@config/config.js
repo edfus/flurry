@@ -1,3 +1,6 @@
+// inner
+const fadeOutSpeedLevel = 4;
+
 // export
 const TestMode = true,
 
@@ -22,14 +25,20 @@ GetContainer = () => {
 GameStartCallback = async () => { // asynchronous 异步的，非同时的
   const loadSection = document.getElementById('loading-section');
   const loader = document.getElementById('loader');
+
+  const reduction_num1 = .02 * fadeOutSpeedLevel,
+        reduction_num2 = .03 * fadeOutSpeedLevel;
+
   const fadeOut = (num1, num2, speed) => {
     (loadSection.style.opacity = num1) <= .1
-        ? loadSection.hidden = true 
+        ? (loadSection.hidden = true) && (loadSection.style.willChange = loader.style.willChange = 'auto')
         : (loader.style.opacity = num2) 
-          && setTimeout(()=>fadeOut(num1 - .06, num2 - .09, speed), speed) // speed单位：毫秒
+          && setTimeout(()=>fadeOut(num1 - reduction_num1, num2 - reduction_num2, speed), speed) // speed单位：毫秒
   }
   setTimeout(()=>{
-    fadeOut(1, 1, 75)
+    loadSection.style.willChange = "opacity";
+    loader.style.willChange = "opacity";
+    fadeOut(1, 1, 25 * fadeOutSpeedLevel);
   }, 400)
 },
 
