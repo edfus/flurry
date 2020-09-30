@@ -18,7 +18,19 @@
 		<script async src="scripts@miscellaneous/webWorker.js"></script>
 		<script type="text/javascript" src="//cdn.jsdelivr.net/gh/FML-MLS/Flurry/lib/three.min.js"></script>
 		<script>try{THREE}catch(e){let script = document.createElement('SCRIPT'); script.src = "lib/three.min.js"; document.head.append(script)}</script>
-		<script type="module" src="scripts@core/base.js"></script>
+		<script src="scripts@config/config.js"></script>
+		<script id="temp">
+			// if(config.useNewBasejs)
+			// 	document.getElementById('temp').outerHTML = 
+			// 	`<script type="module" src="scripts@core/base.js"><\/script>`
+			// else document.getElementById('temp').outerHTML = 
+			// 	`<script type="module" src="scripts@core/old_base.js"><\/script>`
+			let script = document.createElement('SCRIPT');
+			script.type = "module";
+			script.src = config.useNewBasejs ? "scripts@core/base.js" : "scripts@core/old_base.js";
+			document.head.append(script);
+			document.getElementById('temp').remove();
+		</script>
 		<script type="module" async>
 			if("caches" in window && "serviceWorker" in navigator){
 				window.addEventListener("load", ()=>{
@@ -39,11 +51,6 @@
 				['js', new Date()],
 				['config', 'UA-179239422-1']
 			];
-			window.throwError = function(...args) {
-				document.getElementById('show-error').removeAttribute('hidden')
-				document.getElementById('errorLog').innerText = args.join('\n');
-				console.error.apply(this, arguments);
-			};
 		</script>
 		<!-- favicons -->
 		<link rel="icon" href="favicon.ico">
@@ -57,16 +64,20 @@
 	</head>
 	<body>
 		<section id="loading-section">
-			<script>
-				if(!document.cookie.includes("loaded=true")) {
-					const date = new Date();
-					date.setTime(date.getTime() + 5 * 86400000);
-					document.cookie = `loaded=true; expires=${date.toUTCString()}; Secure=true; HostOnly=true; path=/; SameSite=Strict;`;
-				} else {
-					document.getElementById("loading-section").hidden = "true";
-				}
-			</script>
 			<div id="loader">
+				<script>
+					if(!document.cookie.includes("loaded=true")) {
+						const date = new Date();
+						date.setTime(date.getTime() + 5 * 86400000);
+						document.cookie = `loaded=true; expires=${date.toUTCString()}; HostOnly=true; path=/; SameSite=Strict;`;
+					} else if(location.search.includes('app=1')) {
+						document.getElementById("loader").hidden = "true";
+						document.getElementById("loading-section").hidden = "true";
+					} else {
+						document.getElementById("loader").hidden = "true";
+						config.loading_timeOut = 100;
+					}
+				</script>
 				<svg id="circular" viewBox="25 25 50 50">
 					<circle id="path" cx="50" cy="50" r="20" fill="none" stroke-width="2" stroke-miterlimit="10"/>
 				</svg>
@@ -89,7 +100,7 @@
 					setTimeout(()=>{
 						if(document.getElementById('loading-section').hidden !== true){
 							document.getElementById('loading-section').hidden = true;
-							throwError('Network Error😥 - Loading takes too long.')
+							throwError('Loading takes too long.😥')
 						}
 					}, 30000)
 				</script>

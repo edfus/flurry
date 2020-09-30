@@ -58,6 +58,7 @@ z1042117441:
 naiziguai: 
 
 - [ ] 安装Document this插件，查看`规范.md`内的相关内容。
+- [ ] 查看他人的commit历史
 
 ---
 
@@ -67,7 +68,6 @@ cloudres:
 - [ ] 完成web worker - audio开发 https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
 - [ ] indexedDB存储音频
 - [ ] 帮助、Credit、全屏、暂停函数和界面
-- [ ] document.unload - 存储分数
 - [ ] 强制横屏(maybe)
 
 ---

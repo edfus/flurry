@@ -1,7 +1,7 @@
 {
     "name": "flurry.",
     "short_name": "Flurry",
-    "start_url": "https://flurry.ml/",
+    "start_url": "https://flurry.ml/?app=1",
     "scope": "https://flurry.ml/",
     "icons": [
         {
@@ -28,7 +28,7 @@
     "shortcuts": [
         {
             "name": "new voyage.",
-            "url": "https://flurry.ml/",
+            "url": "https://flurry.ml/?app=1",
             "icons": [
                 {"src": "https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/start.png", "sizes": "192x192"}
             ]
