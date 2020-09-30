@@ -1,4 +1,6 @@
-import config from '../scripts@config/config.js';
+// import config from '../scripts@config/config.js'; - deprecated
+// config = window.config; - not necessary
+// type="module" can still get access to config directly
 import {Airplane, Sky, Sea} from '../scripts@core/customObject.js';
 /////////////////////////////////
 {
@@ -17,7 +19,7 @@ import {Airplane, Sky, Sea} from '../scripts@core/customObject.js';
 //SCREEN & MOUSE VARIABLES
 
 var HEIGHT = window.innerHeight, WIDTH = window.innerWidth, // will be changed in window resize event
-    mouseRelativePos = { x: 0, y: 0 };
+    mouseRelativePos = { x: 0, y: 0 }; 
 
 //SCENE & CAMERA VARIABLES
 
@@ -30,8 +32,11 @@ var sea = null, // createdBy new Sea()
     airplane = null, // createdBy new Airplane()
     sky = null; // createdBy new Sky()
 
+var paused = false;
+
+// can't access these seemingly global variables outside base.js, as base.js is loaded as module
 ///////////////////////////////////////////////////
-          
+
 //INIT THREE JS, SCREEN AND MOUSE EVENTS
 window.addEventListener('load', ()=>{
   document.addEventListener('mousemove', event => {
@@ -49,14 +54,23 @@ window.addEventListener('load', ()=>{
   config.gameStartCallback();
   
   (function renderLoop(){
-    // 循环函数，在每帧更新对象的位置和渲染场景
-    //TODO: 在renderLoop中完成粒子特效等的处理
-    //TODO: 完成暂停函数的处理
+    //TODO: if(crashed)
+
     updatePlane();
     updateBackground();
     updateCameraFov();
-    renderer.render(scene, camera);
-    requestAnimationFrame(renderLoop);
+    //TODO: updateScore();
+
+    if(!paused){ // TODO: paused func
+      renderer.render(scene, camera);
+      requestAnimationFrame(renderLoop);
+    } else {
+      waitForUserContinue()
+        .then(()=>{
+          renderer.render(scene, camera);
+          requestAnimationFrame(renderLoop);
+        })
+    }
   })() // (function x(){})(): 一种直接调用函数的技巧，可在函数申明后直接调用它。 
 }, {passive: true});
 
@@ -217,3 +231,26 @@ function normalize(mouseRP, mouseRP_min, mouseRP_max, position_min, position_max
 } 
 
 //TODO: 相机旋转跟随飞机旋转的延迟问题
+
+
+///////////////////////////////////////
+// handle score & game pause & window.unload
+
+function updateScore() {
+  // how to handle and record the speed of the plane?
+  //NOTE: _参考\TheAviator\js\game.js <- 参考
+}
+
+async function waitForUserContinue() {
+  // do something...
+} // listen to user's click event, no reject. remember to removeEventListener
+
+/*
+pauseButton.addEventListener('click',()=>{
+  // do something...
+}, {passive: true})
+
+window.addEventListener('unload', ()=>{
+  // restore the score
+}, {passive: true, once: true})
+*/
