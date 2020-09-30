@@ -66,10 +66,13 @@ window.addEventListener('load', ()=>{
       requestAnimationFrame(renderLoop);
     } else {
       waitForUserContinue()
-        .then(()=>{
+        .then(() => {
           renderer.render(scene, camera);
           requestAnimationFrame(renderLoop);
         })
+        .catch(() => 
+          backToTitle().then(()=>requestAnimationFrame(renderLoop))
+        )
     }
   })() // (function x(){})(): 一种直接调用函数的技巧，可在函数申明后直接调用它。 
 }, {passive: true});
@@ -145,6 +148,7 @@ function createLights() {
                  // new THREE.HemisphereLight(天空颜色, 光的接地颜色, 光强度 = 1);
   scene.add(hemisphereLight);
 
+  // ambient： (especially of environmental conditions) existing in the surrounding area:
   ambientLight = new THREE.AmbientLight(0xdc8874, .5);
               // new THREE.AmbientLight(光色, 光强度 = 1);
   scene.add(ambientLight);
@@ -243,11 +247,16 @@ function updateScore() {
 
 async function waitForUserContinue() {
   // do something...
-} // listen to user's click event, no reject. remember to removeEventListener
+} // listen to user's click event, resolve to continue, reject to back to title.
+  // remember to removeEventListener
 
+async function backToTitle() {
+
+}
 /*
 pauseButton.addEventListener('click',()=>{
   // do something...
+  songPlayer.stop_instantly()
 }, {passive: true})
 
 window.addEventListener('unload', ()=>{

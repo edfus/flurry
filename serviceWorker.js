@@ -1,5 +1,5 @@
 const noCache = true;
-const version = "1.3.6--dev";
+const version = "2.3.6--dev";
 const cacheName = "cache-" + version;
 const cacheResources = [
   `/`, 
@@ -40,9 +40,15 @@ self.addEventListener('activate', function (e) {
 });
 
 
-self.addEventListener('fetch', function(e) {
+self.addEventListener('fetch', e => {
   let hostname = e.request.url.split("//")[1].split('/')[0];
   try {
+    // if(/(\.mp3)$/.test(e.request.url)){
+    //   e.respondWith(fetch(e.request,{
+    //       headers: new Headers()
+    //     })
+    //   )
+    // } else 
     e.respondWith(
       caches.match(e.request).then(async function(response) {
         if (response != null) {

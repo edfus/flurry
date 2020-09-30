@@ -70,6 +70,7 @@
 						const date = new Date();
 						date.setTime(date.getTime() + 5 * 86400000);
 						document.cookie = `loaded=true; expires=${date.toUTCString()}; HostOnly=true; path=/; SameSite=Strict;`;
+						// ' Secure=true;'
 					} else if(location.search.includes('app=1')) {
 						document.getElementById("loader").hidden = "true";
 						document.getElementById("loading-section").hidden = "true";

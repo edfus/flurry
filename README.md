@@ -33,13 +33,11 @@
 
 - [x] 基础文档撰写，Github库配置，统一开发环境，统一代码、commit规范
 - [x] 收集文献资料，收集参考，寻找效果图，寻找竞品
-- [ ] 完成Three.js基础场景搭建（scene、perspective camera、static objects、hemisphereLight、shadowLight），同时完成Web Content第一阶段
+- [ ] 完成Three.js基础场景搭建（scene、perspective camera、static objects、hemisphereLight、shadowLight）
 - [ ] 完成user control
 - [ ] 完成dynamic objects
 - [ ] 完成generate obstacles
 - [ ] 阶段测试，痛点分析，代码梳理，结构重整
-- [ ] Web Content第二阶段
-- [ ] 转为发布配置，webpack、github page、测试
 - [ ] 完成:checkered_flag:
 
 
@@ -50,7 +48,7 @@
 
 ---
 
-z1042117441:
+z1042117441: 
 
 
 ---
@@ -65,10 +63,20 @@ naiziguai:
 
 cloudres: 
 
-- [ ] 完成web worker - audio开发 https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
+- [ ] 完成web worker - audio开发 
+    https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
+    https://github.com/mrdoob/three.js/blob/master/src/audio/Audio.js
+    https://threejs.org/docs/#api/en/audio/Audio
+    https://developer.mozilla.org/en-US/docs/Web/API/AudioBufferSourceNode
+    https://developers.google.com/web/updates/2018/11/web-audio-autoplay
+    https://developer.mozilla.org/en-US/docs/Games/Techniques/Audio_for_Web_Games
+    https://developer.mozilla.org/en-US/docs/Web/Guide/Audio_and_video_delivery/Web_Audio_API_cross_browser
+- [ ] 暂停函数、分数存储
+- [ ] requestAnimationFrame
 - [ ] indexedDB存储音频
-- [ ] 帮助、Credit、全屏、暂停函数和界面
+- [ ] 帮助、Credit、全屏
 - [ ] 强制横屏(maybe)
+- [ ] vertices的概念
 
 ---
 

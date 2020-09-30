@@ -195,7 +195,7 @@ class Sea {
     // .applyMatrix4 ( m : Matrix4 ) :  Multiplies this vector (with an implicit 1 in the 4th dimension) and m, and divides by perspective.
     // 简单来说参数用-Math.PI / 2可以让圆柱体最接近球体
 
-    //NOTE: 那为什么要先建立圆柱体再把其切为球体呢？为何不直接new一个球体？是否因为Three.js中无相关api？
+    //NOTE: 那为什么要先建立圆柱体再把其切为球体呢？为何不直接new一个SphereGeometry？
     // 另外，一句注释过长请分段
     // 还有，如CylinderGeometry(radiusTop : float中的float大可去掉以方便查看
     // 最后，请在注释下方附上官网链接来源，如：https://threejs.org/docs/#api/en/geometries/CylinderGeometry
