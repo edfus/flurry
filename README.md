@@ -71,6 +71,7 @@ cloudres:
     https://developers.google.com/web/updates/2018/11/web-audio-autoplay
     https://developer.mozilla.org/en-US/docs/Games/Techniques/Audio_for_Web_Games
     https://developer.mozilla.org/en-US/docs/Web/Guide/Audio_and_video_delivery/Web_Audio_API_cross_browser
+    https://developers.google.com/web/updates/2017/12/audio-worklet
 - [ ] 暂停函数、分数存储
 - [ ] requestAnimationFrame
 - [ ] indexedDB存储音频

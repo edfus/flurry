@@ -5,18 +5,23 @@
       {
         name: "Intro",
         url: `${cdnName}/resource/audio/Loner%20Soundtrack/0_Intro.mp3`,
-        type: "audio/mpeg"
+        type: "audio/mpeg",
+        role: 'intro',
+        index: -1
       }
     ];
     // https://blog.csdn.net/ML01010736/article/details/46422651 IIS6常用的MIME类型[rmvb,mp3,zip,exe等文件]
     const songObejectSample = {
       name: "",
-      type: "",
-      arrayBuffer: ''
+      type: "audio/mpeg",
+      arrayBuffer: '',
+      role: 'none | intro | ...',
+      index: 0
     } 
     const soundEffectObjSample = {
       name: "",
-      type: "",
+      type: "SE", //TODO: rename type may 
+      role: '',
       audioBuffer: ''
     } // AudioBuffer are designed to hold small audio snippets, typically less than 45 s
       // created from an audio file using the AudioContext.decodeAudioData()
@@ -28,112 +33,60 @@
       //   source.connect(audioContext.destination);
       // });
       // setTimeout(() => audio.play())
-    const openSongDB = ()=>{
-      let request = indexedDB.open('songs_Database', 1);
-      return new Promise((resolve, reject) => {
-        request.onsuccess = event => resolve(event.target.result);
-        request.onerror = event => reject(Error('woah', event.target.error));
-        request.onupgradeneeded = e => {
-          if(e.oldVersion === 0)
-            e.target.result.createObjectStore('songs', {keyPath: 'name', autoIncrement: false}).createIndex('songNameIndex','name',{unique: true});
-        }
-      });
-    }
-  
-    const audioPlayer = new AudioPlayer();
-    openSongDB().then(async db => {
-      const store = db.transaction("songs", "readonly").objectStore("songs"); 
-      // immediately returns
-      const availableSongList = await Promise.all(songs.map(song => {
-        let request = store.get(song.name);
-        return new Promise((resolve, reject) => {
-          request.onsuccess = e => {
-            if(e.target.result === undefined){
-              if(navigator.connection && !navigator.connection.saveData){
-                fetch(
-                  new Request(song.url,
-                    { method: 'GET',
-                      headers: new Headers(),
-                      mode: 'cors',
-                      redirect: 'follow'
-                    })
-                  ).then(response => {
-                        if(response.ok)
-                          return response.arrayBuffer(); // can be converted to arrayBuffer directly?
-                        else console.warn(response)
-                      })
-                      .then(arrayBuffer => {
-                          const store = db.transaction("songs", "readwrite").objectStore("songs");
-                          store.add({
-                            name: song.name,
-                            type: song.type,
-                            arrayBuffer: arrayBuffer
-                          });
-                          resolve(song.name);
-                        })
-                      .catch(error => console.error(error));
-              } else {
-                postMessage({
-                  isError: true,
-                  type: 'Metered Network',
-                  content: song.name
-                })
-              };
-            }
-            else resolve(song.name);
-          };
-          request.onerror = e => reject(e.error);
-        })
-      }))
-    })
-    onmessage = (functionName, ...vars) => {
-      try {
-        availableSongList
-      } catch(err) {
-        postMessage({
-          isError: true,
-          type: 'database unsuccess', //TODO: no need for waiting for a whole datebase loaded 
-          content: functionName + vars.toString()
+
+    
+    class AudioPlayer {
+      #availableList = {};
+      #intro = '';
+      #sequenceArr = [];
+      #rolesToReserve = ["intro"];
+      #audioContext = null; //TODO
+
+      //TODO: onend -> postmassage -> set variable --> main thread
+
+      constructor () {
+        load(songs, 'songs_Database', 'songs').catch(err => {
+          postMessage(
+            newMessage({
+              isError: true,
+              type: err.name,
+              content: err.message
+            })
+          )
         })
       }
-    }
-    /*
-     // https://github.com/GoogleChromeLabs/sw-toolbox/issues/49
-      // https://jakearchibald.com/2018/i-discovered-a-browser-bug/
-      // Access to fetch at 'https://cdn.jsdelivr.net/gh/edfus/storage/music/ShibayanRecords%20-%20%E8%BF%B7%E5%AD%90%E3%81%AE%E3%82%A8%E3%82%B3%E3%83%BC.mp3' from origin 'https://edfus.xyz' has been blocked by CORS policy: Request header field range is not allowed by Access-Control-Allow-Headers in preflight response.
-      if(/\.mp3|\.mp4/.test(e.request.url)){
-        //console.log(e.request.url);
-        e.respondWith(fetch(e.request,{
-            headers: new Headers()
-          })
-        )
-      // The FetchEvent for "https://cdn.jsdelivr.net/gh/edfus/storage/music/ShibayanRecords%20-%20%E8%BF%B7%E5%AD%90%E3%81%AE%E3%82%A8%E3%82%B3%E3%83%BC.mp3" resulted in a network error response: an "opaque" response was used for a request whose type is not no-cors
-      }else 
-      // you can't call respondWith asynchronously ( then(()=> e.respondWith(...)) )
-      // https://googlechrome.github.io/samples/service-worker/prefetch-video/
-      */
-      // check if context is in suspended state (autoplay policy)
-    class AudioPlayer {
-        stop_instantly () {
-          if (audioContext.state === 'suspended') {
-            audioContext.resume();
+      /**
+       * @param {{ role: string; buffer: ArrayBuffer; }} newAudio
+       */
+      set newLoadedAudio (newAudio){
+        // no check for repeat
+        if(newAudio.type === 'SE'){
+          //TODO
+          return ;
         }
 
-        // play or pause track depending on state
-        if (this.dataset.playing === 'false') {
-              audioElement.play();
-              this.dataset.playing = 'true';
-          } else if (this.dataset.playing === 'true') {
-              audioElement.pause();
-              this.dataset.playing = 'false';
+        if(this.#rolesToReserve.includes(newAudio.role)){
+          this.#availableList[newAudio.name] = {
+            type: newAudio.type,
+            role: newAudio.role,
+            buffer: newAudio.arrayBuffer
+          }
+          this[`#${newAudio.role}`] = newAudio.name;
+        } else {
+          this.#sequenceArr[newAudio.index] = newAudio.name;
         }
       }
+
+      stop_instantly () {
+        if (this.#audioContext.state === 'suspended') {
+            this.#audioContext.resume();
+        }
+      }
+
       stop_fadeOut () {
         
       }
-      getSongPlaying () {
 
-      }
       playNext () {
         
       }
@@ -170,39 +123,132 @@
       playDeadSound () {
         
       }
+      async openDB (DBname, storeName) {
+        let request = indexedDB.open(DBname, 1);
+        return new Promise((resolve, reject) => {
+          request.onsuccess = event => resolve(event.target.result);
+          request.onerror = event => reject({name: 'indexDB', message: event.target.error});
+          request.onupgradeneeded = e => {
+            if(e.oldVersion === 0)
+              e.target.result.createObjectStore(storeName, {keyPath: 'name', autoIncrement: false}).createIndex(`${storeName}NameIndex`, 'name', {unique: true});
+          }
+        });
+      }
+      getObjectStore (db, storeName, mode) {
+        return db.transaction(storeName, mode).objectStore(storeName)
+      }
+      /**
+       * load specific source to or in indexDB
+       * @param {Array<Object>} sourceList All stuff to load
+       * @param {string} DBname
+       * @param {string} storeName 
+       * @return {Promise} errors wasn't handled in this func.
+       */
+      async load(sourceList, DBname, storeName) {
+        const db = await openDB(DBname, storeName); 
+        const store = getObjectStore(db, storeName, "readonly");
+        return Promise.all(sourceList.map(source => {
+          let request = store.get(source.name);
+          return new Promise((resolve, reject) => {
+            request.onsuccess = e => {
+              if(e.target.result === undefined){
+                if(navigator.connection && !navigator.connection.saveData){
+                  fetch(
+                    new Request(source.url,
+                      { method: 'GET',
+                        headers: new Headers(),
+                        mode: 'cors',
+                        redirect: 'follow'
+                      })
+                    ).then(response => {
+                          if(response.ok)
+                            return response.arrayBuffer(); // can be converted to arrayBuffer directly?
+                          else reject({name: 'responseNotOk', message: response.url})
+                        })
+                        .then(arrayBuffer => {
+                            const store = getObjectStore(db, storeName, "readwrite");
+                            store.add({
+                              name: source.name,
+                              type: source.type,
+                              arrayBuffer: arrayBuffer
+                            });
+                            this.newLoadedAudio = source;
+                            resolve();
+                          })
+                } else {
+                  reject({name: 'saveDataModeOn', message: undefined})
+                };
+              } else {
+                this.newLoadedAudio = source;
+                resolve();
+              }
+            };
+            request.onerror = e => reject({name: 'indexDB', message: e.error});
+          })
+        }))
+      }
     }
-  }
-  window.songPlayer = {
-    loopMode: true,
-    shuffleMode: false,
-    getSongPlaying: ()=>{},
-    playNext: ()=>{},
-    playIntro: ()=>{},
-    playTheme: ()=>{},
-    playSoundEffect: soundEffectName => {},
-    playDeadSound: ()=>{},
-    stop_instantly: ()=>{},
-    stop_fadeOut: ()=>{}
+    const newMessage = (message_obj) => {
+      const defaultMessage = {
+        isError: false,
+        isEvent: false,
+        type: '',
+        content: undefined
+      }
+      return Object.assign(defaultMessage, message_obj);
+    }
+
+    const audioPlayer = new AudioPlayer();
+
+    onmessage = (functionName, ...vars) => {
+      try {
+        audioPlayer[functionName].apply(audioPlayer, vars);
+      } catch(err) {
+        ; // do sth...
+      }
+    }
   }
 
   if("indexedDB" in window && "Worker" in window){
     const worker = new Worker(URL.createObjectURL(new Blob([`(${work})()`], {type: 'application/javascript'})), { type: 'module' });
-
+    let songPlaying = '';
     worker.onmessage = message => {
       if(message.data.isError){
         switch(message.data.type){
-          case 'Metered Network': 
+          case 'saveDataModeOn': 
             return ;
-          
+          case 'exception':
+            return ;
+          case 'responseNotOk':
+            return ;
+          case 'indexDB':
+            return ;
         }
-      } else {
-
+      } else if(message.data.isEvent){
+        switch(message.data.type){
+          case 'newAudioPlaying':
+            return;
+          case 'responseNotOk':
+            return;
+        }
       }
     }
-    postMessage({
-
-    }) 
-  } else {
-    // TO\DO:
+    const assignWork = (functionName, ...vars) => {
+      worker.postMessage([
+        functionName,
+        ...vars
+      ])
+    }
+    worker.postMessage()
+    window.songPlayer = {
+      getSongPlaying: ()=>songPlaying,
+      playNext: ()=>{},
+      playIntro: ()=>{},
+      playTheme: ()=>{},
+      playSoundEffect: soundEffectName => {},
+      playDeadSound: ()=>{},
+      stop_instantly: ()=>{},
+      stop_fadeOut: ()=>{}
+    }
   }
 }
