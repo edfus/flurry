@@ -3,7 +3,7 @@
   const fadeOutSpeedLevel = 4;
 
   // export
-  const UseNewBasejs = false,
+  const UseNewBasejs = true,
   
   TestMode = true,
 
