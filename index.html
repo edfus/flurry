@@ -15,16 +15,11 @@
 		<link rel="modulepreload" href="scripts@miscellaneous/webWorker.js">
   	<link rel="prefetch" href="scripts@miscellaneous/webWorker.js" as="worker" crossorigin="anonymous">
 		<!-- scripts -->
+		<script src="scripts@config/config.js"></script>
 		<script async src="scripts@miscellaneous/webWorker.js"></script>
 		<script type="text/javascript" src="//cdn.jsdelivr.net/gh/FML-MLS/Flurry/lib/three.min.js"></script>
 		<script>try{THREE}catch(e){let script = document.createElement('SCRIPT'); script.src = "lib/three.min.js"; document.head.append(script)}</script>
-		<script src="scripts@config/config.js"></script>
 		<script id="temp">
-			// if(config.useNewBasejs)
-			// 	document.getElementById('temp').outerHTML = 
-			// 	`<script type="module" src="scripts@core/base.js"><\/script>`
-			// else document.getElementById('temp').outerHTML = 
-			// 	`<script type="module" src="scripts@core/old_base.js"><\/script>`
 			let script = document.createElement('SCRIPT');
 			script.type = "module";
 			script.src = config.useNewBasejs ? "scripts@core/base.js" : "scripts@core/old_base.js";

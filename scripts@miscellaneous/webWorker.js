@@ -8,6 +8,20 @@
         type: "audio/mpeg",
         role: 'intro',
         index: -1
+      },
+      {
+        name: "temp1",
+        url: `${cdnName}/resource/audio/Loner%20Souavddtrack/0_Intro.mp3`,
+        type: "audio/mpeg",
+        role: 'indddtro',
+        index: 2
+      },
+      {
+        name: "temp2",
+        url: `${cdnName}/resource/audio/Loner%20Souadfabrack/0_Intro.mp3`,
+        type: "audio/mpeg",
+        role: 'iaaantro',
+        index: 3
       }
     ];
     // https://blog.csdn.net/ML01010736/article/details/46422651 IIS6常用的MIME类型[rmvb,mp3,zip,exe等文件]
@@ -41,24 +55,18 @@
       #sequenceArr = [];
       #rolesToReserve = ["intro"];
       #audioContext = null; //TODO
+      #maxRetryTimes = 3;
+      #retryGap = 3000; // ms
 
       //TODO: onend -> postmassage -> set variable --> main thread
 
       constructor () {
-        load(songs, 'songs_Database', 'songs').catch(err => {
-          postMessage(
-            newMessage({
-              isError: true,
-              type: err.name,
-              content: err.message
-            })
-          )
-        })
+        this.loadAll();
       }
       /**
        * @param {{ role: string; buffer: ArrayBuffer; }} newAudio
        */
-      set newLoadedAudio (newAudio){
+      set newLoadedAudio (newAudio) {
         // no check for repeat
         if(newAudio.type === 'SE'){
           //TODO
@@ -137,6 +145,31 @@
       getObjectStore (db, storeName, mode) {
         return db.transaction(storeName, mode).objectStore(storeName)
       }
+
+      /**
+       * @param {string} url 
+       * @return {Promise} resolve: arrayBuffer, reject: err
+       */
+      async newfetch (url) {
+        return new Promise((resolve, reject) => {
+          if(navigator.connection && !navigator.connection.saveData){
+            fetch(
+              new Request(url,
+                { method: 'GET',
+                  headers: new Headers(),
+                  mode: 'cors',
+                  redirect: 'follow'
+                })
+              ).then(response => {
+                    if(response.ok)
+                      resolve(response.arrayBuffer()); // can be converted to arrayBuffer directly?
+                    else reject({name: 'responseNotOk', message: response.url})
+                  })
+          } else {
+            reject({name: 'saveDataModeOn', message: undefined})
+          };
+        })
+      }
       /**
        * load specific source to or in indexDB
        * @param {Array<Object>} sourceList All stuff to load
@@ -145,39 +178,38 @@
        * @return {Promise} errors wasn't handled in this func.
        */
       async load(sourceList, DBname, storeName) {
-        const db = await openDB(DBname, storeName); 
-        const store = getObjectStore(db, storeName, "readonly");
-        return Promise.all(sourceList.map(source => {
+        const db = await this.openDB(DBname, storeName); 
+        const store = this.getObjectStore(db, storeName, "readonly");
+        return Promise.all(sourceList.map(source => { // 因为有对responseNotOk的retry处理，所以不用allSettled
           let request = store.get(source.name);
           return new Promise((resolve, reject) => {
             request.onsuccess = e => {
               if(e.target.result === undefined){
-                if(navigator.connection && !navigator.connection.saveData){
-                  fetch(
-                    new Request(source.url,
-                      { method: 'GET',
-                        headers: new Headers(),
-                        mode: 'cors',
-                        redirect: 'follow'
+                const loadSourceWithRetry = (retriedTimes) => { // 避免this丢失
+                  this.newfetch(source.url)
+                    .then(arrayBuffer => {
+                        const store = this.getObjectStore(db, storeName, "readwrite");
+                        store.add({
+                          name: source.name,
+                          type: source.type,
+                          arrayBuffer: arrayBuffer
+                        });
+                        this.newLoadedAudio = source;
+                        resolve();
                       })
-                    ).then(response => {
-                          if(response.ok)
-                            return response.arrayBuffer(); // can be converted to arrayBuffer directly?
-                          else reject({name: 'responseNotOk', message: response.url})
-                        })
-                        .then(arrayBuffer => {
-                            const store = getObjectStore(db, storeName, "readwrite");
-                            store.add({
-                              name: source.name,
-                              type: source.type,
-                              arrayBuffer: arrayBuffer
-                            });
-                            this.newLoadedAudio = source;
-                            resolve();
-                          })
-                } else {
-                  reject({name: 'saveDataModeOn', message: undefined})
-                };
+                    .catch(err => {
+                      switch(err.name) {
+                        case 'saveDataModeOn': reject(err);
+                        case 'responseNotOk': 
+                          ++retriedTimes > this.#maxRetryTimes 
+                          ? reject(err) 
+                          : setTimeout(() => loadSourceWithRetry(retriedTimes), this.#retryGap)
+                          break ;
+                        default: reject({name: 'exception', message: err.message})
+                      }
+                    })
+                  }
+                loadSourceWithRetry(0);
               } else {
                 this.newLoadedAudio = source;
                 resolve();
@@ -187,13 +219,35 @@
           })
         }))
       }
+      async loadAll () {
+        return Promise.allSettled(
+            [
+              this.load(songs, 'songs_Database', 'songs')
+            ]
+          ).then(results => {
+            for (const result of results) {
+              if(result.status === "fulfilled")
+                continue; // to get value: result.value
+              else // rejected
+                return Promise.reject(result.reason)
+            }
+          }).catch(err => 
+            postMessage(
+              newMessage({
+                isError: true,
+                name: err.name,
+                message: err.message
+              })
+            )
+          )
+      }
     }
     const newMessage = (message_obj) => {
       const defaultMessage = {
         isError: false,
         isEvent: false,
-        type: '',
-        content: undefined
+        name: '',
+        message: undefined
       }
       return Object.assign(defaultMessage, message_obj);
     }
@@ -201,31 +255,40 @@
     const audioPlayer = new AudioPlayer();
 
     onmessage = (functionName, ...vars) => {
-      try {
+      // try {
         audioPlayer[functionName].apply(audioPlayer, vars);
-      } catch(err) {
-        ; // do sth...
-      }
+      // } catch(err) {
+      //   ; // do sth...
+      // }
     }
   }
 
   if("indexedDB" in window && "Worker" in window){
     const worker = new Worker(URL.createObjectURL(new Blob([`(${work})()`], {type: 'application/javascript'})), { type: 'module' });
+    const assignWork = (functionName, ...vars) => {
+      worker.postMessage([
+        functionName,
+        ...vars
+      ])
+    }
+
     let songPlaying = '';
+
     worker.onmessage = message => {
       if(message.data.isError){
-        switch(message.data.type){
+        switch(message.data.name){
           case 'saveDataModeOn': 
             return ;
           case 'exception':
             return ;
           case 'responseNotOk':
-            return ;
+            return throwError('📶 Network Error', message.data.message);
           case 'indexDB':
+            throwError('can\' access indexDB😨', message.data.message)
             return ;
         }
       } else if(message.data.isEvent){
-        switch(message.data.type){
+        switch(message.data.name){
           case 'newAudioPlaying':
             return;
           case 'responseNotOk':
@@ -233,13 +296,6 @@
         }
       }
     }
-    const assignWork = (functionName, ...vars) => {
-      worker.postMessage([
-        functionName,
-        ...vars
-      ])
-    }
-    worker.postMessage()
     window.songPlayer = {
       getSongPlaying: ()=>songPlaying,
       playNext: ()=>{},
@@ -250,5 +306,7 @@
       stop_instantly: ()=>{},
       stop_fadeOut: ()=>{}
     }
+  } else {
+    throwError('can\' access indexDB😨') //TODO:
   }
 }

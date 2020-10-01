@@ -76,6 +76,8 @@
 }
 
 window.throwError = function(...args) {
+  if(args[args.length - 1] === true)
+    ; //TODO: errorlog's variable duration
   document.getElementById('show-error').removeAttribute('hidden')
   document.getElementById('errorLog').innerText = args.join('\n');
   console.error.apply(this, arguments);
