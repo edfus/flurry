@@ -61,18 +61,15 @@
 		<section id="loading-section">
 			<div id="loader">
 				<script>
-					if(!document.cookie.includes("loaded=true")) {
-						const date = new Date();
-						date.setTime(date.getTime() + 5 * 86400000);
-						document.cookie = `loaded=true; expires=${date.toUTCString()}; HostOnly=true; path=/; SameSite=Strict;`;
-						// ' Secure=true;'
-					} else if(location.search.includes('app=1')) {
+				if(existsCookie("loaded=true"))
+					if(location.search.includes('app=1')) {
 						document.getElementById("loader").hidden = "true";
 						document.getElementById("loading-section").hidden = "true";
 					} else {
 						document.getElementById("loader").hidden = "true";
 						config.loading_timeOut = 100;
 					}
+				else setCookie("loaded=true", 5)
 				</script>
 				<svg id="circular" viewBox="25 25 50 50">
 					<circle id="path" cx="50" cy="50" r="20" fill="none" stroke-width="2" stroke-miterlimit="10"/>

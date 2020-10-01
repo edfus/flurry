@@ -112,12 +112,12 @@ window.throwError = function(...args) {
       this.classList.add('active')
 
       this.#confirmButton.addEventListener('click', (event) => {
-          console.info(this.#title.innerText + '... confirmed')
+          console.info('Confirm: ' + this.#confirmButton.innerText)
           this.dispatchEvent(new CustomEvent("confirm", {}));
           this.hide();
         }, {passive: true, once: true})
       this.#rejectButtom.addEventListener('click', (event) => {
-          console.info(this.#title.innerText + '... rejected')
+          console.info('Confirm: rejected')
           this.dispatchEvent(new CustomEvent("reject", {}));
           this.hide();
         }, {passive: true, once: true})
@@ -190,5 +190,18 @@ window.throwError = function(...args) {
         })
       else document.body.append(newConfirm);
     })
+  }
+  window.existsCookie = value => document.cookie.includes(value)
+  /**
+   * 设置cookie
+   * @param {string} value no semicolon
+   * @param {number} expireDays
+   * @return {undefined} 
+   */
+  window.setCookie = (value, expireDays) => {
+    const date = new Date();
+    date.setTime(date.getTime() + Number(expireDays) * 86400000);
+    document.cookie = `${value}; expires=${date.toUTCString()}; HostOnly=true; path=/; SameSite=Strict;`;
+    // ' Secure=true;
   }
 }
