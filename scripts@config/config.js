@@ -3,7 +3,7 @@
   const fadeOutSpeedLevel = 4;
 
   // export
-  const UseNewBasejs = true,
+  const UseNewBasejs = false,
   
   TestMode = true,
 
@@ -74,7 +74,10 @@
       speed_sky: RotationSpeed_Sky
   }
 }
-
+/**
+ * throw an error to user
+ * @param {*} args 
+ */
 window.throwError = function(...args) {
   if(args[args.length - 1] === true)
     ; //TODO: errorlog's variable duration
@@ -82,3 +85,110 @@ window.throwError = function(...args) {
   document.getElementById('errorLog').innerText = args.join('\n');
   console.error.apply(this, arguments);
 };
+
+{
+  class MyConfirm extends HTMLElement {
+    #confirmButton = null;
+    #rejectButtom = null;
+    #title = null;
+    #paragraphs = null;
+    // not allowed to pass in any arguments into the constructor.
+    constructor() {
+      super();
+      this.#confirmButton = document.createElement('BUTTON');
+      this.#confirmButton.classList.add('confirm-true-button');
+
+      this.#rejectButtom = document.createElement('BUTTON');
+      this.#rejectButtom.classList.add('confirm-false-button');
+
+      this.#title = document.createElement('H3');
+      this.#title.classList.add('confirm-title');
+
+      this.#paragraphs = document.createElement('ARTICLE'); 
+      this.#paragraphs.classList.add('confirm-body');
+    }
+    show () {
+      this.attachShadow({mode: 'closed'}).append(this.#title, this.#paragraphs, this.#confirmButton, this.#rejectButtom)
+      this.classList.add('active')
+
+      this.#confirmButton.addEventListener('click', (event) => {
+          console.info(this.#title.innerText + '... confirmed')
+          this.dispatchEvent(new CustomEvent("confirm", {}));
+          this.hide();
+        }, {passive: true, once: true})
+      this.#rejectButtom.addEventListener('click', (event) => {
+          console.info(this.#title.innerText + '... rejected')
+          this.dispatchEvent(new CustomEvent("reject", {}));
+          this.hide();
+        }, {passive: true, once: true})
+    }
+    hide () {
+      this.classList.remove('active');
+      setTimeout(()=>this.remove(), 500);
+    }
+    /**
+     * @param {string} str
+     */
+    set confirmText (str) {
+      this.#confirmButton.textContent = str
+    }
+    /**
+     * @param {string} str
+     */
+    set rejectText (str) {
+      this.#rejectButtom.textContent = str
+    }
+    /**
+     * @param {string} str
+     */
+    set title (str) {
+      this.#title.textContent = str
+    }
+    /**
+     * @param {Array<string} arr
+     */
+    set paragraphs (arr) {
+      this.#paragraphs.innerHTML = arr.reduce((accumulator, newP) => {
+        accumulator += `<p class="confirm-paragraphs">${newP}</p>`
+      })
+      // Failed to set the 'outerHTML' property on 'Element': This element's parent is of type '#document-fragment', which is not an element node.
+    }   
+    connectedCallback() {
+      this.show();
+    }
+    disconnectedCallback() {
+      this.dispatchEvent(new CustomEvent("hide", {}))
+    }
+  }
+  window.customElements.define('confirm-dialog', MyConfirm);
+
+  /**
+   * display a self defined confirm dialog other than browser's default
+   * @param {string} title 
+   * @param {Array<string>} paragraphs
+   * @param {string} confirmText
+   * @param {string} rejectText
+   * @return {Promise<boolean>} 
+   */
+  window.newConfirm = async function (title, paragraphs, confirmText, rejectText) {
+    let confirm = document.getElementsByTagName('confirm-dialog')[0]; //检查是否已存在
+
+    let newConfirm = document.createElement('confirm-dialog');
+    newConfirm.title = title;
+    newConfirm.paragraphs = paragraphs;
+    newConfirm.confirmText = confirmText;
+    newConfirm.rejectText = rejectText;
+
+    return new Promise(resolve => {
+      newConfirm.addEventListener('confirm', ()=>resolve(true), {passive: true, once: true});
+      newConfirm.addEventListener('reject', ()=>resolve(false), {passive: true, once: true});
+
+      if(confirm) // 已存在
+        confirm.addEventListener('hide', () => {
+          confirm = null;
+          document.body.append(newConfirm);
+        })
+      else document.body.append(newConfirm);
+    })
+  }
+}

@@ -8,24 +8,39 @@
   --google-style-loader-white: #eee;
 }
 
+html, body {
+  height: 100%;
+  font-size: 16px; /* rem */
+}
+
+/* in mobile browser 100vh will overflow (as there exists the navigation UI) */
+
 body {
   margin: 0;
-  width: 100vw;
-  height: 100vh;
   overflow: hidden;
   background: var(--main-bg-gradient-color);
-}
+} 
+/* stick the entire page in a 100vw/vh block will disable Chrome's pull-to-refresh effect */
+/* https://developers.google.com/web/updates/2017/11/overscroll-behavior */
+/* FIX: pull-to-refresh */
 
 main {
   position: absolute;
   z-index: 2;
+  top: 0;
+  bottom: 0; 
+  /* fix the unintended 4px more height compared with window.innerHeight */
+}
+confirm-dialog {
+  position: fixed;
+  z-index: 5
 }
 
 #loading-section {
   position: absolute;
   z-index: 3;
   width: 100vw;
-  height: 100vh;
+  height: 100%;
   background: var(--main-bg-gradient-color);
   opacity: 1;
   pointer-events: none;
@@ -38,7 +53,7 @@ main {
   margin: 40vh calc(50vw - var(--loader-width) / 2);
 }
 
-.info {
+#info {
   position: absolute;
   top: 40vh;
   left: 0;
@@ -48,7 +63,7 @@ main {
 
 #show-error {
   margin: 0 auto;
-  font-size: 24px;
+  font-size: 1.5rem;
 }
 
 #circular {

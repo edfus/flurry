@@ -57,12 +57,14 @@
       #audioContext = null; //TODO
       #maxRetryTimes = 3;
       #retryGap = 3000; // ms
+      #forceLoad = false;
 
       //TODO: onend -> postmassage -> set variable --> main thread
 
       constructor () {
         this.loadAll();
       }
+
       /**
        * @param {{ role: string; buffer: ArrayBuffer; }} newAudio
        */
@@ -152,7 +154,7 @@
        */
       async newfetch (url) {
         return new Promise((resolve, reject) => {
-          if(navigator.connection && !navigator.connection.saveData){
+          if(this.#forceLoad || navigator.connection && !navigator.connection.saveData){
             fetch(
               new Request(url,
                 { method: 'GET',
@@ -169,6 +171,10 @@
             reject({name: 'saveDataModeOn', message: undefined})
           };
         })
+      }
+
+      forceLoad () {
+        this.#forceLoad = true;
       }
       /**
        * load specific source to or in indexDB
@@ -254,12 +260,9 @@
 
     const audioPlayer = new AudioPlayer();
 
-    onmessage = (functionName, ...vars) => {
-      // try {
-        audioPlayer[functionName].apply(audioPlayer, vars);
-      // } catch(err) {
-      //   ; // do sth...
-      // }
+    onmessage = message => {
+      const [functionName, ...vars] = message.data;
+      audioPlayer[functionName].apply(audioPlayer, vars);
     }
   }
 
@@ -278,6 +281,10 @@
       if(message.data.isError){
         switch(message.data.name){
           case 'saveDataModeOn': 
+            // using default confirm method blocks script execution but setTimeout continues (^^;)
+            newConfirm("Your device is on lite mode", ["Downloading audio is paused to prevent data charges."], "Download anyway", "cancel").then(result => 
+              result && (assignWork("forceLoad"), assignWork("loadAll"))
+            )
             return ;
           case 'exception':
             return ;
