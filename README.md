@@ -75,7 +75,7 @@ cloudres:
 - [ ] 暂停函数、分数存储
 - [ ] requestAnimationFrame
 - [ ] indexedDB存储音频
-- [ ] 帮助、Credit、全屏
+- [ ] 帮助、Credit、全屏、refresh button
 - [ ] 强制横屏(maybe)
 - [ ] vertices的概念
 

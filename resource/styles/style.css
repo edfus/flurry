@@ -6,6 +6,8 @@
   --google-style-loader-red:#d62d20;
   --google-style-loader-yellow: #ffa700;
   --google-style-loader-white: #eee;
+  --confirm-color: #4787ed;
+  --error-color: #666;
 }
 
 html, body {
@@ -19,6 +21,7 @@ body {
   margin: 0;
   overflow: hidden;
   background: var(--main-bg-gradient-color);
+  font-family: 'Lucida Grande', 'Helvetica Neue', sans-serif;
 } 
 /* stick the entire page in a 100vw/vh block will disable Chrome's pull-to-refresh effect */
 /* https://developers.google.com/web/updates/2017/11/overscroll-behavior */
@@ -31,10 +34,64 @@ main {
   bottom: 0; 
   /* fix the unintended 4px more height compared with window.innerHeight */
 }
-confirm-dialog {
+.dialog {
   position: fixed;
-  z-index: 5
+  z-index: 5;
+  left: calc(50% - 245px);
+  box-shadow: 0px 0px 0px -4px rgba(39,55,74,.25), 0 15px 40px 10px rgba(39,55,74,.25);
+  padding: 10px;
+  width: 470px;
+  border-radius: 4px;
+  background: #fff;
+  opacity: 0;
+  top: 20px;
+  transition: opacity .4s ease-out;
 }
+
+.dialog.active {
+  opacity: 1;
+}
+
+.dialog.active::part(button) {
+  cursor: pointer;
+}
+
+::part(button) {
+  display: inline-block;
+  margin-right: 10px;
+  min-width: 107px;
+  margin-top: 10px;
+  padding: 14px 20px;
+  /* text-align: center; */
+  border: none;
+  outline: none; 
+  color: #ffffff;
+  /* disable the focus outline */
+}
+
+
+::part(button):hover {
+	box-shadow: 0px 1px 1px rgba(0,0,0,.1);
+}
+
+::part(button):active, ::part(button):focus {
+	box-shadow: inset 0px 1px 2px rgba(0,0,0,.3);
+}
+
+::part(error-button) {
+  background-color: var(--error-color);
+	text-shadow: 0 1px rgba(0, 0, 0, 0.1);
+}
+
+::part(confirm-button) {
+  background-color: var(--confirm-color);
+}
+
+::part(reject-button) {
+  background-color: #ffffff;
+  color:var(--confirm-color);
+}
+
 
 #loading-section {
   position: absolute;
@@ -60,11 +117,11 @@ confirm-dialog {
   width: 100%;
   text-align: center;
 }
-
+/* 
 #show-error {
   margin: 0 auto;
   font-size: 1.5rem;
-}
+} */
 
 #circular {
   animation: rotate 2s linear infinite;

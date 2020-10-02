@@ -8,20 +8,6 @@
         type: "audio/mpeg",
         role: 'intro',
         index: -1
-      },
-      {
-        name: "temp1",
-        url: `${cdnName}/resource/audio/Loner%20Souavddtrack/0_Intro.mp3`,
-        type: "audio/mpeg",
-        role: 'indddtro',
-        index: 2
-      },
-      {
-        name: "temp2",
-        url: `${cdnName}/resource/audio/Loner%20Souadfabrack/0_Intro.mp3`,
-        type: "audio/mpeg",
-        role: 'iaaantro',
-        index: 3
       }
     ];
     // https://blog.csdn.net/ML01010736/article/details/46422651 IIS6常用的MIME类型[rmvb,mp3,zip,exe等文件]
@@ -280,7 +266,7 @@
     worker.onmessage = message => {
       if(message.data.isError){
         switch(message.data.name){
-          case 'saveDataModeOn': 
+          case 'saveDataModeOn':
             // using default confirm method blocks script execution but setTimeout continues (^^;)
             !existsCookie('rejectedForceLoad=true') && 
               newConfirm("Your device is on lite mode", ["Downloading audio is paused to prevent data charges."], "Download anyway", "cancel").then(result => 
@@ -292,9 +278,9 @@
           case 'exception':
             return ;
           case 'responseNotOk':
-            return throwError('📶 Network Error', message.data.message);
+            return dialog.newError('📶 Network Error', message.data.message, 15000);
           case 'indexDB':
-            throwError('can\' access indexDB😨', message.data.message)
+            dialog.newError('can\' access indexDB😨', message.data.message)
             return ;
         }
       } else if(message.data.isEvent){
@@ -317,6 +303,6 @@
       stop_fadeOut: ()=>{}
     }
   } else {
-    throwError('can\' access indexDB😨') //TODO:
+    dialog.newError('can\' access indexDB😨')
   }
 }

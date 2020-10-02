@@ -31,10 +31,10 @@
 				window.addEventListener("load", ()=>{
 					navigator.serviceWorker.register('serviceWorker.js', { scope: '/' }).then(reg => {
 						if(reg.installing){
-							console.log('[ServiceWorker] installing');
+							console.info('[ServiceWorker] installing');
 						}
 					}).catch(error => {
-						console.log('Registration failed with ' + error);
+						console.info('Registration failed with ' + error);
 					})
 				}, {passive: true, once: true});
 			}
@@ -77,10 +77,6 @@
 			</div>
 		</section>
 		<section id="info">
-				<div id="show-error" hidden>
-					<div>Oops, an error occurred:</div>
-					<span id="errorLog"></span>
-				</div>
 				<noscript>
 					JavaScript is required for processing...😔
 					<style>
@@ -93,7 +89,7 @@
 					setTimeout(()=>{
 						if(document.getElementById('loading-section').hidden !== true){
 							document.getElementById('loading-section').hidden = true;
-							throwError('Loading takes too long.😥')
+							dialog.newError('Loading takes too long.😥', 10000)
 						}
 					}, 30000)
 				</script>

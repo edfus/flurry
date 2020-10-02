@@ -74,69 +74,44 @@
       speed_sky: RotationSpeed_Sky
   }
 }
-/**
- * throw an error to user
- * @param {*} args 
- */
-window.throwError = function(...args) {
-  if(args[args.length - 1] === true)
-    ; //TODO: errorlog's variable duration
-  document.getElementById('show-error').removeAttribute('hidden')
-  document.getElementById('errorLog').innerText = args.join('\n');
-  console.error.apply(this, arguments);
-};
 
 {
-  class MyConfirm extends HTMLElement {
-    #confirmButton = null;
-    #rejectButtom = null;
+  class Dialog extends HTMLElement {
     #title = null;
     #paragraphs = null;
-    // not allowed to pass in any arguments into the constructor.
+    #shadowTree = null;
     constructor() {
       super();
-      this.#confirmButton = document.createElement('BUTTON');
-      this.#confirmButton.classList.add('confirm-true-button');
-
-      this.#rejectButtom = document.createElement('BUTTON');
-      this.#rejectButtom.classList.add('confirm-false-button');
-
       this.#title = document.createElement('H3');
-      this.#title.classList.add('confirm-title');
+      this.#title.part = 'title';
 
       this.#paragraphs = document.createElement('ARTICLE'); 
-      this.#paragraphs.classList.add('confirm-body');
+      this.#paragraphs.part = 'paragraphs';
+      // The result must not have attributes
     }
-    show () {
-      this.attachShadow({mode: 'closed'}).append(this.#title, this.#paragraphs, this.#confirmButton, this.#rejectButtom)
-      this.classList.add('active')
-
-      this.#confirmButton.addEventListener('click', (event) => {
-          console.info('Confirm: ' + this.#confirmButton.innerText)
-          this.dispatchEvent(new CustomEvent("confirm", {}));
-          this.hide();
-        }, {passive: true, once: true})
-      this.#rejectButtom.addEventListener('click', (event) => {
-          console.info('Confirm: rejected')
-          this.dispatchEvent(new CustomEvent("reject", {}));
-          this.hide();
-        }, {passive: true, once: true})
+    showBasic () {
+      window.paused = true;
+      this.classList.add('dialog')
+      this.#shadowTree = this.attachShadow({mode: 'closed'});
+      this.append(this.#title, this.#paragraphs)
+      setTimeout(() => this.classList.add('active'), 300)
     }
     hide () {
-      this.classList.remove('active');
+      window.paused = false;
+      this.classList.remove('active'); // window
       setTimeout(()=>this.remove(), 500);
     }
-    /**
-     * @param {string} str
-     */
-    set confirmText (str) {
-      this.#confirmButton.textContent = str
+    connectedCallback() {
+      window.dialog.busy = true;
+      this.show();
+      window.dialog.observer.dispatchEvent(new CustomEvent("dialogShow", {}))
     }
-    /**
-     * @param {string} str
-     */
-    set rejectText (str) {
-      this.#rejectButtom.textContent = str
+    disconnectedCallback() {
+      window.dialog.observer.dispatchEvent(new CustomEvent("dialogHide", {}))
+      window.dialog.busy = false;
+    }
+    append(...HTMLElements) {
+      HTMLElements.forEach(e => this.#shadowTree.append(e))
     }
     /**
      * @param {string} str
@@ -148,20 +123,98 @@ window.throwError = function(...args) {
      * @param {Array<string} arr
      */
     set paragraphs (arr) {
-      this.#paragraphs.innerHTML = arr.reduce((accumulator, newP) => {
-        accumulator += `<p class="confirm-paragraphs">${newP}</p>`
-      })
+      this.#paragraphs.innerHTML = arr.reduce((accumulator, newP) => 
+        accumulator += `<p part="paragraph">${newP}</p>`
+      )
       // Failed to set the 'outerHTML' property on 'Element': This element's parent is of type '#document-fragment', which is not an element node.
-    }   
-    connectedCallback() {
-      this.show();
-    }
-    disconnectedCallback() {
-      this.dispatchEvent(new CustomEvent("hide", {}))
     }
   }
-  window.customElements.define('confirm-dialog', MyConfirm);
 
+  class MyConfirm extends Dialog {
+    #confirmButton = null;
+    #rejectButton = null;
+    // not allowed to pass in any arguments into the constructor.
+    constructor() {
+      super();
+      this.#confirmButton = document.createElement('BUTTON');
+      this.#confirmButton.part = 'confirm-button button';
+      this.#confirmButton.type = "button"
+
+      this.#rejectButton = document.createElement('BUTTON');
+      this.#rejectButton.part = 'reject-button button';
+      this.#rejectButton.type = "button"
+    }
+    show () {
+      this.showBasic();
+      this.append(this.#confirmButton, this.#rejectButton)
+  
+      this.#confirmButton.addEventListener('click', (event) => {
+          console.info('Confirm: ' + this.#confirmButton.innerText)
+          this.dispatchEvent(new CustomEvent("confirm", {}));
+          this.hide();
+        }, {passive: true, once: true})
+      this.#rejectButton.addEventListener('click', (event) => {
+          console.info('Confirm: rejected')
+          this.dispatchEvent(new CustomEvent("reject", {}));
+          this.hide();
+        }, {passive: true, once: true})
+    }
+    /**
+     * @param {string} str
+     */
+    set confirmText (str) {
+      this.#confirmButton.textContent = str
+    }
+    /**
+     * @param {string} str
+     */
+    set rejectText (str) {
+      this.#rejectButton.textContent = str
+    }
+  }
+
+
+  class MyError extends Dialog {
+    #okButton = null;
+    #msToHide = -1;
+    
+    // not allowed to pass in any arguments into the constructor.
+    constructor() {
+      super();
+      this.#okButton = document.createElement('BUTTON');
+      this.#okButton.part = 'error-button button';
+      this.#okButton.innerText = 'OK';
+      this.title = 'Oops, an error occurred';
+      // this.prototype.#title: Private field '#title' must be declared in an enclosing class 
+    }
+    show () {
+      // only constructor functions have prototypes
+      // console.assert(this.constructor.prototype.show !== this.show) // failed
+      this.showBasic();
+      this.append(this.#okButton)
+      this.#okButton.addEventListener('click', (event) => {
+        this.hide();
+        }, {passive: true, once: true})
+      
+      if(this.#msToHide > 0) {
+        setTimeout(() => this.hide(), this.#msToHide);
+        // setTimeout(this.hide, this.#msToHide); -- `this` will become the window obj
+      }
+    }
+    /**
+     * @param {number} num
+     */
+    set msToHide (num) {
+      this.#msToHide = num;
+    }
+  }
+  window.dialog = {
+    observer: document.createElement('i'),
+    // Object.create(HTMLElement.prototype, {}), // Illegal invocation
+    busy: false
+  };
+  window.customElements.define('confirm-dialog', MyConfirm);
+  window.customElements.define('error-dialog', MyError);
   /**
    * display a self defined confirm dialog other than browser's default
    * @param {string} title 
@@ -170,27 +223,44 @@ window.throwError = function(...args) {
    * @param {string} rejectText
    * @return {Promise<boolean>} 
    */
-  window.newConfirm = async function (title, paragraphs, confirmText, rejectText) {
-    let confirm = document.getElementsByTagName('confirm-dialog')[0]; //检查是否已存在
-
-    let newConfirm = document.createElement('confirm-dialog');
-    newConfirm.title = title;
-    newConfirm.paragraphs = paragraphs;
-    newConfirm.confirmText = confirmText;
-    newConfirm.rejectText = rejectText;
+  window.dialog.newConfirm = async function (title, paragraphs, confirmText, rejectText) {
+    let confirmDialog = document.createElement('confirm-dialog');
+    confirmDialog.title = title;
+    confirmDialog.paragraphs = paragraphs;
+    confirmDialog.confirmText = confirmText;
+    confirmDialog.rejectText = rejectText;
 
     return new Promise(resolve => {
-      newConfirm.addEventListener('confirm', ()=>resolve(true), {passive: true, once: true});
-      newConfirm.addEventListener('reject', ()=>resolve(false), {passive: true, once: true});
+      confirmDialog.addEventListener('confirm', ()=>resolve(true), {passive: true, once: true});
+      confirmDialog.addEventListener('reject', ()=>resolve(false), {passive: true, once: true});
 
-      if(confirm) // 已存在
-        confirm.addEventListener('hide', () => {
-          confirm = null;
-          document.body.append(newConfirm);
-        })
-      else document.body.append(newConfirm);
+      if(window.dialog.busy) // 已有另外的dialog显示
+        window.dialog.observer.addEventListener('dialogHide', () => {
+            document.body.append(confirmDialog);
+          })
+      else document.body.append(confirmDialog);
     })
   }
+  /**
+   * throw an error to user
+   * @param {*} args 
+   */
+  window.dialog.newError = function(...args) {
+    let errorDialog = document.createElement('error-dialog')
+    if(typeof args[args.length - 1] === 'number'){
+      errorDialog.msToHide = args[args.length - 1];
+      errorDialog.paragraphs = args.slice(0, args.length - 1) // 1 or 2?
+    } else {
+      errorDialog.paragraphs = args
+    }
+    if(window.dialog.busy) // 已有另外的dialog显示
+        window.dialog.observer.addEventListener('dialogHide', () => {
+            document.body.append(errorDialog);
+          })
+    else document.body.append(errorDialog);
+    console.error.apply(this, arguments);
+  };
+
   window.existsCookie = value => document.cookie.includes(value)
   /**
    * 设置cookie

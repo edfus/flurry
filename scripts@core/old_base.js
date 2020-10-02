@@ -32,8 +32,6 @@ var sea = null, // createdBy new Sea()
     airplane = null, // createdBy new Airplane()
     sky = null; // createdBy new Sky()
 
-var paused = false;
-
 // can't access these seemingly global variables outside base.js, as base.js is loaded as module
 ///////////////////////////////////////////////////
 
@@ -61,7 +59,7 @@ window.addEventListener('load', ()=>{
     updateCameraFov();
     //TODO: updateScore();
 
-    if(!paused){ // TODO: paused func
+    if(!window.paused){ //TODO: paused func //FIX: requestAnimationFrame
       renderer.render(scene, camera);
       requestAnimationFrame(renderLoop);
     } else {
@@ -246,6 +244,10 @@ function updateScore() {
 }
 
 async function waitForUserContinue() {
+  if(window.dialog.busy)
+    window.dialog.observer.addEventListener('hide', () => {
+      return Promise.resolve()
+    }, {passive: true, once: true})
   // do something...
 } // listen to user's click event, resolve to continue, reject to back to title.
   // remember to removeEventListener
