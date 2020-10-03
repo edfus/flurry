@@ -16,10 +16,6 @@ import {Airplane, Sky, Sea} from '../scripts@core/old_customObject.js';
   console.info(`%c Platform %c ${ua.match(/(?<=\().*?(?=;)/)[0]} `, titleStyle, `${subStyle}: #1475b2;`)
 }
 ////////////////////////////////
-//SCREEN & MOUSE VARIABLES
-
-var HEIGHT = window.innerHeight, WIDTH = window.innerWidth, // will be changed in window resize event
-    mouseRelativePos = { x: 0, y: 0 }; 
 
 //SCENE & CAMERA VARIABLES
 
@@ -35,9 +31,189 @@ var sea = null, // createdBy new Sea()
 // can't access these seemingly global variables outside base.js, as base.js is loaded as module
 ///////////////////////////////////////////////////
 
-// class UserInteraction {
-//   constructor
-// }
+class UserInteraction {
+  #relativePos = { x: 0, y: 0 };
+  #isTouchDevice = false;
+  #windowHeight = 0;
+  #windowWidth =  0;
+  #debounce = {
+    timer: 0,
+    gap_ms: 30,
+    triggered: false
+  };
+
+  #isDragging = false;
+
+  #identifier = "mouse_";
+
+  constructor() {
+    this.#isTouchDevice = this.#testTouchDevice();
+    this.#identifier = ["mouse_","touch_"][Number(this.#isTouchDevice)];
+
+    this.#windowHeight = window.innerHeight;
+    this.#windowWidth = window.innerWidth;
+  }
+
+  get isTouchDevice () {
+    return this.#isTouchDevice;
+  }
+
+  get relativePos () {
+    return this.#relativePos;
+  }
+
+  get HEIGHT () {
+    return this.#windowHeight;
+  }
+
+  get WIDTH () {
+    return this.#windowWidth;
+  }
+
+  addListeners () {
+    // console.log(this.#mouse_addListeners === this['#mouse_addListeners']) - false
+    this[`${this.#identifier}addListeners`]();
+  }
+
+  removeListeners () {
+    this[`${this.#identifier}removeListeners`]();
+  }
+
+ /**
+  * If the browser fires both touch and mouse events because of a single user input, 
+  * the browser must fire a touchstart before any mouse events. 
+  * Consequently, if an application does not want mouse events fired on a specific touch target element, 
+  * the element's touch event handlers should call preventDefault() and no additional mouse events will be dispatched.
+  */
+
+  touch_addListeners () {
+    // document.addEventListener('touchstart', this.#touch_startCallback, {passive: false});
+    document.addEventListener('touchmove', this.#touch_moveCallback, {passive: false});
+    // document.addEventListener('touchend', this.#touch_endCallback, {passive: false});
+  }
+
+  touch_removeListeners () {
+    // document.removeEventListener('touchstart', #touch_startCallback);
+    document.removeEventListener('touchmove', this.#touch_endCallback);
+    // document.removeEventListener('touchend', this.#touch_endCallback);
+  }
+
+  #touch_startCallback = (that => {
+    return event => {
+      event.preventDefault();
+      // switch (event.touches.length) {
+      //   case 1: handle_one_touch(event); break;
+      //   case 2: handle_two_touches(event); break;
+      //   case 3: handle_three_touches(event); break;
+      //   default: console.log("Not supported"); break;
+      // }  
+      that.#isDragging = true;
+    }
+  })(this)
+
+  #touch_moveCallback  = (that => {
+    return event => {
+      event.preventDefault();
+      that.#relativePos = {
+        x: -1 + (event.touches[0].pageX / that.WIDTH) * 2,
+        y: 1 - (event.touches[0].pageY / that.HEIGHT) * 2
+      };
+    }
+  })(this)
+
+  #touch_endCallback = (that => {
+    return event => {
+      event.preventDefault();
+      that.#isDragging = false;
+    }
+  })(this)
+
+  /*
+  drawLines () {
+    var material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
+    var points = [];
+    points.push( new THREE.Vector3( - 10, 0, 0 ) );
+    points.push( new THREE.Vector3( 0, 10, 0 ) );
+    points.push( new THREE.Vector3( 10, 0, 0 ) );
+
+    var geometry = new THREE.BufferGeometry().setFromPoints( points );
+    var line = new THREE.Line( geometry, material );
+  }
+  */
+
+  mouse_addListeners () {
+    // document.addEventListener('mousedown', event => this.#mouse_downCallback(event), {passive: true});
+    document.addEventListener('mousemove', this.#mouse_moveCallback, {passive: true});
+    // document.addEventListener('mouseup', event => this.#mouse_upCallback(event), {passive: true});
+  }
+
+  mouse_removeListeners () {
+    // document.removeEventListener('mousedown', this.#mouse_downCallback);
+    document.removeEventListener('mousemove', this.#mouse_moveCallback);
+    // document.removeEventListener('mouseup', this.#mouse_upCallback);
+    console.log('ascasc')
+  }
+
+  #mouse_downCallback = (that => {
+    return event => {
+      that.#isDragging = true;
+    }
+  })(this)
+
+  #mouse_moveCallback = (that => {
+    return event => {
+      that.#relativePos = {
+        x: -1 + (event.clientX / that.WIDTH) * 2,
+        y: 1 - (event.clientY / that.HEIGHT) * 2
+      }
+    }
+  })(this) // closure
+
+  #mouse_upCallback = (that => {
+    return event => {
+      that.#isDragging = false;
+    }
+  })(this)
+
+  #resizeCallback_debounce () {
+    if(this.#debounce.triggered)
+      clearTimeout(this.#debounce.timer)
+    else this.#debounce.triggered = true;
+    this.#debounce.timer = setTimeout(() => this.#resizeCallback(), this.#debounce.gap_ms)
+  } // If handle does not identify an entry in the list of active timers of the WindowOrWorkerGlobalScope object on which [clearTimeout] was invoked, the method does nothing.
+
+  #resizeCallback () {
+    this.#windowHeight = window.innerHeight;
+    this.#windowWidth = window.innerWidth;
+    renderer.setSize(this.WIDTH, this.HEIGHT);
+    camera.aspect = this.WIDTH / this.HEIGHT;
+    camera.updateProjectionMatrix();
+    this.#debounce.triggered = false;
+  }
+
+  resizeCallback () {
+    return this.#resizeCallback(); // [Violation] 'load' handler took 156ms
+    // return this.#resizeCallback_debounce();  // [Violation] 'setTimeout' handler took 51ms
+    // in 2020 debounce on resize event still worthy?
+  }
+
+  #testTouchDevice () {
+    if ("ontouchstart" in window)
+        return true;
+    else return false;
+    // if (window.DocumentTouch && document instanceof DocumentTouch)
+    //     return true;
+
+    // const prefixes = ["", "-webkit-", "-moz-", "-o-", "-ms-"];
+    // const queries = prefixes.map(prefix => `(${prefix}touch-enabled)`);
+
+    // return window.matchMedia(queries.join(",")).matches;
+    // Modernizr's way  
+    // https://stackoverflow.com/questions/4817029/whats-the-best-way-to-detect-a-touch-screen-device-using-javascript/4819886#4819886
+  }
+}
+
+const userInteraction = new UserInteraction();
 
 
 //INIT THREE JS, SCREEN AND MOUSE EVENTS
@@ -50,14 +226,7 @@ window.addEventListener('load', ()=>{
 
   config.gameStartCallback();
 
-  function mouseMoveCallback (event) {
-    mouseRelativePos = {
-      x: -1 + (event.clientX / WIDTH) * 2,
-      y: 1 - (event.clientY / HEIGHT) * 2
-    };
-  }
-
-  document.addEventListener('mousemove', mouseMoveCallback, {passive: true});
+  userInteraction.addListeners();
 
   function renderLoop_whenPaused() {
     updatePlane();
@@ -80,13 +249,14 @@ window.addEventListener('load', ()=>{
     } else {
       console.info('RenderLoop: game paused');
 
-      document.removeEventListener('mousemove', mouseMoveCallback);
+      userInteraction.removeListeners();
+
       renderLoopPtr = renderLoop_whenPaused;
       renderLoop_whenPaused();
 
       waitForUserContinue()
         .then(() => {
-          document.addEventListener('mousemove', mouseMoveCallback, {passive: true});
+          userInteraction.addListeners();
           renderLoopPtr = renderLoop;
           // back to renderLoop
         })
@@ -129,18 +299,12 @@ function createScene() {
   // 删除对象属性: delete obj['xxx']
 
   renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true }); // antialias: 抗s锯齿
-  renderer.setSize(WIDTH, HEIGHT);
+  renderer.setSize(userInteraction.WIDTH, userInteraction.HEIGHT); 
   renderer.shadowMap.enabled = true;
 
   config.getContainer().appendChild(renderer.domElement);
 
-  window.addEventListener('resize', () => {
-    HEIGHT = window.innerHeight;
-    WIDTH = window.innerWidth;
-    renderer.setSize(WIDTH, HEIGHT);
-    camera.aspect = WIDTH / HEIGHT;
-    camera.updateProjectionMatrix();
-  }, {passive: true}); // HANDLE SCREEN EVENTS
+  window.addEventListener('resize', () => userInteraction.resizeCallback(), {passive: true});
 }
 
 // LIGHTS
@@ -218,7 +382,7 @@ function createSky() {
 }
 
 function updatePlane() {
-  const targetY = normalize(mouseRelativePos.y, -.75, .75, 25, 175);
+  const targetY = normalize(userInteraction.relativePos.y, -.75, .75, 25, 175);
   airplane.mesh.position.y += (targetY - airplane.mesh.position.y) * 0.1;
   airplane.mesh.rotation.z = (targetY - airplane.mesh.position.y) * 0.0128; // 飞机与x轴角度随鼠标上下移动而变化
   airplane.mesh.rotation.x = (airplane.mesh.position.y - targetY) * 0.0064; // 飞机与z轴角度随鼠标上下移动而变化
@@ -233,13 +397,13 @@ function updateBackground() {
 }
 
 function updateCameraFov(){
-  camera.fov = normalize(mouseRelativePos.x, -1, 1, 40, 80);
+  camera.fov = normalize(userInteraction.relativePos.x, -1, 1, 40, 80);
   camera.updateProjectionMatrix();
 }
 /**
  * 根据鼠标相对位置返回映射后的绝对位置（飞机及相机)
  * RP: Relative Position, 取值范围为-1到1
- * @param {number} mouseRP mouseRelativePos.x | .y
+ * @param {number} mouseRP userInteraction.relativePos.x | .y
  * @param {number} mouseRP_min
  * @param {number} mouseRP_max
  * @param {number} position_min
@@ -291,7 +455,7 @@ pauseButton.addEventListener('click',()=>{
 
 document.addEventListener("visibilitychange", () => {
   switch(document.visibilityState) {
-    case 'visible' : 
+    case 'visible' : window.paused = false;
       break;
     case 'hidden' : window.paused = true; 
       break;
