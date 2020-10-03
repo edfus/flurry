@@ -281,9 +281,9 @@
             case 'exception':
               return ;
             case 'responseNotOk':
-              return dialog.newError('📶 Network Error', message.data.message, 15000);
+              return Dialog.newError('📶 Network Error', message.data.message, 15000);
             case 'indexDB':
-              dialog.newError('can\' access indexDB😨', message.data.message)
+              Dialog.newError('can\' access indexDB😨', message.data.message)
               return ;
           }
         } else if(message.data.isEvent){
@@ -310,6 +310,6 @@
     }
     window.audioPlayer = new GlobalAudioPlayer();
   } else {
-    dialog.newError('can\' access indexDB😨')
+    Dialog.newError('can\' access indexDB😨')
   }
 }

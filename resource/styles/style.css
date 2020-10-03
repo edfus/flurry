@@ -59,7 +59,13 @@ main {
 }
 
 .dialog.active {
+  animation: dialog-show .4s ease-out 1;
   opacity: 1;
+}
+
+.dialog.hide {
+  animation: dialog-hide .4s ease-out 1;
+  opacity: 0;
 }
 
 .dialog.active::part(button) {
@@ -100,6 +106,10 @@ main {
 ::part(reject-button) {
   background-color: #ffffff;
   color:var(--confirm-color);
+}
+
+::part(reject-button):active, ::part(reject-button):focus, ::part(reject-button):hover {
+  box-shadow: none;
 }
 
 
@@ -148,6 +158,24 @@ main {
   stroke-dashoffset: 0;
   animation: dash 1.5s ease-in-out infinite, color 6s ease-in-out infinite;
   stroke-linecap: round;
+}
+
+@keyframes dialog-show {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes dialog-hide {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 @keyframes rotate {

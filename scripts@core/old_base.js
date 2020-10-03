@@ -35,14 +35,13 @@ var sea = null, // createdBy new Sea()
 // can't access these seemingly global variables outside base.js, as base.js is loaded as module
 ///////////////////////////////////////////////////
 
+// class UserInteraction {
+//   constructor
+// }
+
+
 //INIT THREE JS, SCREEN AND MOUSE EVENTS
 window.addEventListener('load', ()=>{
-  document.addEventListener('mousemove', event => {
-    mouseRelativePos = {
-      x: -1 + (event.clientX / WIDTH) * 2,
-      y: 1 - (event.clientY / HEIGHT) * 2
-    };
-  }, {passive: true});
   // HANDLE MOUSE EVENTS
   createScene();
   createLights();
@@ -50,29 +49,52 @@ window.addEventListener('load', ()=>{
   createObjects();
 
   config.gameStartCallback();
-  
-  (function renderLoop(){
-    //TODO: if(crashed)
 
+  function mouseMoveCallback (event) {
+    mouseRelativePos = {
+      x: -1 + (event.clientX / WIDTH) * 2,
+      y: 1 - (event.clientY / HEIGHT) * 2
+    };
+  }
+
+  document.addEventListener('mousemove', mouseMoveCallback, {passive: true});
+
+  function renderLoop_whenPaused() {
     updatePlane();
     updateBackground();
-    updateCameraFov();
-    //TODO: updateScore();
+    renderer.render(scene, camera);
+    requestAnimationFrame(renderLoopPtr); // ptr
+  }
 
+  let renderLoopPtr = renderLoop_whenPaused;
+
+  (function renderLoop(){
     if(!window.paused){ //TODO: paused func //FIX: requestAnimationFrame
+      //TODO: if(crashed)
+      updatePlane();
+      updateBackground();
+      updateCameraFov();
+      //TODO: updateScore();
       renderer.render(scene, camera);
       requestAnimationFrame(renderLoop);
     } else {
+      console.info('RenderLoop: game paused');
+
+      document.removeEventListener('mousemove', mouseMoveCallback);
+      renderLoopPtr = renderLoop_whenPaused;
+      renderLoop_whenPaused();
+
       waitForUserContinue()
         .then(() => {
-          renderer.render(scene, camera);
-          requestAnimationFrame(renderLoop);
+          document.addEventListener('mousemove', mouseMoveCallback, {passive: true});
+          renderLoopPtr = renderLoop;
+          // back to renderLoop
         })
         .catch(() => 
           backToTitle().then(()=>requestAnimationFrame(renderLoop))
         )
     }
-  })() // (function x(){})(): 一种直接调用函数的技巧，可在函数申明后直接调用它。 
+  })() // (function x(){})(): 一种直接调用函数的技巧，可在函数申明后直接调用它。
 }, {passive: true});
 
 function createScene() {
@@ -106,7 +128,7 @@ function createScene() {
   */
   // 删除对象属性: delete obj['xxx']
 
-  renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true }); // antialias: 抗s锯齿
   renderer.setSize(WIDTH, HEIGHT);
   renderer.shadowMap.enabled = true;
 
@@ -243,11 +265,16 @@ function updateScore() {
   //NOTE: _参考\TheAviator\js\game.js <- 参考
 }
 
+// Uncaught ReferenceError: Dialog is not defined
+// https://stackoverflow.com/questions/37711603/javascript-es6-class-definition-not-accessible-in-window-global
+
 async function waitForUserContinue() {
-  if(window.dialog.busy)
-    window.dialog.observer.addEventListener('hide', () => {
-      return Promise.resolve()
-    }, {passive: true, once: true})
+  return new Promise((resolve, reject) => {
+    if(Dialog.isBusy)
+      Dialog.addOnceListener('dialogHide', () => 
+        resolve(window.paused = false)
+      )
+  })
   // do something...
 } // listen to user's click event, resolve to continue, reject to back to title.
   // remember to removeEventListener

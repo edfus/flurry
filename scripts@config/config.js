@@ -12,7 +12,7 @@
   BackgroundColor = '#f7d9aa', // used in index.html/meta-themeColor, style-background
 
 
-  Version = '1.2.0' + '--dev', //NOTE: 添加功能后记得更改这个
+  Version = '2.3.5' + '--dev', //NOTE: 添加功能后记得更改这个
 
   PerspectiveCameraSetting = {
       fieldOfView: 60,
@@ -76,10 +76,11 @@
 }
 
 {
-  class Dialog extends HTMLElement {
+  window.Dialog = class Dialog extends HTMLElement {
     #title = null;
     #paragraphs = null;
     #shadowTree = null;
+
     constructor() {
       super();
       this.#title = document.createElement('H3');
@@ -89,44 +90,93 @@
       this.#paragraphs.part = 'paragraphs';
       // The result must not have attributes
     }
-    showBasic () {
-      window.paused = true;
-      this.classList.add('dialog')
-      this.#shadowTree = this.attachShadow({mode: 'closed'});
-      this.append(this.#title, this.#paragraphs)
-      setTimeout(() => this.classList.add('active'), 300)
-    }
-    hide () {
-      window.paused = false;
-      this.classList.remove('active'); // window
-      setTimeout(()=>this.remove(), 500);
-    }
-    connectedCallback() {
-      window.dialog.busy = true;
-      this.show();
-      window.dialog.observer.dispatchEvent(new CustomEvent("dialogShow", {}))
-    }
-    disconnectedCallback() {
-      window.dialog.observer.dispatchEvent(new CustomEvent("dialogHide", {}))
-      window.dialog.busy = false;
-    }
-    append(...HTMLElements) {
-      HTMLElements.forEach(e => this.#shadowTree.append(e))
-    }
+
     /**
      * @param {string} str
      */
-    set title (str) {
+    set title (str = '') {
       this.#title.textContent = str
     }
+
     /**
      * @param {Array<string} arr
      */
-    set paragraphs (arr) {
+    set paragraphs (arr = ['']) {
+      if(!Array.isArray(arr)){
+        if(typeof arr === "string")
+          arr = [arr];
+        else if(arr.length || arr[Symbol.iterator])
+          arr = Array.from(arr);
+          // arrayLike: with length or [Symbol.iterator]
+        else arr = [arr];
+      }
       this.#paragraphs.innerHTML = arr.reduce((accumulator, newP) => 
         accumulator += `<p part="paragraph">${newP}</p>`
-      )
+      , '') // The second parameter is for initial value.
       // Failed to set the 'outerHTML' property on 'Element': This element's parent is of type '#document-fragment', which is not an element node.
+    }
+
+    showBasic () {
+      this.classList.add('dialog')
+      this.#shadowTree = this.attachShadow({mode: 'closed'});
+      this.append(this.#title, this.#paragraphs)
+      this.classList.add('active')
+      Dialog.newEvent("dialogShow")
+    }
+
+    hide () {
+      this.classList.add('hide');
+      Dialog.newEvent("dialogHide")
+      this.addEventListener("animationend", () => {
+        this.remove()
+      }, {passive: true, once: true})
+    }
+
+    connectedCallback() {
+      Dialog.#busy = true;
+      Dialog.newEvent("dialogAdd")
+      this.show ? this.show() : this.showBasic(); // show, not showBasic 
+    }
+
+    disconnectedCallback() {
+      Dialog.#busy = false;
+      Dialog.newEvent("dialogRemove")
+    }
+    
+    append(...HTMLElements) {
+      HTMLElements.forEach(e => this.#shadowTree.append(e))
+    }
+
+    newEvent (name) {
+      this.dispatchEvent(new CustomEvent(name))
+    }
+
+    addOnceListener (eventName, callback) {
+      this.addEventListener(eventName, callback, {passive: true, once: true})
+    }
+
+    static #observer = document.createElement('i');
+
+    static #busy = false;
+
+    static get isBusy () {
+      return Dialog.#busy;
+    }
+
+    static newEvent (name) {
+      Dialog.#observer.dispatchEvent(new CustomEvent(name))
+    }
+
+    static addOnceListener (eventName, callback) {
+      Dialog.#observer.addEventListener(eventName, callback, {passive: true, once: true})
+    }
+
+    static addEventListener (eventName, callback) {
+      Dialog.#observer.addEventListener(eventName, callback, {passive: true})
+    }
+
+    static removeEventListener (eventName, callback) {
+      Dialog.#observer.removeEventListener(eventName, callback)
     }
   }
 
@@ -148,27 +198,27 @@
       this.showBasic();
       this.append(this.#confirmButton, this.#rejectButton)
   
-      this.#confirmButton.addEventListener('click', (event) => {
+      this.#confirmButton.addEventListener('click', event => {
           console.info('Confirm: ' + this.#confirmButton.innerText)
-          this.dispatchEvent(new CustomEvent("confirm", {}));
+          this.newEvent("confirm");
           this.hide();
         }, {passive: true, once: true})
-      this.#rejectButton.addEventListener('click', (event) => {
-          console.info('Confirm: rejected')
-          this.dispatchEvent(new CustomEvent("reject", {}));
+      this.#rejectButton.addEventListener('click', event => {
+          console.info('Confirm: rejected');
+          this.newEvent("reject");
           this.hide();
         }, {passive: true, once: true})
     }
     /**
      * @param {string} str
      */
-    set confirmText (str) {
+    set confirmText (str = 'Yes') {
       this.#confirmButton.textContent = str
     }
     /**
      * @param {string} str
      */
-    set rejectText (str) {
+    set rejectText (str = 'cancel') {
       this.#rejectButton.textContent = str
     }
   }
@@ -192,7 +242,7 @@
       // console.assert(this.constructor.prototype.show !== this.show) // failed
       this.showBasic();
       this.append(this.#okButton)
-      this.#okButton.addEventListener('click', (event) => {
+      this.#okButton.addEventListener('click', event => {
         this.hide();
         }, {passive: true, once: true})
       
@@ -204,15 +254,10 @@
     /**
      * @param {number} num
      */
-    set msToHide (num) {
+    set msToHide (num = 200) {
       this.#msToHide = num;
     }
   }
-  window.dialog = {
-    observer: document.createElement('i'),
-    // Object.create(HTMLElement.prototype, {}), // Illegal invocation
-    busy: false
-  };
   window.customElements.define('confirm-dialog', MyConfirm);
   window.customElements.define('error-dialog', MyError);
   /**
@@ -223,7 +268,7 @@
    * @param {string} rejectText
    * @return {Promise<boolean>} 
    */
-  window.dialog.newConfirm = async function (title, paragraphs, confirmText, rejectText) {
+  Dialog.newConfirm = async function (title, paragraphs, confirmText, rejectText) {
     let confirmDialog = document.createElement('confirm-dialog');
     confirmDialog.title = title;
     confirmDialog.paragraphs = paragraphs;
@@ -231,13 +276,13 @@
     confirmDialog.rejectText = rejectText;
 
     return new Promise(resolve => {
-      confirmDialog.addEventListener('confirm', ()=>resolve(true), {passive: true, once: true});
-      confirmDialog.addEventListener('reject', ()=>resolve(false), {passive: true, once: true});
+      confirmDialog.addOnceListener('confirm', ()=>resolve(true));
+      confirmDialog.addOnceListener('reject', ()=>resolve(false));
 
-      if(window.dialog.busy) // 已有另外的dialog显示
-        window.dialog.observer.addEventListener('dialogHide', () => {
-            document.body.append(confirmDialog);
-          })
+      if(Dialog.isBusy) // 已有另外的dialog显示
+        Dialog.addOnceListener('dialogHide', () => 
+            document.body.append(confirmDialog)
+          )
       else document.body.append(confirmDialog);
     })
   }
@@ -245,7 +290,7 @@
    * throw an error to user
    * @param {*} args 
    */
-  window.dialog.newError = function(...args) {
+  Dialog.newError = function(...args) {
     let errorDialog = document.createElement('error-dialog')
 
     let { [args.length - 1]: lastParam, length: len } = args; // reminder
@@ -257,13 +302,17 @@
       errorDialog.paragraphs = args
     }
     
-    if(window.dialog.busy) // 已有另外的dialog显示
-        window.dialog.observer.addEventListener('dialogHide', () => {
-            document.body.append(errorDialog);
-          })
+    if(Dialog.isBusy) // 已有另外的dialog显示
+      Dialog.addOnceListener('dialogHide', () => 
+            document.body.append(errorDialog)
+          )
     else document.body.append(errorDialog);
     console.error.apply(this, arguments);
   };
+
+  Dialog.addEventListener('dialogShow', () => {
+    window.paused = true;
+  })
 
   window.existsCookie = value => document.cookie.includes(value)
   /**
