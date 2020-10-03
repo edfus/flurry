@@ -34,7 +34,7 @@
       // });
       // setTimeout(() => audio.play())
 
-    
+    /* class AudioPlayer - BEGIN */
     class AudioPlayer {
       #availableList = {};
       #intro = '';
@@ -234,7 +234,8 @@
           )
       }
     }
-    const newMessage = (message_obj) => {
+    /* class AudioPlayer - END */
+    const newMessage = message_obj => {
       const defaultMessage = {
         isError: false,
         isEvent: false,
@@ -244,64 +245,70 @@
       return Object.assign(defaultMessage, message_obj);
     }
 
-    const audioPlayer = new AudioPlayer();
-
     onmessage = message => {
       const [functionName, ...vars] = message.data;
       audioPlayer[functionName].apply(audioPlayer, vars);
     }
+
+    const audioPlayer = new AudioPlayer();
   }
 
   if("indexedDB" in window && "Worker" in window){
-    const worker = new Worker(URL.createObjectURL(new Blob([`(${work})()`], {type: 'application/javascript'})), { type: 'module' });
-    const assignWork = (functionName, ...vars) => {
-      worker.postMessage([
-        functionName,
-        ...vars
-      ])
-    }
+    class GlobalAudioPlayer {
+      #songPlaying = '';
+      #worker = null;
+      constructor () {
+        this.#worker = this.#newWorker(work);
+        this.#worker.onmessage = this.#onmessage;
+      }
 
-    let songPlaying = '';
+      #newWorker (workerFunction) {
+        return new Worker(URL.createObjectURL(new Blob([`(${workerFunction})()`], {type: 'application/javascript'})), { type: 'module' });
+      }
 
-    worker.onmessage = message => {
-      if(message.data.isError){
-        switch(message.data.name){
-          case 'saveDataModeOn':
-            // using default confirm method blocks script execution but setTimeout continues (^^;)
-            !existsCookie('rejectedForceLoad=true') && 
-              newConfirm("Your device is on lite mode", ["Downloading audio is paused to prevent data charges."], "Download anyway", "cancel").then(result => 
-                result === true
-                ? (assignWork("forceLoad"), assignWork("loadAll"))
-                : setCookie("rejectedForceLoad=true", 1)
-              ) || console.info('Cookie: rejectedForceLoad=true')
-            return ;
-          case 'exception':
-            return ;
-          case 'responseNotOk':
-            return dialog.newError('📶 Network Error', message.data.message, 15000);
-          case 'indexDB':
-            dialog.newError('can\' access indexDB😨', message.data.message)
-            return ;
-        }
-      } else if(message.data.isEvent){
-        switch(message.data.name){
-          case 'newAudioPlaying':
-            return;
-          case 'responseNotOk':
-            return;
+      #onmessage (message) {
+        if(message.data.isError){
+          switch(message.data.name){
+            case 'saveDataModeOn':
+              // using default confirm method blocks script execution but setTimeout continues (^^;)
+              !existsCookie('rejectedForceLoad=true') && 
+                newConfirm("Your device is on lite mode", ["Downloading audio is paused to prevent data charges."], "Download anyway", "cancel").then(result => 
+                  result === true
+                  ? (this.#assignWork("forceLoad"), this.#assignWork("loadAll"))
+                  : setCookie("rejectedForceLoad=true", 1)
+                ) || console.info('Cookie: rejectedForceLoad=true')
+              return ;
+            case 'exception':
+              return ;
+            case 'responseNotOk':
+              return dialog.newError('📶 Network Error', message.data.message, 15000);
+            case 'indexDB':
+              dialog.newError('can\' access indexDB😨', message.data.message)
+              return ;
+          }
+        } else if(message.data.isEvent){
+          switch(message.data.name){
+            case 'newAudioPlaying':
+              return;
+          }
         }
       }
+
+      #assignWork (functionName, ...vars) {
+        this.#worker.postMessage([
+          functionName,
+          ...vars
+        ])
+      }
+
+      get songPlaying () {
+        return this.#songPlaying;
+      }
+
+      // ...
+
     }
-    window.songPlayer = {
-      getSongPlaying: ()=>songPlaying,
-      playNext: ()=>{},
-      playIntro: ()=>{},
-      playTheme: ()=>{},
-      playSoundEffect: soundEffectName => {},
-      playDeadSound: ()=>{},
-      stop_instantly: ()=>{},
-      stop_fadeOut: ()=>{}
-    }
+    window.audioPlayer = new GlobalAudioPlayer();
   } else {
     dialog.newError('can\' access indexDB😨')
   }

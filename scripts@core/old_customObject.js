@@ -117,9 +117,7 @@ class Airplane {
     this.propeller.rotation.x += speed; // 螺旋桨旋转速度
   }
   set defaultPropellerSpeed(newSpeed) { // 对每个Aiplane类的对象都可单独设置默认旋转速度
-    if(!isNaN(newSpeed)) // NaN: Not a Number
-      this.#defaultPropellerSpeed = newSpeed;
-    else throw 'Airplane Setter: new speed is Not a Number';
+      this.#defaultPropellerSpeed = Number(newSpeed);
   }
   get defaultPropellerSpeed() {
     return this.#defaultPropellerSpeed;

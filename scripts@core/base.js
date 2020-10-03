@@ -1,13 +1,15 @@
-class flurry {
+class game {
   #pi = Math.PI; // private field
   #scene = null;
   #camera = null;
   #songPlayer = window.songPlayer;
+  #paused = false;
   constructor() { 
     // 创建场景、相机、渲染器
   } 
   init() {
     // 创建灯光、隧道等静态物体
+    // trigger an event
   }
   #update () { // private field function
      // renderloop在外界调用，以便更好的执行暂停等
@@ -15,7 +17,14 @@ class flurry {
   stop_audio() {
     return songPlayer.stop_instantly();
   }
-  // example
+  pause () {
+    this.#paused = true;
+  }
+
+  get paused() {
+    return this.#paused;
+  }
+  // examples
   #createPointCloud(size, transparent, opacity, vertexColors, sizeAttenuation, color) {
     let geometry = new THREE.Geometry();
     const material = new THREE.PointCloudMaterial({
@@ -42,4 +51,22 @@ class flurry {
     }
     return new THREE.PointCloud(geometry, material);
   }
+  #onASameLine (THREEobj_arr) {
+    const intersects = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize())
+                                .intersectObjects(THREEobj_arr);
+    if (intersects.length > 0) {
+        intersects[0].object.material.transparent = true;
+        intersects[0].object.material.opacity = 0.1;
+    }
+  }
+  #flyControls () {
+    //TODO: 调查此，检查其是否符合我们的需求
+    var flyControls = new THREE.FlyControls(camera);
+    flyControls.movementSpeed = 25;
+    flyControls.domElement = window.config.getContainer();
+    flyControls.rollSpeed = Math.PI / 24;
+    flyControls.autoForward = true;
+  }
 }
+
+window.game = new game();

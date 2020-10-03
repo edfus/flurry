@@ -260,8 +260,24 @@ pauseButton.addEventListener('click',()=>{
   // do something...
   songPlayer.stop_instantly()
 }, {passive: true})
+*/
+
+document.addEventListener("visibilitychange", () => {
+  switch(document.visibilityState) {
+    case 'visible' : 
+      break;
+    case 'hidden' : window.paused = true; 
+      break;
+    default: ; 
+  }
+}, {passive: true});
+
+window.addEventListener("pagehide", event => { // safari
+  if (event.persisted) {
+    /* the page isn't being discarded, so it can be reused later */
+  }
+}, {passive: true});
 
 window.addEventListener('unload', ()=>{
   // restore the score
 }, {passive: true, once: true})
-*/

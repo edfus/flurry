@@ -247,12 +247,16 @@
    */
   window.dialog.newError = function(...args) {
     let errorDialog = document.createElement('error-dialog')
-    if(typeof args[args.length - 1] === 'number'){
-      errorDialog.msToHide = args[args.length - 1];
-      errorDialog.paragraphs = args.slice(0, args.length - 1) // 1 or 2?
+
+    let { [args.length - 1]: lastParam, length: len } = args; // reminder
+
+    if(typeof lastParam === 'number'){
+      errorDialog.msToHide = lastParam;
+      errorDialog.paragraphs = args.slice(0, len - 1)
     } else {
       errorDialog.paragraphs = args
     }
+    
     if(window.dialog.busy) // 已有另外的dialog显示
         window.dialog.observer.addEventListener('dialogHide', () => {
             document.body.append(errorDialog);
