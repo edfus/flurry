@@ -67,6 +67,13 @@ class game {
     flyControls.rollSpeed = Math.PI / 24;
     flyControls.autoForward = true;
   }
+  #cameraHelper () { 
+    scene.add(new THREE.CameraHelper(shadowLight.shadow.camera));
+  }
+  #collisionDetect (obj_vector3) {
+    return airplane.mesh.position.clone().sub(obj_vector3).length - this.#tolerance;
+    // clone is a must
+  }
 }
 
 window.game = new game();

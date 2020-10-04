@@ -272,7 +272,7 @@
             case 'saveDataModeOn':
               // using default confirm method blocks script execution but setTimeout continues (^^;)
               !existsCookie('rejectedForceLoad=true') && 
-                newConfirm("Your device is on lite mode", ["Downloading audio is paused to prevent data charges."], "Download anyway", "cancel").then(result => 
+                Dialog.newConfirm("Your device is on lite mode", ["Downloading audio is paused to prevent data charges."], "Download anyway", "cancel").then(result => 
                   result === true
                   ? (this.#assignWork("forceLoad"), this.#assignWork("loadAll"))
                   : setCookie("rejectedForceLoad=true", 1)

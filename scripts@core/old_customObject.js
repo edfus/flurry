@@ -1,11 +1,8 @@
 // 调用方法： new AirPlane();
 import colors from '../scripts@config/colors.js';
 
-const numOfCloudsInSky = 20,
-      rotationSpeedOfPropeller = .6;
-
 class Airplane {
-  #defaultPropellerSpeed = rotationSpeedOfPropeller; 
+  #defaultPropellerSpeed = config.defaultPropellerSpeed; 
   // #varName : private field，仅能通过class的内置函数访问
   // 不能通过如airplane.#defaultPropellerSpeed的方式访问（注意airplane开头为小写，表示变量）
   constructor() {
@@ -156,7 +153,7 @@ class Cloud {
 class Sky {
   constructor() {
     this.mesh = new THREE.Object3D();
-    this.nClouds = numOfCloudsInSky;
+    this.nClouds = config.numOfCloudsInSky;
     this.clouds = [];
     const stepAngle = Math.PI * 2 / this.nClouds;
     for (let i = 0, newCloud = {}; i < this.nClouds; i++) {

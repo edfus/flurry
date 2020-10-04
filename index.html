@@ -70,9 +70,6 @@
 						config.loading_timeOut = 100;
 					}
 				else setCookie("loaded=true", 5)
-				// temp
-				if(location.search.includes('app=1'))
-					setTimeout(() => Dialog.newConfirm("Welcome!", ['Version: ' + config.version,"userAgent: ↓", navigator.userAgent], "Sure", "ok"), 1000)
 				</script>
 				<svg id="circular" viewBox="25 25 50 50">
 					<circle id="path" cx="50" cy="50" r="20" fill="none" stroke-width="2" stroke-miterlimit="10"/>

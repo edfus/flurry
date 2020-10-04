@@ -94,7 +94,7 @@ class UserInteraction {
 
   touch_removeListeners () {
     // document.removeEventListener('touchstart', #touch_startCallback);
-    document.removeEventListener('touchmove', this.#touch_endCallback);
+    document.removeEventListener('touchmove', this.#touch_moveCallback);
     // document.removeEventListener('touchend', this.#touch_endCallback);
   }
 
@@ -151,7 +151,6 @@ class UserInteraction {
     // document.removeEventListener('mousedown', this.#mouse_downCallback);
     document.removeEventListener('mousemove', this.#mouse_moveCallback);
     // document.removeEventListener('mouseup', this.#mouse_upCallback);
-    console.log('ascasc')
   }
 
   #mouse_downCallback = (that => {
@@ -213,32 +212,66 @@ class UserInteraction {
   }
 }
 
+// Cannot access 'whenPaused' before initialization, this: undefined
+// so using es6 class.
+class WhenPaused {
+  divideX = 6;
+
+  constructor() {
+
+  }
+  #speed_sea = config.speed_sea / this.divideX;
+  #speed_sky = config.speed_sky / this.divideX;
+
+  renderLoop = (that => {
+    return () => {
+      updatePlane();
+      updateBackground(that.#speed_sea, that.#speed_sky);
+      renderer.render(scene, camera);
+      requestAnimationFrame(that.renderLoopPtr); // ptr, invoked by window so closure necessary
+    };
+  })(this)
+
+  start () {
+    userInteraction.removeListeners();
+    this.renderLoopPtr = this.renderLoop;
+    airplane.defaultPropellerSpeed /= this.divideX;
+    this.renderLoop();
+  }
+  end () {
+    userInteraction.addListeners();
+    airplane.defaultPropellerSpeed = config.defaultPropellerSpeed;
+    whenPaused.renderLoopPtr = renderLoop;
+  }
+}
+
 const userInteraction = new UserInteraction();
 
+const whenPaused = new WhenPaused();
 
 //INIT THREE JS, SCREEN AND MOUSE EVENTS
 window.addEventListener('load', ()=>{
   // HANDLE MOUSE EVENTS
+  
+  // loading: 0 ms
+
   createScene();
   createLights();
 
   createObjects();
 
+  // loading: 157.890869140625 ms
+
   config.gameStartCallback();
 
-  userInteraction.addListeners();
+  // loading: 159.793701171875 ms
 
-  function renderLoop_whenPaused() {
-    updatePlane();
-    updateBackground();
-    renderer.render(scene, camera);
-    requestAnimationFrame(renderLoopPtr); // ptr
-  }
+  userInteraction.addListeners(); 
 
-  let renderLoopPtr = renderLoop_whenPaused;
+  // loading: 160.85498046875 ms
 
-  (function renderLoop(){
-    if(!window.paused){ //TODO: paused func //FIX: requestAnimationFrame
+  (function renderLoop() { // immediate function前不加;会出各种各样奇奇怪怪的错
+    if(!window.paused){
       //TODO: if(crashed)
       updatePlane();
       updateBackground();
@@ -249,22 +282,19 @@ window.addEventListener('load', ()=>{
     } else {
       console.info('RenderLoop: game paused');
 
-      userInteraction.removeListeners();
-
-      renderLoopPtr = renderLoop_whenPaused;
-      renderLoop_whenPaused();
+      whenPaused.start();
 
       waitForUserContinue()
         .then(() => {
-          userInteraction.addListeners();
-          renderLoopPtr = renderLoop;
+          whenPaused.end();
           // back to renderLoop
         })
         .catch(() => 
           backToTitle().then(()=>requestAnimationFrame(renderLoop))
         )
     }
-  })() // (function x(){})(): 一种直接调用函数的技巧，可在函数申明后直接调用它。
+  })() // (function x(){})(): 一种直接调用函数的技巧，可在函数申明后直接调用它。\
+  // loading: 386.660888671875 ms
 }, {passive: true});
 
 function createScene() {
@@ -387,13 +417,13 @@ function updatePlane() {
   airplane.mesh.rotation.z = (targetY - airplane.mesh.position.y) * 0.0128; // 飞机与x轴角度随鼠标上下移动而变化
   airplane.mesh.rotation.x = (airplane.mesh.position.y - targetY) * 0.0064; // 飞机与z轴角度随鼠标上下移动而变化
   // 0.1 0.0128 0.0064的选取机制不大清楚……
-  airplane.propellerSpin(.6); // 螺旋桨旋转(默认速度0.6)
+  airplane.propellerSpin(); // 螺旋桨旋转(默认速度0.6)
 }
 
-function updateBackground() {
+function updateBackground(speed_sea = config.speed_sea, speed_sky = config.speed_sky) {
   sea.moveWaves(); // 海浪
-  sea.move(config.speed_sea);
-  sky.move(config.speed_sky); // 大海的移动 - 天空的移动
+  sea.move(speed_sea);
+  sky.move(speed_sky); // 大海的移动 - 天空的移动
 }
 
 function updateCameraFov(){

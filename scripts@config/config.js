@@ -58,7 +58,9 @@
   },
 
   RotationSpeed_Sea = .005,
-  RotationSpeed_Sky = .01
+  RotationSpeed_Sky = .01,
+  NumOfCloudsInSky = 20,
+  RotationSpeed_Propeller = .6
 
   ;
 
@@ -71,7 +73,9 @@
       getContainer: GetContainer,
       gameStartCallback: GameStartCallback,
       speed_sea: RotationSpeed_Sea,
-      speed_sky: RotationSpeed_Sky
+      speed_sky: RotationSpeed_Sky,
+      defaultPropellerSpeed: RotationSpeed_Propeller,
+      numOfCloudsInSky: NumOfCloudsInSky
   }
 }
 
