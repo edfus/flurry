@@ -182,6 +182,26 @@
     static removeEventListener (eventName, callback) {
       Dialog.#observer.removeEventListener(eventName, callback)
     }
+    /**
+     * 向document添加dialog
+     * @static
+     * @param {Dialog} newDialog
+     */
+    // this.#observer.dataset.queue = [];
+    // Note that the HTMLElement.dataset property is a DOMStringMap
+    static #queue;
+    static append (newDialog) {
+      if(this.#queue === undefined){ // init
+        this.#queue = [];
+        this.addEventListener('dialogRemove', () => {
+          if(this.#queue.length)
+            document.body.append(this.#queue.shift())
+        })
+      }
+      if(this.isBusy)
+        this.#queue.push(newDialog)
+      else document.body.append(newDialog)
+    }
   }
 
   class MyConfirm extends Dialog {
@@ -283,11 +303,7 @@
       confirmDialog.addOnceListener('confirm', ()=>resolve(true));
       confirmDialog.addOnceListener('reject', ()=>resolve(false));
 
-      if(Dialog.isBusy) // 已有另外的dialog显示
-        Dialog.addOnceListener('dialogHide', () => 
-            document.body.append(confirmDialog)
-          )
-      else document.body.append(confirmDialog);
+      Dialog.append(confirmDialog);
     })
   }
   /**
@@ -306,11 +322,7 @@
       errorDialog.paragraphs = args
     }
     
-    if(Dialog.isBusy) // 已有另外的dialog显示
-      Dialog.addOnceListener('dialogHide', () => 
-            document.body.append(errorDialog)
-          )
-    else document.body.append(errorDialog);
+    Dialog.append(errorDialog);
     console.error.apply(this, arguments);
   };
 
