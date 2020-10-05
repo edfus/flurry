@@ -92,6 +92,9 @@
 							Dialog.newError('Loading takes too long.😥', 10000)
 						}
 					}, 30000)
+					if(window.matchMedia('screen and (orientation: portrait) and (max-width: 767px)').matches){
+						Dialog.newError('Don\'t forget to change orientation to landscape :）', 5000)
+					}
 				</script>
 		</section>
 		<main id="canvas"></main>

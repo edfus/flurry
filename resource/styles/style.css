@@ -25,15 +25,27 @@ html, body {
   font-size: 16px; /* rem */
 }
 
-@media screen and (min-width: 480px) and (max-width: 824px) {
+@media screen and (min-width: 450px) and (max-width: 824px) {  /* iphone X width: 812, pixel XL: 823 */
   html, body {
     font-size: 14px; /* rem */
   }
 }
 
-@media screen and (max-width: 480px) {
+@media screen and (min-width: 375px) and (max-width: 449px) { /* iphone 6/7/8 375 */
   html, body {
     font-size: 12px; /* rem */
+  }
+}
+
+@media screen and (min-width: 320px) and (max-width: 374px) { /* iphone 6/7/8 375 */
+  html, body {
+    font-size: 11px; /* rem */
+  }
+}
+
+@media screen and (max-width: 319px) { /* iphone 5/SE */
+  .dialog {
+    display: none;
   }
 }
 
@@ -61,10 +73,11 @@ main {
 .dialog {
   position: fixed;
   z-index: 5;
+  width: 30rem;
+  box-sizing: border-box;
   left: calc(50% - 15rem);
   box-shadow: 0px 0px 0px -4px rgba(39,55,74,.25), 0 15px 40px 10px rgba(39,55,74,.25);
   padding: 0.625rem;
-  width: 30rem;
   border-radius: 0.25rem;
   background: #fff;
   opacity: 0;

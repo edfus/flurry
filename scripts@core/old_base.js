@@ -13,7 +13,7 @@ import {Airplane, Sky, Sea} from '../scripts@core/old_customObject.js';
   console.info(`%c Version %c ${config.version} `, titleStyle, `${subStyle}: #F5986E;`)
   console.info(`%c Environment %c ${mode[0]} `, titleStyle, `${subStyle}: ${mode[1]};`)
   console.info(`%c Browser %c ${ua.slice(ua.lastIndexOf(') ') + 2, ua.length)} `, titleStyle, `${subStyle}: #1475b2;`)
-  console.info(`%c Platform %c ${ua.match(/(?<=\().*?(?=;)/)[0]} `, titleStyle, `${subStyle}: #1475b2;`)
+  console.info(`%c Platform %c ${ua.match(/(?<=\().*?(?=\))/)[0]} `, titleStyle, `${subStyle}: #1475b2;`)
 }
 ////////////////////////////////
 
@@ -215,39 +215,53 @@ class UserInteraction {
 // Cannot access 'whenPaused' before initialization, this: undefined
 // so using es6 class.
 class WhenPaused {
-  divideX = 6;
-
+  static #divideX = 6;
+  static #renderLoopPtr = null; // function ptr
+  // static #renderLoopPtr = this.#renderLoop;
+  // Cannot read private member #renderLoop from an object whose class did not declare it
   constructor() {
 
   }
-  #speed_sea = config.speed_sea / this.divideX;
-  #speed_sky = config.speed_sky / this.divideX;
 
-  renderLoop = (that => {
-    return () => {
+  static #speed_sea = config.speed_sea / this.#divideX;
+  static #speed_sky = config.speed_sky / this.#divideX;
+
+  static #renderLoop = (that => 
+    () => {
       updatePlane();
       updateBackground(that.#speed_sea, that.#speed_sky);
       renderer.render(scene, camera);
-      requestAnimationFrame(that.renderLoopPtr); // ptr, invoked by window so closure necessary
-    };
-  })(this)
+      requestAnimationFrame(that.#renderLoopPtr); // ptr, invoked by window so closure necessary
+    }
+  )(this) // this: WhenPaused, whether renderLoop is a static method or not
 
-  start () {
+  static start () {
     userInteraction.removeListeners();
-    this.renderLoopPtr = this.renderLoop;
-    airplane.defaultPropellerSpeed /= this.divideX;
-    this.renderLoop();
+    this.#renderLoopPtr = this.#renderLoop;
+    airplane.defaultPropellerSpeed /= this.#divideX;
+    this.#renderLoop();
   }
-  end () {
+  static backTo (newRenderLoop) {
     userInteraction.addListeners();
     airplane.defaultPropellerSpeed = config.defaultPropellerSpeed;
-    whenPaused.renderLoopPtr = renderLoop;
+    this.#renderLoopPtr = newRenderLoop; // 
   }
 }
 
 const userInteraction = new UserInteraction();
 
-const whenPaused = new WhenPaused();
+let inQueue = false;
+function throttleLog () {
+  if(inQueue)
+    return;
+  else {
+    setTimeout(() => {
+      console.log.apply(this, arguments);
+      inQueue = false;
+    }, 500)
+    inQueue = true;
+  }
+}
 
 //INIT THREE JS, SCREEN AND MOUSE EVENTS
 window.addEventListener('load', ()=>{
@@ -261,6 +275,10 @@ window.addEventListener('load', ()=>{
   createObjects();
 
   // loading: 157.890869140625 ms
+
+  config.getContainer().appendChild(renderer.domElement);
+
+  window.addEventListener('resize', () => userInteraction.resizeCallback(), {passive: true});
 
   config.gameStartCallback();
 
@@ -282,18 +300,19 @@ window.addEventListener('load', ()=>{
     } else {
       console.info('RenderLoop: game paused');
 
-      whenPaused.start();
+      WhenPaused.start();
 
       waitForUserContinue()
         .then(() => {
-          whenPaused.end();
-          // back to renderLoop
+          WhenPaused.backTo(renderLoop);
+          // can't access immediate function renderLoop outside it
         })
-        .catch(() => 
+        .catch(err => {
+          // console.error(err)
           backToTitle().then(()=>requestAnimationFrame(renderLoop))
-        )
+        })
     }
-  })() // (function x(){})(): 一种直接调用函数的技巧，可在函数申明后直接调用它。\
+  })()
   // loading: 386.660888671875 ms
 }, {passive: true});
 
@@ -331,10 +350,6 @@ function createScene() {
   renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true }); // antialias: 抗s锯齿
   renderer.setSize(userInteraction.WIDTH, userInteraction.HEIGHT); 
   renderer.shadowMap.enabled = true;
-
-  config.getContainer().appendChild(renderer.domElement);
-
-  window.addEventListener('resize', () => userInteraction.resizeCallback(), {passive: true});
 }
 
 // LIGHTS
