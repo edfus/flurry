@@ -1,10 +1,9 @@
 {
   const work = () => {
-    const cdnName = 'https://cdn.jsdelivr.net/gh/FML-MLS/Flurry';
     const songs = [
       {
         name: "Intro",
-        url: `${cdnName}/resource/audio/Loner%20Soundtrack/0_Intro.mp3`,
+        url: `resource/audio/Loner%20Soundtrack/0_Intro.mp3`,
         type: "audio/mpeg",
         role: 'intro',
         index: -1

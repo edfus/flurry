@@ -3,7 +3,7 @@ const version = "2.3.6--dev";
 const cacheName = "cache-" + version;
 const cacheResources = [
   `/`, 
-  `https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/lib/three.min.js`
+  `https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js`
 ];
 const DLC = [
 
@@ -60,7 +60,7 @@ self.addEventListener('fetch', e => {
           }
           let request = e.request.clone();
           return await fetch(request).then(async response=>{
-            if (!response || response.status !== 200 || response.type !== "basic" ? ( response.type !== "cors" ? true : hostname !== "cdn.jsdelivr.net" ) : false ) {
+            if (!response || response.status !== 200 || response.type !== "basic" ? ( response.type !== "cors" ? true : hostname !== "cdnjs.cloudflare.com" ) : false ) {
               return response;
             }
             if(!noCache && request.method === "GET"){

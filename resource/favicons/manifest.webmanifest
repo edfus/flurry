@@ -1,22 +1,22 @@
 {
     "name": "flurry.",
     "short_name": "Flurry",
-    "start_url": "https://flurry.ml/?app=1",
-    "scope": "https://flurry.ml/",
+    "start_url": "/?app=1",
+    "scope": "/",
     "icons": [
         {
-            "src": "https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/maskable-192.png",
+            "src": "/resource/favicons/maskable-192.png",
             "sizes": "192x192",
             "type": "image/png",
             "purpose":"maskable"
         },
         {
-            "src": "https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/favicon-192.jpg",
+            "src": "/resource/favicons/favicon-192.jpg",
             "sizes": "192x192",
             "type": "image/png"
         },
         {
-            "src": "https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/favicon-512.jpg",
+            "src": "/resource/favicons/favicon-512.jpg",
             "sizes": "512x512",
             "type": "image/png"
         }
@@ -28,9 +28,9 @@
     "shortcuts": [
         {
             "name": "new voyage.",
-            "url": "https://flurry.ml/?app=1",
+            "url": "/?app=1",
             "icons": [
-                {"src": "https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/start.png", "sizes": "192x192"}
+                {"src": "/resource/favicons/start.png", "sizes": "192x192"}
             ]
         }
     ]     

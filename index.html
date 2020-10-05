@@ -2,8 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin="anonymous">
-		<link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+		<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin="anonymous">
 		<!-- meta -->
 		<title>The Aviator</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=auto">
@@ -11,13 +10,13 @@
 		<meta name="google" content="notranslate">
 		<meta name="format-detection" content="telphone=no, email=no">
 		<!-- Preload -->
-		<link rel="modulepreload" href="scripts@core/base.js">
-		<link rel="modulepreload" href="scripts@miscellaneous/webWorker.js">
-  	<link rel="prefetch" href="scripts@miscellaneous/webWorker.js" as="worker" crossorigin="anonymous">
+		<link rel="modulepreload" href="/scripts@core/base.js">
+		<link rel="modulepreload" href="/scripts@miscellaneous/webWorker.js">
+		<link rel="modulepreload" href="https://www.googletagmanager.com/gtag/js?id=UA-179239422-1">		
 		<!-- scripts -->
-		<script src="scripts@config/config.js"></script>
-		<script async src="scripts@miscellaneous/webWorker.js"></script>
-		<script type="text/javascript" src="//cdn.jsdelivr.net/gh/FML-MLS/Flurry/lib/three.min.js"></script>
+		<script src="/scripts@config/config.js"></script>
+		<script async src="/scripts@miscellaneous/webWorker.js"></script>
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js"></script>
 		<script>try{THREE}catch(e){let script = document.createElement('SCRIPT'); script.src = "lib/three.min.js"; document.head.append(script)}</script>
 		<script id="temp">
 			let script = document.createElement('SCRIPT');
@@ -40,7 +39,7 @@
 			}
 		</script>
 		<!-- Google Analytics -->
-		<script async src="https://www.googletagmanager.com/gtag/js?id=UA-179239422-1"></script>
+		<script type="module" async src="https://www.googletagmanager.com/gtag/js?id=UA-179239422-1"></script>
 		<script>
 			window.dataLayer = [
 				['js', new Date()],
@@ -48,14 +47,14 @@
 			];
 		</script>
 		<!-- favicons -->
-		<link rel="icon" href="favicon.ico">
+		<link rel="icon" href="/favicon.ico">
 		<meta name="theme-color" content="#f7d9aa">
-		<link rel="mask-icon" href="https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/safari-pinned-tab.svg">
-		<link rel="apple-touch-icon" sizes="180x180" href="https://cdn.jsdelivr.net/gh/Flurry/resource/favicons/apple-touch-icon-180.png">
-		<link rel="manifest" href="https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/manifest.webmanifest">
-		<meta name="msapplication-config" content="https://cdn.jsdelivr.net/gh/FML-MLS/Flurry/resource/favicons/browserconfig.xml">
+		<link rel="mask-icon" href="/resource/favicons/safari-pinned-tab.svg">
+		<link rel="apple-touch-icon" sizes="180x180" href="/resource/favicons/apple-touch-icon-180.png">
+		<link rel="manifest" href="/resource/favicons/manifest.webmanifest">
+		<meta name="msapplication-config" content="/resource/favicons/browserconfig.xml">
 		<!-- styles -->
-		<link href="resource/styles/style.css" rel="stylesheet" type="text/css">
+		<link href="/resource/styles/style.css" rel="stylesheet" type="text/css">
 	</head>
 	<body>
 		<section id="loading-section">
@@ -93,7 +92,7 @@
 						}
 					}, 30000)
 					if(window.matchMedia('screen and (orientation: portrait) and (max-width: 767px)').matches){
-						Dialog.newError('Don\'t forget to change orientation to landscape :）', 5000)
+						Dialog.newError('Don\'t forget to change orientation to landscape <span style="font-family: Roboto,Helvetica Neue,sans-serif">:)</span>', 5000)
 					}
 				</script>
 		</section>
