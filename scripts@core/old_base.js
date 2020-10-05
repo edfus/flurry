@@ -186,7 +186,12 @@ class UserInteraction {
     this.#windowWidth = window.innerWidth;
     renderer.setSize(this.WIDTH, this.HEIGHT);
     camera.aspect = this.WIDTH / this.HEIGHT;
-    camera.updateProjectionMatrix();
+    // camera的aspect应和renderer.setSize的纵横比相同
+    camera.updateProjectionMatrix(); 
+    // you will have to call .updateProjectionMatrix for the changes to take effect.
+    if(config.testMode){
+      config.cameraHelper.update()
+    }
     this.#debounce.triggered = false;
   }
 
@@ -255,8 +260,8 @@ function throttleLog () {
   if(inQueue)
     return;
   else {
+    console.log.apply(this, arguments);
     setTimeout(() => {
-      console.log.apply(this, arguments);
       inQueue = false;
     }, 500)
     inQueue = true;
@@ -340,6 +345,11 @@ function createScene() {
     * far为远平面与透视顶点的距离，默认为2000，应大于near
     */
   Object.assign(camera.position, new THREE.Vector3(0, 100, 200));
+
+  if(config.testMode){
+    config.cameraHelper = new THREE.CameraHelper(camera);
+    scene.add(config.cameraHelper)
+  }
   /*
   *  Object.assign(target, source)
   *  将一个原对象上的属性拷贝到另一个目标对象上，最终结果取两个对象的并集，如果有冲突的属性，则以原对象上属性为主，表现上就是直接覆盖过去
@@ -428,10 +438,9 @@ function createSky() {
 
 function updatePlane() {
   const targetY = normalize(userInteraction.relativePos.y, -.75, .75, 25, 175);
-  airplane.mesh.position.y += (targetY - airplane.mesh.position.y) * 0.1;
+  airplane.mesh.position.y += (targetY - airplane.mesh.position.y) * 0.1; // 每帧向新的目标点飞去1/10的距离。
   airplane.mesh.rotation.z = (targetY - airplane.mesh.position.y) * 0.0128; // 飞机与x轴角度随鼠标上下移动而变化
   airplane.mesh.rotation.x = (airplane.mesh.position.y - targetY) * 0.0064; // 飞机与z轴角度随鼠标上下移动而变化
-  // 0.1 0.0128 0.0064的选取机制不大清楚……
   airplane.propellerSpin(); // 螺旋桨旋转(默认速度0.6)
 }
 
@@ -441,10 +450,12 @@ function updateBackground(speed_sea = config.speed_sea, speed_sky = config.speed
   sky.move(speed_sky); // 大海的移动 - 天空的移动
 }
 
-function updateCameraFov(){
+function updateCameraFov(){ // fov: Field Of View - https://blog.csdn.net/weixin_39675633/article/details/103410983
   camera.fov = normalize(userInteraction.relativePos.x, -1, 1, 40, 80);
+  // 40 到 80范围内，40时画面显示内容最小，80时画面显示内容最多（广角）
+  // 软件模拟的fov不会导致畸变等，可以直接当放大缩小的工具用
   camera.updateProjectionMatrix();
-}
+} 
 /**
  * 根据鼠标相对位置返回映射后的绝对位置（飞机及相机)
  * RP: Relative Position, 取值范围为-1到1

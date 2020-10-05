@@ -15,10 +15,12 @@
   Version = '2.3.5' + '--dev', //NOTE: 添加功能后记得更改这个
 
   PerspectiveCameraSetting = {
-      fieldOfView: 60,
+      fieldOfView: 60, 
+      // Unity中Camera的FOV（默认的垂直方向）设置为多少比较合理呢，怎样做产生的透视失真更小？ - zd304的回答 - 知乎
+      // https://www.zhihu.com/question/395044805/answer/1233585414
       aspectRatio: window.innerWidth / window.innerHeight,
-      nearPlane: 1,
-      farPlane: 10000
+      nearPlane: 1, // 可以看作近端裁剪
+      farPlane: 10000 // 可以看作远端裁剪
   },
 
   GetContainer = () => {
@@ -258,7 +260,7 @@
       this.#okButton = document.createElement('BUTTON');
       this.#okButton.part = 'error-button button';
       this.#okButton.innerText = 'OK';
-      this.title = 'Oops, an error occurred';
+      this.title = 'Oops, an error occurred.';
       // this.prototype.#title: Private field '#title' must be declared in an enclosing class 
     }
     show () {
@@ -340,7 +342,9 @@
   window.setCookie = (value, expireDays) => {
     const date = new Date();
     date.setTime(date.getTime() + Number(expireDays) * 86400000);
-    document.cookie = `${value}; expires=${date.toUTCString()}; HostOnly=true; path=/; SameSite=Strict;`;
-    // ' Secure=true;
+    if(location.protocol !== 'https:' && config.testMode)
+      document.cookie = `${value}; expires=${date.toUTCString()}; HostOnly=true; path=/; SameSite=Strict;`;
+    else 
+      document.cookie = `${value}; expires=${date.toUTCString()}; HostOnly=true; Secure=true; path=/; SameSite=Strict;`;
   }
 }

@@ -8,6 +8,7 @@
   --google-style-loader-white: #eee;
   --confirm-color: #4787ed;
   --error-color: #666;
+  --light-sky-blue: #b3e5fc;
 }
 
 /* latin */
@@ -117,8 +118,12 @@ main {
 	box-shadow: 0px 1px 1px rgba(0,0,0,.1);
 }
 
-::part(button):active, ::part(button):focus {
-	box-shadow: inset 0px 1px 2px rgba(0,0,0,.3);
+@media (pointer: fine) and (hover: hover) {
+  ::part(button):active, ::part(button):focus {
+    box-shadow: none;
+    background-color: var(--light-sky-blue);
+    color: var(--confirm-color);
+  }
 }
 
 ::part(error-button) {
