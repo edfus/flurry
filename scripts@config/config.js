@@ -5,14 +5,14 @@
   // export
   const UseNewBasejs = false,
   
-  TestMode = true,
+  TestMode = location.search.includes('test=1') ? true : false,
 
   themeColor = '#000', // used in , webmanifest
 
   BackgroundColor = '#f7d9aa', // used in index.html/meta-themeColor, style-background
 
 
-  Version = '2.3.5' + '--dev', //NOTE: 添加功能后记得更改这个
+  Version = '4.3.5' + '--dev', //NOTE: 添加功能后记得更改这个
 
   PerspectiveCameraSetting = {
       fieldOfView: 60, 

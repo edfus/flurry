@@ -78,12 +78,6 @@ cloudres:
 
 ---
 
-### Change log
-
-- 09-12 init. 完成基本框架建设，完成团队组织。
-- 09-15 The Aviator part1.js学习完成。
-- 09-
-
 ### Credits
 
 - [蓝飞互娱(kunpo)](https://kunpo.cc/) - [Loner](https://play.google.com/store/apps/details?id=com.kunpo.loner&hl=en_US) (Google Play)
