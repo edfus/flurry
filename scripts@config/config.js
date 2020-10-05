@@ -289,7 +289,7 @@
   /**
    * display a self defined confirm dialog other than browser's default
    * @param {string} title 
-   * @param {Array<string>} paragraphs
+   * @param {string | Array<string>} paragraphs
    * @param {string} confirmText
    * @param {string} rejectText
    * @return {Promise<boolean>} 
