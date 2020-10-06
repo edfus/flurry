@@ -1,9 +1,10 @@
 {
   const work = () => {
+    const host = `https://flurry.ml/`;
     const songs = [
       {
         name: "Intro",
-        url: `resource/audio/Loner%20Soundtrack/0_Intro.mp3`,
+        url: `${host}resource/audio/Loner%20Soundtrack/0_Intro.mp3`,
         type: "audio/mpeg",
         role: 'intro',
         index: -1
@@ -137,9 +138,9 @@
        * @param {string} url 
        * @return {Promise} resolve: arrayBuffer, reject: err
        */
-      async newfetch (url) {
+      async newfetch (url, type) {
         return new Promise((resolve, reject) => {
-          if(this.#forceLoad || navigator.connection && !navigator.connection.saveData){
+          if(this.#forceLoad || (navigator.connection && !navigator.connection.saveData)){
             fetch(
               new Request(url,
                 { method: 'GET',
@@ -149,9 +150,14 @@
                 })
               ).then(response => {
                     if(response.ok)
-                      resolve(response.arrayBuffer()); // can be converted to arrayBuffer directly?
+                      resolve(response.arrayBuffer()); 
                     else reject({name: 'responseNotOk', message: response.url})
                   })
+            /*
+            The Promise returned from fetch() won’t reject on HTTP error status even if the response is an HTTP 404 or 500. 
+            Instead, it will resolve normally (with ok status set to false),
+            and it will only reject on network failure or if anything prevented the request from completing.
+            */
           } else {
             reject({name: 'saveDataModeOn', message: undefined})
           };
@@ -176,7 +182,7 @@
           return new Promise((resolve, reject) => {
             request.onsuccess = e => {
               if(e.target.result === undefined){
-                const loadSourceWithRetry = (retriedTimes) => { // 避免this丢失
+                const loadSourceWithRetry = retriedTimes => { // 避免this丢失
                   this.newfetch(source.url)
                     .then(arrayBuffer => {
                         const store = this.getObjectStore(db, storeName, "readwrite");
@@ -190,12 +196,11 @@
                       })
                     .catch(err => {
                       switch(err.name) {
-                        case 'saveDataModeOn': reject(err);
+                        case 'saveDataModeOn': return reject(err);                           
                         case 'responseNotOk': 
-                          ++retriedTimes > this.#maxRetryTimes 
-                          ? reject(err) 
+                          return ++retriedTimes > this.#maxRetryTimes 
+                          ? reject(err)
                           : setTimeout(() => loadSourceWithRetry(retriedTimes), this.#retryGap)
-                          break ;
                         default: reject({name: 'exception', message: err.message})
                       }
                     })
@@ -265,33 +270,35 @@
         return new Worker(URL.createObjectURL(new Blob([`(${workerFunction})()`], {type: 'application/javascript'})), { type: 'module' });
       }
 
-      #onmessage (message) {
-        if(message.data.isError){
-          switch(message.data.name){
-            case 'saveDataModeOn':
-              // using default confirm method blocks script execution but setTimeout continues (^^;)
-              !existsCookie('rejectedForceLoad=true') && 
-                Dialog.newConfirm("Your device is on lite mode", ["Downloading audio is paused to prevent data charges."], "Download anyway", "cancel").then(result => 
-                  result === true
-                  ? (this.#assignWork("forceLoad"), this.#assignWork("loadAll"))
-                  : setCookie("rejectedForceLoad=true", 1)
-                ) || console.info('Cookie: rejectedForceLoad=true')
-              return ;
-            case 'exception':
-              return ;
-            case 'responseNotOk':
-              return Dialog.newError('📶 Network Error', message.data.message, 15000);
-            case 'indexDB':
-              Dialog.newError('can\' access indexDB😨', message.data.message)
-              return ;
-          }
-        } else if(message.data.isEvent){
-          switch(message.data.name){
-            case 'newAudioPlaying':
-              return;
+      #onmessage = (that => {
+        return function (message) {
+          if(message.data.isError){
+            switch(message.data.name){
+              case 'saveDataModeOn':
+                // using default confirm method blocks script execution but setTimeout continues (^^;)
+                !existsCookie('rejectedForceLoad=true') && 
+                  Dialog.newConfirm("Your device is on lite mode", ["Downloading audio is paused to prevent data charges."], "Download anyway", "cancel").then(result => 
+                    result === true
+                    ? (that.#assignWork("forceLoad"), that.#assignWork("loadAll"))
+                    : setCookie("rejectedForceLoad=true", 1)
+                  ) || console.info('Cookie: rejectedForceLoad=true')
+                return ;
+              case 'exception':
+                return  Dialog.newError(message.data.name, message.data.message, 15000);;
+              case 'responseNotOk':
+                return Dialog.newError('📶 Network Error', message.data.message, 15000);
+              case 'indexDB':
+                Dialog.newError('can\' access indexDB😨', message.data.message)
+                return ;
+            }
+          } else if(message.data.isEvent){
+            switch(message.data.name){
+              case 'newAudioPlaying':
+                return;
+            }
           }
         }
-      }
+      })(this)
 
       #assignWork (functionName, ...vars) {
         this.#worker.postMessage([
