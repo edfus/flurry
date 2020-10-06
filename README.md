@@ -6,19 +6,7 @@
 
 ---
 
-### 特性描述
-
-1. 粒子效果（喷气、得分）
-2. 光渲染
-3. 碰撞检测
-4. 障碍物（差集运算）
-    https://threejs.org/examples/#webgl_clipping_intersection
-    https://threejs.org/examples/#webgl_clipping_stencil
-    https://threejs.org/examples/#webgl_geometry_shapes
-5. 相机位置等
-    https://ldr1-18716f-1302358347.tcloudbaseapp.com/editor/ （可以用作布置layout时的可视化）
-6. 暂停接口 window blur
-7. 减少竞技性和难度，更偏向纯粹舒缓的视觉类游戏
+### 流程规划
 
 - scene、perspective camera
 - static objects(基础隧道场景建模，飞机建模构造)
@@ -28,8 +16,6 @@
 - user control(输入设备处理，极端情况处理，屏幕大小适配，碰撞监测……)
 
 ![效果图](_参考/Screenshot_20200912-212610.png.webp)
-
-### 流程规划
 
 - [x] 基础文档撰写，Github库配置，统一开发环境，统一代码、commit规范
 - [x] 收集文献资料，收集参考，寻找效果图，寻找竞品

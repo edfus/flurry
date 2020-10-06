@@ -5,9 +5,9 @@
   // export
   const UseNewBasejs = false,
   
-  TestMode = location.search.includes('test=1') ? true : false,
+  TestMode = /test=1|debug/.test(location.search) ? true : false,
 
-  themeColor = '#000', // used in , webmanifest
+  ThemeColor = '#000', // used in , webmanifest
 
   BackgroundColor = '#f7d9aa', // used in index.html/meta-themeColor, style-background
 
@@ -24,7 +24,11 @@
   },
 
   GetContainer = () => {
-    return document.getElementById('canvas')
+    return document.getElementById('main')
+  },
+
+  GetUIContainer = () => {
+    return document.getElementById('ui')
   },
 
   GameStartCallback = async () => { // asynchronous 异步的，非同时的
@@ -62,7 +66,7 @@
   RotationSpeed_Sea = .005,
   RotationSpeed_Sky = .01,
   NumOfCloudsInSky = 20,
-  RotationSpeed_Propeller = .6
+  RotationSpeed_Propeller = .4
 
   ;
 
@@ -73,11 +77,20 @@
       version: Version,
       cameraSetting: PerspectiveCameraSetting,
       getContainer: GetContainer,
+      getUIContainer:  GetUIContainer,
       gameStartCallback: GameStartCallback,
       speed_sea: RotationSpeed_Sea,
       speed_sky: RotationSpeed_Sky,
       defaultPropellerSpeed: RotationSpeed_Propeller,
-      numOfCloudsInSky: NumOfCloudsInSky
+      numOfCloudsInSky: NumOfCloudsInSky,
+      colors: {
+        red: 0xf25346,
+        white: 0xd8d0d1,
+        brown: 0x59332e,
+        pink: 0xF5986E,
+        brownDark: 0x23190f,
+        blue: 0x68c3c0,
+      }
   }
 }
 
@@ -122,7 +135,7 @@
       // Failed to set the 'outerHTML' property on 'Element': This element's parent is of type '#document-fragment', which is not an element node.
     }
 
-    showBasic () {
+    show () {
       this.classList.add('dialog')
       this.#shadowTree = this.attachShadow({mode: 'closed'});
       this.append(this.#title, this.#paragraphs)
@@ -141,7 +154,7 @@
     connectedCallback() {
       Dialog.#busy = true;
       Dialog.newEvent("dialogAdd")
-      this.show ? this.show() : this.showBasic(); // show, not showBasic 
+      this.show() // in prototype  may or may not 
     }
 
     disconnectedCallback() {
@@ -221,7 +234,9 @@
       this.#rejectButton.type = "button"
     }
     show () {
-      this.showBasic();
+      // this.showBasic();
+      // this.constructor.prototype.__proto__.show.call(this)
+      Dialog.prototype.show.call(this)
       this.append(this.#confirmButton, this.#rejectButton)
   
       this.#confirmButton.addEventListener('click', event => {
@@ -264,9 +279,11 @@
       // this.prototype.#title: Private field '#title' must be declared in an enclosing class 
     }
     show () {
-      // only constructor functions have prototypes
       // console.assert(this.constructor.prototype.show !== this.show) // failed
-      this.showBasic();
+
+      // this.constructor.prototype.__proto__.show.call(this)
+      Dialog.prototype.show.call(this)
+      // this.showBasic();
       this.append(this.#okButton)
       this.#okButton.addEventListener('click', event => {
         this.hide();
@@ -318,7 +335,8 @@
     let { [args.length - 1]: lastParam, length: len } = args; // reminder
 
     if(typeof lastParam === 'number'){
-      errorDialog.msToHide = lastParam;
+      if(!config.testMode)
+        errorDialog.msToHide = lastParam;
       errorDialog.paragraphs = args.slice(0, len - 1)
     } else {
       errorDialog.paragraphs = args

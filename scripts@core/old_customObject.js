@@ -1,5 +1,4 @@
-// 调用方法： new AirPlane();
-import colors from '../scripts@config/colors.js';
+const colors = config.colors;
 
 class Airplane {
   #defaultPropellerSpeed = config.defaultPropellerSpeed; 

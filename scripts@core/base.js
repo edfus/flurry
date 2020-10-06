@@ -50,6 +50,8 @@ class game {
         // Math.random() return a random value between 0 and 1
     }
     return new THREE.PointCloud(geometry, material);
+    // group = new THREE.Group();
+    //             scene.add(group);
   }
   #onASameLine (THREEobj_arr) {
     const intersects = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize())

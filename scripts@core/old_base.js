@@ -71,7 +71,7 @@ class UserInteraction {
   }
 
   addListeners () {
-    // console.log(this.#mouse_addListeners === this['#mouse_addListeners']) - false
+    // this['#mouse_addListeners'] - undefined
     this[`${this.#identifier}addListeners`]();
   }
 
@@ -87,26 +87,23 @@ class UserInteraction {
   */
 
   touch_addListeners () {
-    // document.addEventListener('touchstart', this.#touch_startCallback, {passive: false});
+    document.addEventListener('touchstart', this.#touch_startCallback, {passive: false});
     document.addEventListener('touchmove', this.#touch_moveCallback, {passive: false});
-    // document.addEventListener('touchend', this.#touch_endCallback, {passive: false});
+    document.addEventListener('touchend', this.#touch_endCallback, {passive: false});
   }
 
   touch_removeListeners () {
-    // document.removeEventListener('touchstart', #touch_startCallback);
+    document.removeEventListener('touchstart', this.#touch_startCallback);
     document.removeEventListener('touchmove', this.#touch_moveCallback);
-    // document.removeEventListener('touchend', this.#touch_endCallback);
+    document.removeEventListener('touchend', this.#touch_endCallback);
   }
+
+  // touchcancel is fired whenever it takes ~200 ms to return from a touchmove event handler.
 
   #touch_startCallback = (that => {
     return event => {
       event.preventDefault();
-      // switch (event.touches.length) {
-      //   case 1: handle_one_touch(event); break;
-      //   case 2: handle_two_touches(event); break;
-      //   case 3: handle_three_touches(event); break;
-      //   default: console.log("Not supported"); break;
-      // }  
+      // switch (event.touches.length)
       that.#isDragging = true;
     }
   })(this)
@@ -114,10 +111,18 @@ class UserInteraction {
   #touch_moveCallback  = (that => {
     return event => {
       event.preventDefault();
+      let x = 0, y = 0;
+      for (const touch of event.touches) {
+        x += touch.pageX;
+        y += touch.pageY;
+      }
       that.#relativePos = {
-        x: -1 + (event.touches[0].pageX / that.WIDTH) * 2,
-        y: 1 - (event.touches[0].pageY / that.HEIGHT) * 2
+        x: -1 + (x / event.touches.length / that.WIDTH) * 2,
+        y: 1 - (y / event.touches.length / that.HEIGHT) * 2
       };
+      setTimeout(() => {
+        // ...
+      }, 0)
     }
   })(this)
 
@@ -128,29 +133,16 @@ class UserInteraction {
     }
   })(this)
 
-  /*
-  drawLines () {
-    var material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
-    var points = [];
-    points.push( new THREE.Vector3( - 10, 0, 0 ) );
-    points.push( new THREE.Vector3( 0, 10, 0 ) );
-    points.push( new THREE.Vector3( 10, 0, 0 ) );
-
-    var geometry = new THREE.BufferGeometry().setFromPoints( points );
-    var line = new THREE.Line( geometry, material );
-  }
-  */
-
   mouse_addListeners () {
-    // document.addEventListener('mousedown', event => this.#mouse_downCallback(event), {passive: true});
+    document.addEventListener('mousedown', this.#mouse_downCallback, {passive: true});
     document.addEventListener('mousemove', this.#mouse_moveCallback, {passive: true});
-    // document.addEventListener('mouseup', event => this.#mouse_upCallback(event), {passive: true});
+    document.addEventListener('mouseup', this.#mouse_upCallback, {passive: true});
   }
 
   mouse_removeListeners () {
-    // document.removeEventListener('mousedown', this.#mouse_downCallback);
+    document.removeEventListener('mousedown', this.#mouse_downCallback);
     document.removeEventListener('mousemove', this.#mouse_moveCallback);
-    // document.removeEventListener('mouseup', this.#mouse_upCallback);
+    document.removeEventListener('mouseup', this.#mouse_upCallback);
   }
 
   #mouse_downCallback = (that => {
@@ -160,13 +152,14 @@ class UserInteraction {
   })(this)
 
   #mouse_moveCallback = (that => {
+    // 声明建立时和建立后不同。建立后不能访问非static元素，prototype不能访问private field元素，但此时都能
     return event => {
       that.#relativePos = {
         x: -1 + (event.clientX / that.WIDTH) * 2,
         y: 1 - (event.clientY / that.HEIGHT) * 2
       }
     }
-  })(this) // closure
+  })(this)
 
   #mouse_upCallback = (that => {
     return event => {
@@ -192,6 +185,7 @@ class UserInteraction {
     if(config.testMode){
       config.cameraHelper.update()
     }
+    canvas2D.setSize(this.WIDTH, this.HEIGHT)
     this.#debounce.triggered = false;
   }
 
@@ -202,22 +196,83 @@ class UserInteraction {
   }
 
   #testTouchDevice () {
-    if ("ontouchstart" in window)
-        return true;
+    if ("ontouchstart" in window) 
+      return true;
     else return false;
-    // if (window.DocumentTouch && document instanceof DocumentTouch)
-    //     return true;
-
-    // const prefixes = ["", "-webkit-", "-moz-", "-o-", "-ms-"];
-    // const queries = prefixes.map(prefix => `(${prefix}touch-enabled)`);
-
-    // return window.matchMedia(queries.join(",")).matches;
-    // Modernizr's way  
-    // https://stackoverflow.com/questions/4817029/whats-the-best-way-to-detect-a-touch-screen-device-using-javascript/4819886#4819886
+    // Modernizr's way isn't working (^^;)
   }
 }
 
-// Cannot access 'whenPaused' before initialization, this: undefined
+const userInteraction = new UserInteraction();
+
+class Canvas2D {
+  // #lineMaterial = null;
+  #canvas = null;
+  #context = null;
+
+  #camera2D = null;
+  #scene2D = null;
+
+  #width = 0;
+  #height = 0;
+
+  constructor () {
+    this.#width = userInteraction.WIDTH;
+    this.#height = userInteraction.HEIGHT;
+
+    this.#canvas = new OffscreenCanvas(this.#width, this.#height);
+    this.#context = this.#canvas.getContext('2d');
+
+    // // Create the camera and set the viewport to match the screen dimensions.
+    // this.#camera2D = new THREE.OrthographicCamera(-width/2, width/2, height/2, -height/2, 0, 30 );
+
+    scene.background = new THREE.CanvasTexture(this.#canvas);
+    // https://threejs.org/docs/#api/en/textures/CanvasTexture
+
+    // let material = new THREE.MeshBasicMaterial( {map: texture} );
+    // material.transparent = true;
+    // material.depthTest = false;
+    // material.depthWrite = false;
+
+    // this.#lineMaterial = new THREE.LineBasicMaterial({ 
+    //   color: config.colors.white, 
+    //   vertexColors: false,
+    //   linewidth: 1,
+    //   opacity: 1,
+    //   transparent: true
+    // })
+  }
+
+  setSize (width, height) {
+    this.#width = width;
+    this.#height = height;
+    this.#canvas.width = width;
+    this.#canvas.height = height;
+
+    // this.#camera2D.left = width / -2;
+    // this.#camera2D.right = width / 2;
+    // this.#camera2D.top = height / 2;
+    // this.#camera2D.bottom = height / -2;
+    // this.#camera2D.updateProjectionMatrix();
+  }
+
+  drawNewLine () {
+ 
+  }
+
+  updateLines () {
+
+  }
+
+  clear () {
+    this.#context.save();
+    this.#context.clearRect(0, 0, this.#width, this.#height); // fillRect
+  } // 高宽改变时，画布内容会被清空，需要重新绘制
+
+  
+}
+
+// Cannot access 'whenPaused' before initialization. this: undefined
 // so using es6 class.
 class WhenPaused {
   static #divideX = 6;
@@ -252,8 +307,6 @@ class WhenPaused {
     this.#renderLoopPtr = newRenderLoop; // 
   }
 }
-
-const userInteraction = new UserInteraction();
 
 let inQueue = false;
 function throttleLog () {
