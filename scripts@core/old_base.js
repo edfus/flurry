@@ -404,8 +404,6 @@ function throttleLog () {
 
 //INIT THREE JS, SCREEN AND MOUSE EVENTS
 window.addEventListener('load', ()=>{
-  // HANDLE MOUSE EVENTS
-  
   // loading: 0 ms
 
   createScene();
