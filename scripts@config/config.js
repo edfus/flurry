@@ -39,10 +39,10 @@
      * @param {*} per_ms 每隔多少毫秒执行一次。单位：毫秒
      * @param {*} reference 指向的对象
      */
-    const fadeOut = (currentOpacity, reduction_num, per_ms, reference) => { 
-      (reference.style.opacity = currentOpacity) < .1
+    const fadeOut = (currentOpacity, reduction_num, reference) => () => { 
+      (reference.style.opacity = currentOpacity) < 0
       ? (reference.hidden = true) && (reference.style.willChange = 'auto')
-      : setTimeout(() => fadeOut(currentOpacity - reduction_num, reduction_num, per_ms, reference), per_ms)
+      : requestAnimationFrame(fadeOut(currentOpacity - reduction_num, reduction_num, reference))
     }
 
     const loadSection = document.getElementById('loading-section');
@@ -51,11 +51,11 @@
     setTimeout(()=>{
       if(loadSection.hidden !== true){
         loadSection.style.willChange = "opacity";
-        fadeOut(1, .02 * fadeOutSpeedLevel, 25 * fadeOutSpeedLevel, loadSection);
+        fadeOut(1, .0013 * fadeOutSpeedLevel, loadSection)();
       }
       if(loader.hidden !== true){
         loader.style.willChange = "opacity";
-        fadeOut(1, .03 * fadeOutSpeedLevel, 25 * fadeOutSpeedLevel, loader);
+        fadeOut(1, .0020 * fadeOutSpeedLevel, loader)();
       }
     }, config?.loading_timeOut ?? 400)
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Optional_chaining

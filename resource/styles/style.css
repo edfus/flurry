@@ -71,6 +71,15 @@ main {
   bottom: 0; 
   /* fix the unintended 4px more height compared with window.innerHeight */
 }
+main > canvas {
+  position: absolute;
+  top: 0;
+  bottom: 0; 
+}
+main > #ui {
+  z-index: 1;
+  background: none;
+}
 .dialog {
   position: fixed;
   z-index: 5;

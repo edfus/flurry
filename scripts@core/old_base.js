@@ -33,16 +33,14 @@ var sea = null, // createdBy new Sea()
 
 class UserInteraction {
   #relativePos = { x: 0, y: 0 };
+  #absolutePos = { x: 0, y: 0 };
+
   #isTouchDevice = false;
+
   #windowHeight = 0;
   #windowWidth =  0;
-  #debounce = {
-    timer: 0,
-    gap_ms: 30,
-    triggered: false
-  };
 
-  #isDragging = false;
+  #mouseMove_triggered = false;
 
   #identifier = "mouse_";
 
@@ -103,8 +101,9 @@ class UserInteraction {
   #touch_startCallback = (that => {
     return event => {
       event.preventDefault();
-      // switch (event.touches.length)
-      that.#isDragging = true;
+      for (const touch of event.touches) {
+        canvas2D.createLine(touch.pageX, touch.pageY, touch.identifier)
+      }
     }
   })(this)
 
@@ -116,63 +115,64 @@ class UserInteraction {
         x += touch.pageX;
         y += touch.pageY;
       }
-      that.#relativePos = {
-        x: -1 + (x / event.touches.length / that.WIDTH) * 2,
-        y: 1 - (y / event.touches.length / that.HEIGHT) * 2
-      };
-      setTimeout(() => {
-        // ...
-      }, 0)
+      that.#updateRelativePos(x / event.touches.length, y / event.touches.length);
+      // setTimeout(() => {
+        for (const touch of event.changedTouches) {
+          canvas2D.pushPoint(touch.pageX, touch.pageY, touch.identifier)
+        } // Is touchmove event fire once in per frame?
+      // }, 0)  
     }
   })(this)
+
+  #updateRelativePos (x = this.#absolutePos.x, y = this.#absolutePos.y) {
+    this.#relativePos.x = -1 + (x / this.WIDTH) * 2,
+    this.#relativePos.y = 1 - (y / this.HEIGHT) * 2
+  }
 
   #touch_endCallback = (that => {
     return event => {
       event.preventDefault();
-      that.#isDragging = false;
-    }
-  })(this)
-
-  mouse_addListeners () {
-    document.addEventListener('mousedown', this.#mouse_downCallback, {passive: true});
-    document.addEventListener('mousemove', this.#mouse_moveCallback, {passive: true});
-    document.addEventListener('mouseup', this.#mouse_upCallback, {passive: true});
-  }
-
-  mouse_removeListeners () {
-    document.removeEventListener('mousedown', this.#mouse_downCallback);
-    document.removeEventListener('mousemove', this.#mouse_moveCallback);
-    document.removeEventListener('mouseup', this.#mouse_upCallback);
-  }
-
-  #mouse_downCallback = (that => {
-    return event => {
-      that.#isDragging = true;
-    }
-  })(this)
-
-  #mouse_moveCallback = (that => {
-    // 声明建立时和建立后不同。建立后不能访问非static元素，prototype不能访问private field元素，但此时都能
-    return event => {
-      that.#relativePos = {
-        x: -1 + (event.clientX / that.WIDTH) * 2,
-        y: 1 - (event.clientY / that.HEIGHT) * 2
+      for (const touch of event.changedTouches) {
+        canvas2D.endLine(touch.identifier)
       }
     }
   })(this)
 
-  #mouse_upCallback = (that => {
+  mouse_addListeners () {
+    document.addEventListener('mousemove', this.#mouse_moveCallback, {passive: true});
+    document.addEventListener('mouseleave', this.#mouse_leaveCallback, {passive: true});
+  }
+
+  mouse_removeListeners () {
+    // "mousemove mouseleave mouseover".split(' ').forEach(e => e)
+    document.removeEventListener('mousemove', this.#mouse_moveCallback);
+    document.removeEventListener('mouseleave', this.#mouse_leaveCallback);
+  }
+
+  #mouse_moveCallback = (that => {
+    // 声明建立时和建立后不同。建立后不能访问非static元素，prototype不能访问private field元素，但此时都能
     return event => {
-      that.#isDragging = false;
+      that.#absolutePos.x = event.clientX;
+      that.#absolutePos.y = event.clientY;
+      that.#updateRelativePos();
+
+      if(config.testMode)
+        if(that.#mouseMove_triggered)
+          canvas2D.pushPoint(event.clientX, event.clientY, 0)
+        else {
+          canvas2D.createLine(event.clientX, event.clientY, 0);
+          that.#mouseMove_triggered = true;
+        }
     }
   })(this)
 
-  #resizeCallback_debounce () {
-    if(this.#debounce.triggered)
-      clearTimeout(this.#debounce.timer)
-    else this.#debounce.triggered = true;
-    this.#debounce.timer = setTimeout(() => this.#resizeCallback(), this.#debounce.gap_ms)
-  } // If handle does not identify an entry in the list of active timers of the WindowOrWorkerGlobalScope object on which [clearTimeout] was invoked, the method does nothing.
+  #mouse_leaveCallback = (that => {
+    return event => {
+      that.#mouseMove_triggered = false;
+      if(config.testMode)
+        canvas2D.endLine(0);
+    }
+  })(this)
 
   #resizeCallback () {
     this.#windowHeight = window.innerHeight;
@@ -186,7 +186,6 @@ class UserInteraction {
       config.cameraHelper.update()
     }
     canvas2D.setSize(this.WIDTH, this.HEIGHT)
-    this.#debounce.triggered = false;
   }
 
   resizeCallback () {
@@ -206,71 +205,152 @@ class UserInteraction {
 const userInteraction = new UserInteraction();
 
 class Canvas2D {
-  // #lineMaterial = null;
   #canvas = null;
   #context = null;
 
-  #camera2D = null;
-  #scene2D = null;
+  #paths_obj = {};
 
-  #width = 0;
-  #height = 0;
+  #fadeOutSpeed = .035
 
   constructor () {
-    this.#width = userInteraction.WIDTH;
-    this.#height = userInteraction.HEIGHT;
+    this.#canvas = config.getUIContainer();
 
-    this.#canvas = new OffscreenCanvas(this.#width, this.#height);
+    this.#canvas.width = userInteraction.WIDTH;
+    this.#canvas.height = userInteraction.HEIGHT;
+
     this.#context = this.#canvas.getContext('2d');
 
-    // // Create the camera and set the viewport to match the screen dimensions.
-    // this.#camera2D = new THREE.OrthographicCamera(-width/2, width/2, height/2, -height/2, 0, 30 );
+    this.#setStyle();
 
-    scene.background = new THREE.CanvasTexture(this.#canvas);
-    // https://threejs.org/docs/#api/en/textures/CanvasTexture
+    Object.defineProperty(this.#paths_obj, 'empty', {
+      value: true,
+      writable: true
+      // enumerable: false - default
+    });
+  }
 
-    // let material = new THREE.MeshBasicMaterial( {map: texture} );
-    // material.transparent = true;
-    // material.depthTest = false;
-    // material.depthWrite = false;
+  #alpha (alpha) {
+    return `rgba(255, 255, 255, ${alpha})`
+  }
 
-    // this.#lineMaterial = new THREE.LineBasicMaterial({ 
-    //   color: config.colors.white, 
-    //   vertexColors: false,
-    //   linewidth: 1,
-    //   opacity: 1,
-    //   transparent: true
-    // })
+  #setStyle () {
+    this.#context.shadowColor = this.#alpha(.4);
+    this.#context.shadowBlur = 6;
+
+    this.#context.lineWidth = 3;
+    this.#context.lineJoin = this.#context.lineCap = 'round';
+  }
+
+  /**
+   * construct a new line object
+   * @param {number} identifier
+   * @return {TouchPath} new line object
+   */
+  #createNewTouchPath (identifier) {
+    let newPath = { // 0 - identifier of this touch
+      segments: [],
+      last_i: 0,
+      path: new Path2D() // path2D obj
+    }
+    newPath.segments.push(this.#newPathSegment(newPath))
+
+    this.#paths_obj[identifier] = newPath;
+    this.#paths_obj.empty = false;
+    return newPath;
+  }
+  /**
+   * construct a new line object
+   * @param {TouchPath} path
+   * @return {TouchPathSegment} new line object
+   */
+  #newPathSegment (path_obj) {
+    let newSegment = {
+      path: new Path2D(),
+      opacity: .6
+    }
+    
+    path_obj.path.addPath(newSegment.path)
+    return newSegment;
+  } // this[#TouchPathSegment] is not a constructor
+
+  createLine (startX, startY, identifier) {
+    let path = this.#createNewTouchPath(identifier);
+
+    path.segments[0].path.moveTo(startX, startY);
+    path.path.moveTo(startX, startY);
+  }
+
+  endLine (identifier) {
+    Object.defineProperty(this.#paths_obj[identifier], 'end', {
+      value: true,
+      // writable: false - default
+      // enumerable: false - default
+    });
+  }
+
+  pushPoint (x, y, identifier) {
+    let path = this.#paths_obj[identifier];
+    let i = path.last_i;
+
+    path.segments[i].path.lineTo(x, y);
+    // quadraticCurveTo(x, y, midPoint.x, midPoint.y)
+    // http://perfectionkills.com/exploring-canvas-drawing-techniques/
+    path.segments.push(this.#newPathSegment(path));
+    path.segments[i + 1].path.moveTo(x, y);
+
+    path.last_i = i + 1;
+  }
+
+  paint () {
+    if(this.#paths_obj.empty)
+      return ;
+    this.clear();
+    for(const [identifier, path] of Object.entries(this.#paths_obj)) {
+      if(path.last_i === 0) // newly created by touchstart
+        continue;
+
+      let i_toRemove = -1;
+
+      for(let i = 0; i < path.last_i; i++) { // last segment will not be processed
+        let segment = path.segments[i];
+        segment.opacity -= this.#fadeOutSpeed;
+        this.#context.strokeStyle = this.#alpha(segment.opacity);
+        this.#context.stroke(segment.path);
+
+        if(segment.opacity <= this.#fadeOutSpeed){
+          i_toRemove = i;
+        }
+      }
+
+      i_toRemove++; // if -1, then 0, no effect
+
+      path.segments.splice(0, i_toRemove);
+      path.last_i -= i_toRemove;
+      if(path.last_i <= 1 && path.end) {
+        delete this.#paths_obj[identifier];
+        this.#paths_obj.empty = this.#isEmpty;
+      }
+    }
+  }
+
+  #isEmpty () {
+    for (const whateverEnumerable in this.#paths_obj) { // using const
+      return false;
+    }
+    return true;
   }
 
   setSize (width, height) {
-    this.#width = width;
-    this.#height = height;
     this.#canvas.width = width;
     this.#canvas.height = height;
-
-    // this.#camera2D.left = width / -2;
-    // this.#camera2D.right = width / 2;
-    // this.#camera2D.top = height / 2;
-    // this.#camera2D.bottom = height / -2;
-    // this.#camera2D.updateProjectionMatrix();
-  }
-
-  drawNewLine () {
- 
-  }
-
-  updateLines () {
-
-  }
-
-  clear () {
-    this.#context.save();
-    this.#context.clearRect(0, 0, this.#width, this.#height); // fillRect
   } // 高宽改变时，画布内容会被清空，需要重新绘制
 
-  
+  clear () {
+    this.#context.clearRect(0, 0, this.#canvas.width, this.#canvas.height); // fillRect
+    // Another elegant option is to set the 'globalCompositeOperation' to 'xor' and paint you line again....so it will be removed
+  } 
 }
+const canvas2D = new Canvas2D();
 
 // Cannot access 'whenPaused' before initialization. this: undefined
 // so using es6 class.
@@ -288,6 +368,7 @@ class WhenPaused {
 
   static #renderLoop = (that => 
     () => {
+      canvas2D.paint();
       updatePlane();
       updateBackground(that.#speed_sea, that.#speed_sky);
       renderer.render(scene, camera);
@@ -349,6 +430,7 @@ window.addEventListener('load', ()=>{
   (function renderLoop() { // immediate function前不加;会出各种各样奇奇怪怪的错
     if(!window.paused){
       //TODO: if(crashed)
+      canvas2D.paint(); // 我做着玩的，到时候会删掉 - cloudres
       updatePlane();
       updateBackground();
       updateCameraFov();
