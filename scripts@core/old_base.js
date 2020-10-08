@@ -584,7 +584,7 @@ function updateBackground(speed_sea = config.speed_sea, speed_sky = config.speed
 }
 
 function updateCameraFov(){ // fov: Field Of View - https://blog.csdn.net/weixin_39675633/article/details/103410983
-  camera.fov = normalize(userInteraction.relativePos.x, -1, 1, 40, 80);
+  camera.fov += (normalize(userInteraction.relativePos.x, -1, 1, 40, 80) - camera.fov) * 0.1
   // 40 到 80范围内，40时画面显示内容最小，80时画面显示内容最多（广角）
   // 软件模拟的fov不会导致畸变等，可以直接当放大缩小的工具用
   camera.updateProjectionMatrix();

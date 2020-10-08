@@ -12,7 +12,7 @@
   BackgroundColor = '#f7d9aa', // used in index.html/meta-themeColor, style-background
 
 
-  Version = '4.3.5' + '--dev', //NOTE: 添加功能后记得更改这个
+  Version = '5.3.5' + '--dev', //NOTE: 添加功能后记得更改这个
 
   PerspectiveCameraSetting = {
       fieldOfView: 60, 
@@ -236,7 +236,8 @@
     show () {
       // this.showBasic();
       // this.constructor.prototype.__proto__.show.call(this)
-      Dialog.prototype.show.call(this)
+      // Dialog.prototype.show.call(this)
+      super.show();
       this.append(this.#confirmButton, this.#rejectButton)
   
       this.#confirmButton.addEventListener('click', event => {
@@ -282,8 +283,8 @@
       // console.assert(this.constructor.prototype.show !== this.show) // failed
 
       // this.constructor.prototype.__proto__.show.call(this)
-      Dialog.prototype.show.call(this)
-      // this.showBasic();
+      // Dialog.prototype.show.call(this)
+      super.show();
       this.append(this.#okButton)
       this.#okButton.addEventListener('click', event => {
         this.hide();
