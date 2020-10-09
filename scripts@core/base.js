@@ -1,3 +1,4 @@
+"use strict";
 class game {
   #pi = Math.PI; // private field
   #scene = null;

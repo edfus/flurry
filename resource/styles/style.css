@@ -171,19 +171,6 @@ main > #ui {
   margin: 40vh calc(50vw - var(--loader-width) / 2);
 }
 
-#info {
-  position: absolute;
-  top: 40vh;
-  left: 0;
-  width: 100%;
-  text-align: center;
-}
-/* 
-#show-error {
-  margin: 0 auto;
-  font-size: 1.5rem;
-} */
-
 #circular {
   animation: rotate 2s linear infinite;
   height: 100%;

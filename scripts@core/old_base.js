@@ -1,3 +1,4 @@
+"use strict";
 // import config from '../scripts@config/config.js'; - deprecated
 // config = window.config; - not necessary
 // type="module" can still get access to config directly
@@ -68,9 +69,22 @@ class UserInteraction {
     return this.#windowWidth;
   }
 
+  #updateRelativePos (x = this.#absolutePos.x, y = this.#absolutePos.y) {
+    this.#relativePos.x = -1 + (x / this.WIDTH) * 2,
+    this.#relativePos.y = 1 - (y / this.HEIGHT) * 2
+  }
+
+  #testTouchDevice () {
+    if ("ontouchstart" in window) 
+      return true;
+    else return false;
+    // Modernizr's way isn't working (^^;)
+  }
+
   addListeners () {
     // this['#mouse_addListeners'] - undefined
     this[`${this.#identifier}addListeners`]();
+    // 不能动态访问private field
   }
 
   removeListeners () {
@@ -84,13 +98,13 @@ class UserInteraction {
   * the element's touch event handlers should call preventDefault() and no additional mouse events will be dispatched.
   */
 
-  touch_addListeners () {
+  touch_addListeners = function () {
     document.addEventListener('touchstart', this.#touch_startCallback, {passive: false});
     document.addEventListener('touchmove', this.#touch_moveCallback, {passive: false});
     document.addEventListener('touchend', this.#touch_endCallback, {passive: false});
   }
 
-  touch_removeListeners () {
+  touch_removeListeners = function () {
     document.removeEventListener('touchstart', this.#touch_startCallback);
     document.removeEventListener('touchmove', this.#touch_moveCallback);
     document.removeEventListener('touchend', this.#touch_endCallback);
@@ -124,11 +138,6 @@ class UserInteraction {
     }
   })(this)
 
-  #updateRelativePos (x = this.#absolutePos.x, y = this.#absolutePos.y) {
-    this.#relativePos.x = -1 + (x / this.WIDTH) * 2,
-    this.#relativePos.y = 1 - (y / this.HEIGHT) * 2
-  }
-
   #touch_endCallback = (that => {
     return event => {
       event.preventDefault();
@@ -138,12 +147,12 @@ class UserInteraction {
     }
   })(this)
 
-  mouse_addListeners () {
+  mouse_addListeners = function () {
     document.addEventListener('mousemove', this.#mouse_moveCallback, {passive: true});
     document.addEventListener('mouseleave', this.#mouse_leaveCallback, {passive: true});
   }
 
-  mouse_removeListeners () {
+  mouse_removeListeners = function () {
     // "mousemove mouseleave mouseover".split(' ').forEach(e => e)
     document.removeEventListener('mousemove', this.#mouse_moveCallback);
     document.removeEventListener('mouseleave', this.#mouse_leaveCallback);
@@ -188,17 +197,10 @@ class UserInteraction {
     canvas2D.setSize(this.WIDTH, this.HEIGHT)
   }
 
-  resizeCallback () {
+  resizeCallback = function () {
     return this.#resizeCallback(); // [Violation] 'load' handler took 156ms
     // return this.#resizeCallback_debounce();  // [Violation] 'setTimeout' handler took 51ms
     // in 2020 debounce on resize event still worthy?
-  }
-
-  #testTouchDevice () {
-    if ("ontouchstart" in window) 
-      return true;
-    else return false;
-    // Modernizr's way isn't working (^^;)
   }
 }
 
@@ -207,10 +209,9 @@ const userInteraction = new UserInteraction();
 class Canvas2D {
   #canvas = null;
   #context = null;
-
   #paths_obj = {};
 
-  #fadeOutSpeed = .035
+  fadeOutSpeed = .035
 
   constructor () {
     this.#canvas = config.getUIContainer();
@@ -220,7 +221,7 @@ class Canvas2D {
 
     this.#context = this.#canvas.getContext('2d');
 
-    this.#setStyle();
+    this.setStyle();
 
     Object.defineProperty(this.#paths_obj, 'empty', {
       value: true,
@@ -229,12 +230,12 @@ class Canvas2D {
     });
   }
 
-  #alpha (alpha) {
+  alpha = function (alpha) { // can be changed, not in prototype
     return `rgba(255, 255, 255, ${alpha})`
   }
 
-  #setStyle () {
-    this.#context.shadowColor = this.#alpha(.4);
+  setStyle = function () {
+    this.#context.shadowColor = this.alpha(.4);
     this.#context.shadowBlur = 6;
 
     this.#context.lineWidth = 3;
@@ -246,13 +247,13 @@ class Canvas2D {
    * @param {number} identifier
    * @return {TouchPath} new line object
    */
-  #createNewTouchPath (identifier) {
+  createNewTouchPath (identifier) {
     let newPath = { // 0 - identifier of this touch
       segments: [],
       last_i: 0,
       path: new Path2D() // path2D obj
     }
-    newPath.segments.push(this.#newPathSegment(newPath))
+    newPath.segments.push(this.newPathSegment(newPath))
 
     this.#paths_obj[identifier] = newPath;
     this.#paths_obj.empty = false;
@@ -263,7 +264,7 @@ class Canvas2D {
    * @param {TouchPath} path
    * @return {TouchPathSegment} new line object
    */
-  #newPathSegment (path_obj) {
+  newPathSegment (path_obj) {
     let newSegment = {
       path: new Path2D(),
       opacity: .6
@@ -271,10 +272,10 @@ class Canvas2D {
     
     path_obj.path.addPath(newSegment.path)
     return newSegment;
-  } // this[#TouchPathSegment] is not a constructor
+  } // this[#TouchPathSegment] is not a constructor - can't use class method as a constructor
 
   createLine (startX, startY, identifier) {
-    let path = this.#createNewTouchPath(identifier);
+    let path = this.createNewTouchPath(identifier);
 
     path.segments[0].path.moveTo(startX, startY);
     path.path.moveTo(startX, startY);
@@ -295,7 +296,7 @@ class Canvas2D {
     path.segments[i].path.lineTo(x, y);
     // quadraticCurveTo(x, y, midPoint.x, midPoint.y)
     // http://perfectionkills.com/exploring-canvas-drawing-techniques/
-    path.segments.push(this.#newPathSegment(path));
+    path.segments.push(this.newPathSegment(path));
     path.segments[i + 1].path.moveTo(x, y);
 
     path.last_i = i + 1;
@@ -313,11 +314,11 @@ class Canvas2D {
 
       for(let i = 0; i < path.last_i; i++) { // last segment will not be processed
         let segment = path.segments[i];
-        segment.opacity -= this.#fadeOutSpeed;
-        this.#context.strokeStyle = this.#alpha(segment.opacity);
+        segment.opacity -= this.fadeOutSpeed;
+        this.#context.strokeStyle = this.alpha(segment.opacity);
         this.#context.stroke(segment.path);
 
-        if(segment.opacity <= this.#fadeOutSpeed){
+        if(segment.opacity <= this.fadeOutSpeed){
           i_toRemove = i;
         }
       }
@@ -328,13 +329,13 @@ class Canvas2D {
       path.last_i -= i_toRemove;
       if(path.last_i <= 1 && path.end) {
         delete this.#paths_obj[identifier];
-        this.#paths_obj.empty = this.#isEmpty;
+        this.#paths_obj.empty = this.isEmpty(this.#paths_obj);
       }
     }
   }
 
-  #isEmpty () {
-    for (const whateverEnumerable in this.#paths_obj) { // using const
+  isEmpty (obj) {
+    for (const whateverEnumerable in obj) {
       return false;
     }
     return true;
@@ -355,31 +356,32 @@ const canvas2D = new Canvas2D();
 // Cannot access 'whenPaused' before initialization. this: undefined
 // so using es6 class.
 class WhenPaused {
-  static #divideX = 6;
-  static #renderLoopPtr = null; // function ptr
-  // static #renderLoopPtr = this.#renderLoop;
+  static divideX = 6;
+  // static #renderLoopPtr = null; // function ptr
   // Cannot read private member #renderLoop from an object whose class did not declare it
-  constructor() {
 
-  }
+  // 没有construct的需要，所以全部使用static属性通过WhenPaused访问
 
-  static #speed_sea = config.speed_sea / this.#divideX;
-  static #speed_sky = config.speed_sky / this.#divideX;
+  static speed_sea = config.speed_sea / this.divideX;
+  static speed_sky = config.speed_sky / this.divideX;
+  static speed_propeller = config.speed_propeller / this.divideX;
 
   static #renderLoop = (that => 
     () => {
       canvas2D.paint();
-      updatePlane();
-      updateBackground(that.#speed_sea, that.#speed_sky);
+      updatePlane(that.speed_propeller);
+      updateBackground(that.speed_sea, that.speed_sky);
       renderer.render(scene, camera);
       requestAnimationFrame(that.#renderLoopPtr); // ptr, invoked by window so closure necessary
     }
-  )(this) // this: WhenPaused, whether renderLoop is a static method or not
+  )(this); // this: WhenPaused 
+
+  static #renderLoopPtr = this.#renderLoop; // must after static #renderLoop's declaration
 
   static start () {
     userInteraction.removeListeners();
     this.#renderLoopPtr = this.#renderLoop;
-    airplane.defaultPropellerSpeed /= this.#divideX;
+    airplane.defaultPropellerSpeed /= this.divideX;
     this.#renderLoop();
   }
   static backTo (newRenderLoop) {
@@ -554,31 +556,40 @@ function createPlane(){
   airplane = new Airplane();
   airplane.mesh.scale.set(.25, .25, .25);
   airplane.mesh.position.y = 100;
+  airplane.defaultSpeed = config.speed_propeller;
   scene.add(airplane.mesh);
 }
 
 function createSea(){
   sea = new Sea();
   sea.mesh.position.y = -600;
+  sea.defaultSpeed = config.speed_sea;
   scene.add(sea.mesh);
 }
 
 function createSky() {
   sky = new Sky();
   sky.mesh.position.y = -600;
+  sky.defaultSpeed = config.speed_sky;
   scene.add(sky.mesh);
 }
 
-function updatePlane() {
+/**
+ * @param {number | undefined} speed_propeller
+ */
+function updatePlane(speed_propeller) {
   const targetY = normalize(userInteraction.relativePos.y, -.75, .75, 25, 175);
   airplane.mesh.position.y += (targetY - airplane.mesh.position.y) * 0.1; // 每帧向新的目标点飞去1/10的距离。
   airplane.mesh.rotation.z = (targetY - airplane.mesh.position.y) * 0.0128; // 飞机与x轴角度随鼠标上下移动而变化
   airplane.mesh.rotation.x = (airplane.mesh.position.y - targetY) * 0.0064; // 飞机与z轴角度随鼠标上下移动而变化
-  airplane.propellerSpin(); // 螺旋桨旋转(默认速度0.6)
+  airplane.propellerSpin(speed_propeller); // 螺旋桨旋转(默认速度0.6)
 }
-
-function updateBackground(speed_sea = config.speed_sea, speed_sky = config.speed_sky) {
-  sea.moveWaves(); // 海浪
+/**
+ * @param {number | undefined} speed_sea
+ * @param {number | undefined} speed_sky
+ */
+function updateBackground(speed_sea, speed_sky) {
+  sea.moveWaves(speed_sea); // 海浪
   sea.move(speed_sea);
   sky.move(speed_sky); // 大海的移动 - 天空的移动
 }

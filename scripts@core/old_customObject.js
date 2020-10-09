@@ -1,9 +1,8 @@
+"use strict";
 const colors = config.colors;
 
 class Airplane {
-  #defaultPropellerSpeed = config.defaultPropellerSpeed; 
-  // #varName : private field，仅能通过class的内置函数访问
-  // 不能通过如airplane.#defaultPropellerSpeed的方式访问（注意airplane开头为小写，表示变量）
+  defaultSpeed = 0;
   constructor() {
     this.mesh = new THREE.Object3D();
     this.mesh.name = "airplane";
@@ -108,15 +107,8 @@ class Airplane {
     this.propeller.position.set(60, 0, 0);
     this.mesh.add(this.propeller); // propeller的旋转在updatePlane()中控制
   }
-  propellerSpin(speed = this.#defaultPropellerSpeed) { 
-    // 初始为rotationSpeedOfPropeller，可通过airplaneObj.defaultPropellerSpeed = xxx更改
+  propellerSpin(speed = this.defaultSpeed) { 
     this.propeller.rotation.x += speed; // 螺旋桨旋转速度
-  }
-  set defaultPropellerSpeed(newSpeed) { // 对每个Aiplane类的对象都可单独设置默认旋转速度
-      this.#defaultPropellerSpeed = Number(newSpeed);
-  }
-  get defaultPropellerSpeed() {
-    return this.#defaultPropellerSpeed;
   }
 }
 
@@ -150,6 +142,7 @@ class Cloud {
 }
 
 class Sky {
+  defaultSpeed = 0;
   constructor() {
     this.mesh = new THREE.Object3D();
     this.nClouds = config.numOfCloudsInSky;
@@ -175,13 +168,15 @@ class Sky {
       this.mesh.add(newCloud.mesh);
     }
   }
-  move(rotateAngel = 0) { // no default
-    this.mesh.rotation.z += rotateAngel;
+  move(rotation = this.defaultSpeed) {
+    this.mesh.rotation.z += rotation;
   }
 }
 
 class Sea {
   #length = 0; // sea对象的vertices个数，waves数组的length
+  #waves = [];
+  defaultSpeed = 0;
   constructor() {
     const geometry = new THREE.CylinderGeometry(600, 600, 800, 40, 10); 
     // CylinderGeometry(radiusTop, radiusBottom, height, radialSegments, heightSegments, openEnded: Boolean, thetaStart, thetaLength)
@@ -196,9 +191,9 @@ class Sea {
     // api注释并非必须，一切都只是为了方便他人和未来的自己理解。
     // 因此，请站在实用性的角度去处理api注释，而非单纯复制粘贴。Create, not work.
     this.#length  = geometry.vertices.length;
-    this.waves = [];
+
     for (let i = 0; i < this.#length; i++){
-      this.waves.push({
+      this.#waves.push({
         x: geometry.vertices[i].x,
         y: geometry.vertices[i].y,
         z: geometry.vertices[i].z,
@@ -218,19 +213,19 @@ class Sea {
     this.mesh = new THREE.Mesh(geometry, material);
     this.mesh.receiveShadow = true; // airplane cast shadow
   }
-  move(rotateAngel = 0) { // no default
-    this.mesh.rotation.z += rotateAngel;
+  move(rotation = this.defaultSpeed) {
+    this.mesh.rotation.z += rotation;
   }
-  moveWaves() { // 海浪
+  moveWaves(rotation = this.defaultSpeed) {
     const vertices = this.mesh.geometry.vertices;
     for (let i = 0; i < this.#length; i++){
-      const waveProperties = this.waves[i];
+      const waveProperties = this.#waves[i];
       vertices[i].x =  waveProperties.x + Math.cos(waveProperties.ang) * waveProperties.amp;
       vertices[i].y = waveProperties.y + Math.sin(waveProperties.ang) * waveProperties.amp;
       waveProperties.ang += waveProperties.speed;
     }
     this.mesh.geometry.verticesNeedUpdate = true;
-    this.mesh.rotation.z += .005;
+    this.mesh.rotation.z += rotation;
   }
 }
 

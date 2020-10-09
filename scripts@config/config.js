@@ -1,3 +1,4 @@
+"use strict";
 {
   // inner
   const fadeOutSpeedLevel = 4;
@@ -12,7 +13,7 @@
   BackgroundColor = '#f7d9aa', // used in index.html/meta-themeColor, style-background
 
 
-  Version = '5.3.5' + '--dev', //NOTE: 添加功能后记得更改这个
+  Version = '5.3.6' + '--dev', //NOTE: 添加功能后记得更改这个
 
   PerspectiveCameraSetting = {
       fieldOfView: 60, 
@@ -51,11 +52,11 @@
     setTimeout(()=>{
       if(loadSection.hidden !== true){
         loadSection.style.willChange = "opacity";
-        fadeOut(1, .0013 * fadeOutSpeedLevel, loadSection)();
+        fadeOut(1, .002 * fadeOutSpeedLevel, loadSection)();
       }
       if(loader.hidden !== true){
         loader.style.willChange = "opacity";
-        fadeOut(1, .0020 * fadeOutSpeedLevel, loader)();
+        fadeOut(1, .003 * fadeOutSpeedLevel, loader)();
       }
     }, config?.loading_timeOut ?? 400)
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Optional_chaining
@@ -81,7 +82,7 @@
       gameStartCallback: GameStartCallback,
       speed_sea: RotationSpeed_Sea,
       speed_sky: RotationSpeed_Sky,
-      defaultPropellerSpeed: RotationSpeed_Propeller,
+      speed_propeller: RotationSpeed_Propeller,
       numOfCloudsInSky: NumOfCloudsInSky,
       colors: {
         red: 0xf25346,
@@ -113,14 +114,14 @@
     /**
      * @param {string} str
      */
-    set title (str = '') {
+    set title (str) {
       this.#title.textContent = str
     }
 
     /**
      * @param {Array<string} arr
      */
-    set paragraphs (arr = ['']) {
+    set paragraphs (arr) {
       if(!Array.isArray(arr)){
         if(typeof arr === "string")
           arr = [arr];
@@ -236,7 +237,9 @@
     show () {
       // this.showBasic();
       // this.constructor.prototype.__proto__.show.call(this)
+      // this.__proto__.__proto__.show.call(this)
       // Dialog.prototype.show.call(this)
+      // super - shorthand method names (ES6), returns undefined when used in an non-class object (chrome 85.0.4183.121)
       super.show();
       this.append(this.#confirmButton, this.#rejectButton)
   
@@ -254,13 +257,13 @@
     /**
      * @param {string} str
      */
-    set confirmText (str = 'Yes') {
+    set confirmText (str) {
       this.#confirmButton.textContent = str
     }
     /**
      * @param {string} str
      */
-    set rejectText (str = 'cancel') {
+    set rejectText (str) {
       this.#rejectButton.textContent = str
     }
   }
@@ -298,7 +301,7 @@
     /**
      * @param {number} num
      */
-    set msToHide (num = 200) {
+    set msToHide (num) {
       this.#msToHide = num;
     }
   }
@@ -312,7 +315,7 @@
    * @param {string} rejectText
    * @return {Promise<boolean>} 
    */
-  Dialog.newConfirm = async function (title, paragraphs, confirmText, rejectText) {
+  Dialog.newConfirm = async function (title = "", paragraphs = [""], confirmText = "Yes", rejectText = "cancel") {
     let confirmDialog = document.createElement('confirm-dialog');
     confirmDialog.title = title;
     confirmDialog.paragraphs = paragraphs;
@@ -330,17 +333,17 @@
    * throw an error to user
    * @param {*} args 
    */
-  Dialog.newError = function(...args) {
+  Dialog.newError = function(...args) { // rest parameters cannot have a default initialiser
     let errorDialog = document.createElement('error-dialog')
 
-    let { [args.length - 1]: lastParam, length: len } = args; // reminder
+    const { [args.length - 1]: lastParam, length: len } = args; // es6 shorthand syntax
 
     if(typeof lastParam === 'number'){
       if(!config.testMode)
         errorDialog.msToHide = lastParam;
       errorDialog.paragraphs = args.slice(0, len - 1)
     } else {
-      errorDialog.paragraphs = args
+      errorDialog.paragraphs = args // when no param passed args will just be an empty array, without undefined in it
     }
     
     Dialog.append(errorDialog);
