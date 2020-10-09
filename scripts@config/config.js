@@ -136,6 +136,10 @@
       // Failed to set the 'outerHTML' property on 'Element': This element's parent is of type '#document-fragment', which is not an element node.
     }
 
+    get paragraphs () {
+      return this.#paragraphs.textContent;
+    }
+
     show () {
       this.classList.add('dialog')
       this.#shadowTree = this.attachShadow({mode: 'closed'});
@@ -153,7 +157,7 @@
     }
 
     connectedCallback() {
-      Dialog.#busy = true;
+      Dialog.#busy = true; // okay, just need to be in the same enclosing class declaration
       Dialog.newEvent("dialogAdd")
       this.show() // in prototype  may or may not 
     }
@@ -349,7 +353,7 @@
     }
     
     Dialog.append(errorDialog);
-    console.error.apply(this, arguments);
+    console.warn.call(this, "NewError: ", errorDialog.paragraphs);
   };
 
   Dialog.addEventListener('dialogShow', () => {
