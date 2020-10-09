@@ -1,4 +1,3 @@
-"use strict";
 const colors = config.colors;
 
 class Airplane {

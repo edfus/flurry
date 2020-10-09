@@ -175,47 +175,56 @@
       this.addEventListener(eventName, callback, {passive: true, once: true})
     }
 
-    static #observer = document.createElement('i');
-
     static #busy = false;
 
     static get isBusy () {
-      return Dialog.#busy;
+      return this.#busy;
     }
 
+    static #callbackQueue = {}
+
     static newEvent (name) {
-      Dialog.#observer.dispatchEvent(new CustomEvent(name))
+      // Dialog.#observer.dispatchEvent(new CustomEvent(name))
+      if(this.#callbackQueue[name])
+        this.#callbackQueue[name] = this.#callbackQueue[name].filter(
+          ({callback, once}) => {
+            callback.call(this);
+            if(once)
+              return false;
+            else return true
+        });
     }
 
     static addOnceListener (eventName, callback) {
-      Dialog.#observer.addEventListener(eventName, callback, {passive: true, once: true})
+      this.#callbackQueue[eventName] ?? (this.#callbackQueue[eventName] = new Array)
+      this.#callbackQueue[eventName].push({callback, once: true}) // shorthand
     }
 
     static addEventListener (eventName, callback) {
-      Dialog.#observer.addEventListener(eventName, callback, {passive: true})
+      this.#callbackQueue[eventName] ?? (this.#callbackQueue[eventName] = new Array)
+      this.#callbackQueue[eventName].push({callback, once: false}) // shorthand
     }
 
-    static removeEventListener (eventName, callback) {
-      Dialog.#observer.removeEventListener(eventName, callback)
+    static removeEventListener (eventName, callbackToRemove) {
+      this.#callbackQueue[eventName] = this.#callbackQueue[eventName].filter(({callback}) => {
+        if(callback === callbackToRemove)
+          return false;
+        else return true;
+      })
     }
-    /**
-     * 向document添加dialog
-     * @static
-     * @param {Dialog} newDialog
-     */
     // this.#observer.dataset.queue = [];
-    // Note that the HTMLElement.dataset property is a DOMStringMap
-    static #queue;
+      // Note that the HTMLElement.dataset property is a DOMStringMap
+    static #dialogQueue;
     static append (newDialog) {
-      if(this.#queue === undefined){ // init
-        this.#queue = [];
+      if(this.#dialogQueue === undefined){ // init
+        this.#dialogQueue = [];
         this.addEventListener('dialogRemove', () => {
-          if(this.#queue.length)
-            document.body.append(this.#queue.shift())
+          if(this.#dialogQueue.length)
+            document.body.append(this.#dialogQueue.shift())
         })
       }
       if(this.isBusy)
-        this.#queue.push(newDialog)
+        this.#dialogQueue.push(newDialog)
       else document.body.append(newDialog)
     }
   }
@@ -223,7 +232,6 @@
   class MyConfirm extends Dialog {
     #confirmButton = null;
     #rejectButton = null;
-    // not allowed to pass in any arguments into the constructor.
     constructor() {
       super();
       this.#confirmButton = document.createElement('BUTTON');
@@ -273,7 +281,6 @@
     #okButton = null;
     #msToHide = -1;
     
-    // not allowed to pass in any arguments into the constructor.
     constructor() {
       super();
       this.#okButton = document.createElement('BUTTON');
@@ -283,10 +290,6 @@
       // this.prototype.#title: Private field '#title' must be declared in an enclosing class 
     }
     show () {
-      // console.assert(this.constructor.prototype.show !== this.show) // failed
-
-      // this.constructor.prototype.__proto__.show.call(this)
-      // Dialog.prototype.show.call(this)
       super.show();
       this.append(this.#okButton)
       this.#okButton.addEventListener('click', event => {
@@ -295,7 +298,6 @@
       
       if(this.#msToHide > 0) {
         setTimeout(() => this.hide(), this.#msToHide);
-        // setTimeout(this.hide, this.#msToHide); -- `this` will become the window obj
       }
     }
     /**

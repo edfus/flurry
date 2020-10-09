@@ -1,4 +1,4 @@
-"use strict";
+// "use strict"; ES6 modules are always in strict mode
 // import config from '../scripts@config/config.js'; - deprecated
 // config = window.config; - not necessary
 // type="module" can still get access to config directly

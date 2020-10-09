@@ -1,3 +1,4 @@
+"use strict";
 {
   const work = () => {
     const host = `https://flurry.ml/`;
