@@ -111,6 +111,7 @@ class UserInteraction {
   }
 
   // touchcancel is fired whenever it takes ~200 ms to return from a touchmove event handler.
+  // 为了能够removeEventListenerr，此处不使用箭头函数而使用闭包（或bind）
 
   #touch_startCallback = (that => {
     return event => {
@@ -159,7 +160,6 @@ class UserInteraction {
   }
 
   #mouse_moveCallback = (that => {
-    // 声明建立时和建立后不同。建立后不能访问非static元素，prototype不能访问private field元素，但此时都能
     return event => {
       that.#absolutePos.x = event.clientX;
       that.#absolutePos.y = event.clientY;
@@ -283,7 +283,7 @@ class Canvas2D {
 
   endLine (identifier) {
     Object.defineProperty(this.#paths_obj[identifier], 'end', {
-      value: true,
+      value: true
       // writable: false - default
       // enumerable: false - default
     });
@@ -366,15 +366,13 @@ class WhenPaused {
   static speed_sky = config.speed_sky / this.divideX;
   static speed_propeller = config.speed_propeller / this.divideX;
 
-  static #renderLoop = (that => 
-    () => {
+  static #renderLoop () {
       canvas2D.paint();
-      updatePlane(that.speed_propeller);
-      updateBackground(that.speed_sea, that.speed_sky);
+      updatePlane(this.speed_propeller);
+      updateBackground(this.speed_sea, this.speed_sky);
       renderer.render(scene, camera);
-      requestAnimationFrame(that.#renderLoopPtr); // ptr, invoked by window so closure necessary
-    }
-  )(this); // this: WhenPaused 
+      requestAnimationFrame(() => this.#renderLoopPtr()); // invoked by window
+  } // this: WhenPaused 
 
   static #renderLoopPtr = this.#renderLoop; // must after static #renderLoop's declaration
 
@@ -387,7 +385,7 @@ class WhenPaused {
   static backTo (newRenderLoop) {
     userInteraction.addListeners();
     airplane.defaultPropellerSpeed = config.defaultPropellerSpeed;
-    this.#renderLoopPtr = newRenderLoop; // 
+    this.#renderLoopPtr = newRenderLoop.bind(window); // can't access WhenPaused by this in newRenderLoop
   }
 }
 

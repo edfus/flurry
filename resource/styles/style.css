@@ -11,14 +11,13 @@
   --light-sky-blue: #b3e5fc;
 }
 
-/* latin */
 @font-face {
   font-family: 'Electrolize';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
   src: local('Electrolize'), local('Electrolize-Regular'), url(https://fonts.gstatic.com/s/electrolize/v9/cIf5Ma1dtE0zSiGSiED7AXEBuI8.woff2) format('woff2'), url(/resource/Electrolize.woff2) format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; /* latin */
 } 
 
 html, body {
@@ -26,25 +25,25 @@ html, body {
   font-size: 16px; /* rem */
 }
 
-@media screen and (min-width: 450px) and (max-width: 824px) {  /* iphone X width: 812, pixel XL: 823 */
+@media screen and (min-width: 450px) and (max-width: 824px) {  /* iphone X width: 812px, pixel XL: 823px */
   html, body {
     font-size: 14px; /* rem */
   }
 }
 
-@media screen and (min-width: 375px) and (max-width: 449px) { /* iphone 6/7/8 375 */
+@media screen and (min-width: 375px) and (max-width: 449px) { /* iphone 6/7/8 375px */
   html, body {
     font-size: 12px; /* rem */
   }
 }
 
-@media screen and (min-width: 320px) and (max-width: 374px) { /* iphone 6/7/8 375 */
+@media screen and (min-width: 320px) and (max-width: 374px) { /* iphone 6/7/8 375px */
   html, body {
     font-size: 11px; /* rem */
   }
 }
 
-@media screen and (max-width: 319px) { /* iphone 5/SE */
+@media screen and (max-width: 319px) { /* iphone 5/SE: 320px */
   .dialog {
     display: none;
   }
@@ -132,7 +131,8 @@ main > #ui {
     box-shadow: none;
     background-color: var(--light-sky-blue);
     color: var(--confirm-color);
-  }
+  } 
+  /* touch device has native focus style */
 }
 
 ::part(error-button) {
