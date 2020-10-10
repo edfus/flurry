@@ -119,7 +119,7 @@
     }
 
     /**
-     * @param {Array<string} arr
+     * @param {Array<string>} arr
      */
     set paragraphs (arr) {
       if(!Array.isArray(arr)){
@@ -209,12 +209,16 @@
       this.#callbackQueue[eventName].push({callback, once: false}) // shorthand
     }
 
-    static removeEventListener (eventName, callbackToRemove) {
-      this.#callbackQueue[eventName] = this.#callbackQueue[eventName].filter(({callback}) => {
-        if(callback === callbackToRemove)
-          return false;
-        else return true;
-      })
+    static removeEventListener (eventName, callbackToRemove, isOnceEvent = false) {
+      while(
+        !this.#callbackQueue[eventName].every(({callback, once}, i, arr) => {
+          if(callback === callbackToRemove && once === isOnceEvent) {
+            arr.splice(i, 1);
+            return false;
+          }
+          else return true;
+        })
+      ) ; // 不shallow copy数组，提高效率
     }
     // this.#observer.dataset.queue = [];
       // Note that the HTMLElement.dataset property is a DOMStringMap
@@ -251,7 +255,7 @@
       // this.constructor.prototype.__proto__.show.call(this)
       // this.__proto__.__proto__.show.call(this)
       // Dialog.prototype.show.call(this)
-      // super - shorthand method names (ES6), returns undefined when used in an non-class object (chrome 85.0.4183.121)
+      // super - available in all shorthand methods (ES6)
       super.show();
       this.append(this.#confirmButton, this.#rejectButton)
   
