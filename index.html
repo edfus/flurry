@@ -97,6 +97,11 @@
 					if(window.matchMedia('screen and (orientation: portrait) and (max-width: 767px)').matches){
 						Dialog.newError('Don\'t forget to change orientation to landscape <span style="font-family: Roboto,Helvetica Neue,sans-serif">:)</span>', 5000)
 					}
+					try {
+						window.WebGL2RenderingContext.name.a?.b ?? [...[]].includes(), class {static #a}
+					} catch (err) {
+						Dialog.newError(`--Browser compatibility issue😢--`,`We're Sorry - It looks like your browser doesn't support some of the features we depend on.`, err)
+					}
 				</script>
 		</section>
 		<main id="main"><canvas id="ui"></canvas></main>
