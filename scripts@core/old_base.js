@@ -2,7 +2,8 @@
 // import config from '../scripts@config/config.js'; - deprecated
 // config = window.config; - not necessary
 // type="module" can still get access to config directly
-import {Airplane, Sky, Sea} from '../scripts@core/old_customObject.js';
+import { Airplane, Sky, Sea } from '../scripts@core/old_customObject.js';
+import UserInteraction from '../scripts@core/ui.js'
 /////////////////////////////////
 {
   let mode = ['production', '#42c02e'];
@@ -17,9 +18,7 @@ import {Airplane, Sky, Sea} from '../scripts@core/old_customObject.js';
   console.info(`%c Platform %c ${ua.match(/(?<=\().*?(?=\))/)[0]} `, titleStyle, `${subStyle}: #1475b2;`)
 }
 ////////////////////////////////
-
-//SCENE & CAMERA VARIABLES
-
+// can't access these seemingly global variables outside base.js, as base.js is loaded as module
 var scene = null,
     camera = null,
     renderer = null;
@@ -29,348 +28,19 @@ var sea = null, // createdBy new Sea()
     airplane = null, // createdBy new Airplane()
     sky = null; // createdBy new Sky()
 
-// can't access these seemingly global variables outside base.js, as base.js is loaded as module
-///////////////////////////////////////////////////
-
-class UserInteraction {
-  #relativePos = { x: 0, y: 0 };
-  #absolutePos = { x: 0, y: 0 };
-
-  #isTouchDevice = false;
-
-  #windowHeight = 0;
-  #windowWidth =  0;
-
-  #mouseMove_triggered = false;
-
-  #identifier = "mouse_";
-
-  constructor() {
-    this.#isTouchDevice = this.#testTouchDevice();
-    this.#identifier = ["mouse_","touch_"][Number(this.#isTouchDevice)];
-
-    this.#windowHeight = window.innerHeight;
-    this.#windowWidth = window.innerWidth;
-  }
-
-  get isTouchDevice () {
-    return this.#isTouchDevice;
-  }
-
-  get relativePos () {
-    return this.#relativePos;
-  }
-
-  get HEIGHT () {
-    return this.#windowHeight;
-  }
-
-  get WIDTH () {
-    return this.#windowWidth;
-  }
-
-  #updateRelativePos (x = this.#absolutePos.x, y = this.#absolutePos.y) {
-    this.#relativePos.x = -1 + (x / this.WIDTH) * 2,
-    this.#relativePos.y = 1 - (y / this.HEIGHT) * 2
-  }
-
-  #testTouchDevice () {
-    if ("ontouchstart" in window) 
-      return true;
-    else return false;
-    // Modernizr's way isn't working (^^;)
-  }
-
-  addListeners () {
-    // this['#mouse_addListeners'] - undefined
-    this[`${this.#identifier}addListeners`]();
-    // 不能动态访问private field
-  }
-
-  removeListeners () {
-    this[`${this.#identifier}removeListeners`]();
-  }
-
- /**
-  * If the browser fires both touch and mouse events because of a single user input, 
-  * the browser must fire a touchstart before any mouse events. 
-  * Consequently, if an application does not want mouse events fired on a specific touch target element, 
-  * the element's touch event handlers should call preventDefault() and no additional mouse events will be dispatched.
-  */
-
-  touch_addListeners = function () {
-    document.addEventListener('touchstart', this.#touch_startCallback, {passive: false});
-    document.addEventListener('touchmove', this.#touch_moveCallback, {passive: false});
-    document.addEventListener('touchend', this.#touch_endCallback, {passive: false});
-  }
-
-  touch_removeListeners = function () {
-    document.removeEventListener('touchstart', this.#touch_startCallback);
-    document.removeEventListener('touchmove', this.#touch_moveCallback);
-    document.removeEventListener('touchend', this.#touch_endCallback);
-  }
-
-  // touchcancel is fired whenever it takes ~200 ms to return from a touchmove event handler.
-  // 为了能够removeEventListenerr，此处不使用箭头函数而使用闭包（或bind）
-
-  #touch_startCallback = (that => {
-    return event => {
-      event.preventDefault();
-      for (const touch of event.touches) {
-        canvas2D.createLine(touch.pageX, touch.pageY, touch.identifier)
-      }
-    }
-  })(this)
-
-  #touch_moveCallback  = (that => {
-    return event => {
-      event.preventDefault();
-      let x = 0, y = 0;
-      for (const touch of event.touches) {
-        x += touch.pageX;
-        y += touch.pageY;
-      }
-      that.#updateRelativePos(x / event.touches.length, y / event.touches.length);
-      // setTimeout(() => {
-        for (const touch of event.changedTouches) {
-          canvas2D.pushPoint(touch.pageX, touch.pageY, touch.identifier)
-        } // Is touchmove event fire once in per frame?
-      // }, 0)  
-    }
-  })(this)
-
-  #touch_endCallback = (that => {
-    return event => {
-      event.preventDefault();
-      for (const touch of event.changedTouches) {
-        canvas2D.endLine(touch.identifier)
-      }
-    }
-  })(this)
-
-  mouse_addListeners = function () {
-    document.addEventListener('mousemove', this.#mouse_moveCallback, {passive: true});
-    document.addEventListener('mouseleave', this.#mouse_leaveCallback, {passive: true});
-  }
-
-  mouse_removeListeners = function () {
-    // "mousemove mouseleave mouseover".split(' ').forEach(e => e)
-    document.removeEventListener('mousemove', this.#mouse_moveCallback);
-    document.removeEventListener('mouseleave', this.#mouse_leaveCallback);
-  }
-
-  #mouse_moveCallback = (that => {
-    return event => {
-      that.#absolutePos.x = event.clientX;
-      that.#absolutePos.y = event.clientY;
-      that.#updateRelativePos();
-
-      if(config.testMode)
-        if(that.#mouseMove_triggered)
-          canvas2D.pushPoint(event.clientX, event.clientY, 0)
-        else {
-          canvas2D.createLine(event.clientX, event.clientY, 0);
-          that.#mouseMove_triggered = true;
-        }
-    }
-  })(this)
-
-  #mouse_leaveCallback = (that => {
-    return event => {
-      that.#mouseMove_triggered = false;
-      if(config.testMode)
-        canvas2D.endLine(0);
-    }
-  })(this)
-
-  #resizeCallback () {
-    this.#windowHeight = window.innerHeight;
-    this.#windowWidth = window.innerWidth;
-    renderer.setSize(this.WIDTH, this.HEIGHT);
-    camera.aspect = this.WIDTH / this.HEIGHT;
-    // camera的aspect应和renderer.setSize的纵横比相同
-    camera.updateProjectionMatrix(); 
-    // you will have to call .updateProjectionMatrix for the changes to take effect.
-    if(config.testMode){
-      config.cameraHelper.update()
-    }
-    canvas2D.setSize(this.WIDTH, this.HEIGHT)
-  }
-
-  resizeCallback = function () {
-    return this.#resizeCallback(); // [Violation] 'load' handler took 156ms
-    // return this.#resizeCallback_debounce();  // [Violation] 'setTimeout' handler took 51ms
-    // in 2020 debounce on resize event still worthy?
-  }
-}
-
 const userInteraction = new UserInteraction();
 
-class Canvas2D {
-  #canvas = null;
-  #context = null;
-  #paths_obj = {};
-
-  fadeOutSpeed = .035
-
-  constructor () {
-    this.#canvas = config.getUIContainer();
-
-    this.#canvas.width = userInteraction.WIDTH;
-    this.#canvas.height = userInteraction.HEIGHT;
-
-    this.#context = this.#canvas.getContext('2d');
-
-    this.setStyle();
-
-    Object.defineProperty(this.#paths_obj, 'empty', {
-      value: true,
-      writable: true
-      // enumerable: false - default
-    });
-  }
-
-  alpha = function (alpha) { // can be changed, not in prototype
-    return `rgba(255, 255, 255, ${alpha})`
-  }
-
-  setStyle = function () {
-    this.#context.shadowColor = this.alpha(.4);
-    this.#context.shadowBlur = 6;
-
-    this.#context.lineWidth = 3;
-    this.#context.lineJoin = this.#context.lineCap = 'round';
-  }
-
-  /**
-   * construct a new line object
-   * @param {number} identifier
-   * @return {TouchPath} new line object
-   */
-  createNewTouchPath (identifier) {
-    let newPath = { // 0 - identifier of this touch
-      segments: [],
-      last_i: 0,
-      path: new Path2D() // path2D obj
-    }
-    newPath.segments.push(this.newPathSegment(newPath))
-
-    this.#paths_obj[identifier] = newPath;
-    this.#paths_obj.empty = false;
-    return newPath;
-  }
-  /**
-   * construct a new line object
-   * @param {TouchPath} path
-   * @return {TouchPathSegment} new line object
-   */
-  newPathSegment (path_obj) {
-    let newSegment = {
-      path: new Path2D(),
-      opacity: .6
-    }
-    
-    path_obj.path.addPath(newSegment.path)
-    return newSegment;
-  } // this[#TouchPathSegment] is not a constructor - can't use class method as a constructor
-
-  createLine (startX, startY, identifier) {
-    let path = this.createNewTouchPath(identifier);
-
-    path.segments[0].path.moveTo(startX, startY);
-    path.path.moveTo(startX, startY);
-  }
-
-  endLine (identifier) {
-    Object.defineProperty(this.#paths_obj[identifier], 'end', {
-      value: true
-      // writable: false - default
-      // enumerable: false - default
-    });
-  }
-
-  pushPoint (x, y, identifier) {
-    let path = this.#paths_obj[identifier];
-    let i = path.last_i;
-
-    path.segments[i].path.lineTo(x, y);
-    // quadraticCurveTo(x, y, midPoint.x, midPoint.y)
-    // http://perfectionkills.com/exploring-canvas-drawing-techniques/
-    path.segments.push(this.newPathSegment(path));
-    path.segments[i + 1].path.moveTo(x, y);
-
-    path.last_i = i + 1;
-  }
-
-  paint () {
-    if(this.#paths_obj.empty)
-      return ;
-    this.clear();
-    for(const [identifier, path] of Object.entries(this.#paths_obj)) {
-      if(path.last_i === 0) // newly created by touchstart
-        continue;
-
-      let i_toRemove = -1;
-
-      for(let i = 0; i < path.last_i; i++) { // last segment will not be processed
-        let segment = path.segments[i];
-        segment.opacity -= this.fadeOutSpeed;
-        this.#context.strokeStyle = this.alpha(segment.opacity);
-        this.#context.stroke(segment.path);
-
-        if(segment.opacity <= this.fadeOutSpeed){
-          i_toRemove = i;
-        }
-      }
-
-      i_toRemove++; // if -1, then 0, no effect
-
-      path.segments.splice(0, i_toRemove);
-      path.last_i -= i_toRemove;
-      if(path.last_i <= 1 && path.end) {
-        delete this.#paths_obj[identifier];
-        this.#paths_obj.empty = this.isEmpty(this.#paths_obj);
-      }
-    }
-  }
-
-  isEmpty (obj) {
-    for (const whateverEnumerable in obj) {
-      return false;
-    }
-    return true;
-  }
-
-  setSize (width, height) {
-    this.#canvas.width = width;
-    this.#canvas.height = height;
-  } // 高宽改变时，画布内容会被清空，需要重新绘制
-
-  clear () {
-    this.#context.clearRect(0, 0, this.#canvas.width, this.#canvas.height); // fillRect
-    // Another elegant option is to set the 'globalCompositeOperation' to 'xor' and paint you line again....so it will be removed
-  } 
-}
-const canvas2D = new Canvas2D();
-
-// Cannot access 'whenPaused' before initialization. this: undefined
-// so using es6 class.
-class WhenPaused {
+class WhenPaused { // 没有construct的需要，所以全部使用static属性通过WhenPaused访问
   static divideX = 6;
-  // static #renderLoopPtr = null; // function ptr
-  // Cannot read private member #renderLoop from an object whose class did not declare it
-
-  // 没有construct的需要，所以全部使用static属性通过WhenPaused访问
-
   static speed_sea = config.speed_sea / this.divideX;
   static speed_sky = config.speed_sky / this.divideX;
   static speed_propeller = config.speed_propeller / this.divideX;
 
-  static #renderLoop () {
-      canvas2D.paint();
-      updatePlane(this.speed_propeller);
-      updateBackground(this.speed_sea, this.speed_sky);
+  static #renderLoop () { // the renderLoop to be executed when paused
+      updatePlane();
+      updateBackground();
       renderer.render(scene, camera);
+      userInteraction.canvas2D.paint();
       requestAnimationFrame(() => this.#renderLoopPtr()); // invoked by window
   } // this: WhenPaused 
 
@@ -379,13 +49,17 @@ class WhenPaused {
   static start () {
     userInteraction.removeListeners();
     this.#renderLoopPtr = this.#renderLoop;
-    airplane.defaultPropellerSpeed /= this.divideX;
+    sea.defaultSpeed = this.speed_sea;
+    sky.defaultSpeed = this.speed_sky;
+    airplane.defaultSpeed = this.speed_propeller;
     this.#renderLoop();
   }
   static backTo (newRenderLoop) {
     userInteraction.addListeners();
-    airplane.defaultPropellerSpeed = config.defaultPropellerSpeed;
-    this.#renderLoopPtr = newRenderLoop.bind(window); // can't access WhenPaused by this in newRenderLoop
+    sea.defaultSpeed = config.speed_sea;
+    sky.defaultSpeed = config.speed_sky;
+    airplane.defaultSpeed = config.speed_propeller;
+    this.#renderLoopPtr = newRenderLoop.bind(window); // .bind(window): can't access WhenPaused by this in newRenderLoop
   }
 }
 
@@ -402,38 +76,42 @@ function throttleLog () {
   }
 }
 
-//INIT THREE JS, SCREEN AND MOUSE EVENTS
+////////////////////////////////////////
+
 window.addEventListener('load', ()=>{
   // loading: 0 ms
 
   createScene();
   createLights();
-
   createObjects();
 
   // loading: 157.890869140625 ms
-
-  config.getContainer().appendChild(renderer.domElement);
-
-  window.addEventListener('resize', () => userInteraction.resizeCallback(), {passive: true});
-
-  config.gameStartCallback();
-
-  // loading: 159.793701171875 ms
+  userInteraction.addResizeCallback(() => {
+    renderer.setSize(userInteraction.WIDTH, userInteraction.HEIGHT);
+    camera.aspect = userInteraction.WIDTH / userInteraction.HEIGHT; // camera的aspect应和renderer.setSize的纵横比相同
+    camera.updateProjectionMatrix(); 
+  })
+  if(config.testMode){
+    userInteraction.addResizeCallback(() => config.cameraHelper.update());
+  }
+  userInteraction.listenResize();
 
   userInteraction.addListeners(); 
+
+  config.getContainer().appendChild(renderer.domElement);
+  config.gameStartCallback();
 
   // loading: 160.85498046875 ms
 
   (function renderLoop() { // immediate function前不加;会出各种各样奇奇怪怪的错
     if(!window.paused){
       //TODO: if(crashed)
-      canvas2D.paint(); // 我做着玩的，到时候会删掉 - cloudres
       updatePlane();
       updateBackground();
       updateCameraFov();
       //TODO: updateScore();
       renderer.render(scene, camera);
+      userInteraction.canvas2D.paint();
       requestAnimationFrame(renderLoop);
     } else {
       console.info('RenderLoop: game paused');
@@ -452,7 +130,9 @@ window.addEventListener('load', ()=>{
     }
   })()
   // loading: 386.660888671875 ms
-}, {passive: true});
+}, {passive: true, once: true});
+
+///////////////////////////
 
 function createScene() {
   scene = new THREE.Scene();
