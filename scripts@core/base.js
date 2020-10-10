@@ -79,3 +79,51 @@ class game {
 }
 
 window.game = new game();
+//////////////////////////////// game's child objects
+import UserInteraction from '../scripts@core/ui.js';
+
+game.ui = new UserInteraction();
+
+game.paused = false; // explicit
+
+game.pause = class { // result in changing game.paused
+  static init () { 
+    // all methods related to changing game state
+    document.addEventListener("visibilitychange", () => {
+      if(document.visibilityState === 'visible')
+        game.paused = false; 
+      else {
+        game.paused = true; 
+      }
+    }, {passive: true});
+
+    Dialog.addEventListener('dialogShow', () => {
+      game.paused = true;
+    })
+  }
+  static async waitForUserContinue () {
+    return new Promise((resolve, reject) => {
+      if(Dialog.isBusy)
+        Dialog.addOnceListener('dialogHide', () => 
+          resolve(window.paused = false)
+        )
+    })
+  }
+  //////////////////////// logic when game paused
+  static #renderLoop_whenPaused () { // the renderLoop to be executed when paused
+    // do sth...
+    requestAnimationFrame(() => this.#renderLoopPtr()); // invoked by window
+  }
+
+  static #renderLoopPtr = this.#renderLoop_whenPaused; // must after static #renderLoop's declaration
+
+  static start () {
+    game.ui.removeListeners();
+    this.#renderLoopPtr = this.#renderLoop_whenPaused;
+    this.#renderLoop_whenPaused();
+  }
+  static backTo (newRenderLoop) {
+    game.ui.addListeners();
+    this.#renderLoopPtr = newRenderLoop.bind(window); // .bind(window): can't access WhenPaused by this in newRenderLoop
+  }
+}
