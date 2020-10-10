@@ -51,10 +51,7 @@ cloudres:
 
 - [ ] 完成web worker - audio开发 
     https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
-    https://github.com/mrdoob/three.js/blob/master/src/audio/Audio.js
-    https://threejs.org/docs/#api/en/audio/Audio
     https://developer.mozilla.org/en-US/docs/Web/API/AudioBufferSourceNode
-    https://developers.google.com/web/updates/2018/11/web-audio-autoplay
     https://developer.mozilla.org/en-US/docs/Games/Techniques/Audio_for_Web_Games
     https://developer.mozilla.org/en-US/docs/Web/Guide/Audio_and_video_delivery/Web_Audio_API_cross_browser
     https://developers.google.com/web/updates/2017/12/audio-worklet

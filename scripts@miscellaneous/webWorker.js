@@ -7,124 +7,156 @@
         name: "Intro",
         url: `${host}resource/audio/Loner%20Soundtrack/0_Intro.mp3`,
         type: "audio/mpeg",
-        role: 'intro',
-        index: -1
+        role: 'intro'
+        // index: -1
       }
     ];
     // https://blog.csdn.net/ML01010736/article/details/46422651 IIS6常用的MIME类型[rmvb,mp3,zip,exe等文件]
     const songObejectSample = {
-      name: "",
       type: "audio/mpeg",
       arrayBuffer: '',
+      usage: 'song',
       role: 'none | intro | ...',
+      name: "", 
       index: 0
     } 
     const soundEffectObjSample = {
-      name: "",
-      type: "SE", //TODO: rename type may 
-      role: '',
-      audioBuffer: ''
-    } // AudioBuffer are designed to hold small audio snippets, typically less than 45 s
-      // created from an audio file using the AudioContext.decodeAudioData()
-      // audioContext.decodeAudioData(response, buffer => {
-      //   let source = audioContext.createBufferSource();
-      //   // 将解码后得到的值赋给buffer
-      //   source.buffer = buffer;
-      //   // 完成。将source绑定到audioContext。也可以连接AnalyserNode
-      //   source.connect(audioContext.destination);
-      // });
-      // setTimeout(() => audio.play())
+      type: "audio/mpeg",
+      audioBuffer: '',
+      usage: "se",
+      role: ''
+      // name: ''
+    } 
+    // AudioBuffer are designed to hold small audio snippets, typically less than 45 s
+    // created from an audio file using the AudioContext.decodeAudioData()
 
     /* class AudioPlayer - BEGIN */
     class AudioPlayer {
-      #availableList = {};
-      #intro = '';
-      #sequenceArr = [];
       #rolesToReserve = ["intro"];
-      #audioContext = null; //TODO
+
+      #songs = {
+        intro: null,
+        nextsToPlay: new Array(2), // for next two songs to play, reserve their array buffer 
+        currentIndex: 0,
+        theme: null
+      };
+      #sequenceArr = [];
+      #isSongPlaying = false;
+
+      #SEList = {
+
+      }
+      #isSEPlaying = false;
+      
+      #audioContext = null;
+      #source = null;
+
       #maxRetryTimes = 3;
       #retryGap = 3000; // ms
       #forceLoad = false;
-
-      //TODO: onend -> postmassage -> set variable --> main thread
 
       constructor () {
         this.loadAll();
       }
 
       /**
-       * @param {{ role: string; buffer: ArrayBuffer; }} newAudio
+       * @param {{ name?: string; index?: number; type: string; role: string; audioBuffer?: ArrayBuffer; buffer?: ArrayBuffer; }} newAudio
        */
       set newLoadedAudio (newAudio) {
-        // no check for repeat
-        if(newAudio.type === 'SE'){
-          //TODO
+        // has check for repeat
+        if(newAudio.usage === 'se'){
+          this.#SEList[newAudio.role] 
+          ?? (this.#SEList[newAudio.role] = {
+            audioBuffer: ''
+          }) // one role one se
           return ;
         }
 
         if(this.#rolesToReserve.includes(newAudio.role)){
-          this.#availableList[newAudio.name] = {
+          this.#songs[newAudio.role]
+          ?? (this.#songs[newAudio.role] = {
+            name: newAudio.name,
             type: newAudio.type,
-            role: newAudio.role,
             buffer: newAudio.arrayBuffer
-          }
-          this[`#${newAudio.role}`] = newAudio.name;
+          })
         } else {
+          if(this.#sequenceArr[newAudio.index] != undefined) // undefined or null
+            return ;
           this.#sequenceArr[newAudio.index] = newAudio.name;
-        }
-      }
-
-      stop_instantly () {
-        if (this.#audioContext.state === 'suspended') {
-            this.#audioContext.resume();
-        }
-      }
-
-      stop_fadeOut () {
-        
-      }
-
-      playNext () {
-        
-      }
-      // https://developers.google.com/web/updates/2018/11/web-audio-autoplay
-      /*
-      We detect when users regularly let audio play for more than 7 seconds during most of their visits to a website, 
-      and enable autoplay for that website.
-      chrome://media-engagement/
-      */
-      playIntro () {
-        let startPlayPromise = videoElem.play();
-
-        /* In the Web Audio API, a web site or app can start playing audio using the start() method on a source node linked to the AudioContext. Doing so outside the context of handling a user input event is subject to autoplay rules.
-        */
-        if (startPlayPromise !== undefined) { // in earlier versions of the HTML specification, play() didn't return a value.
-          startPlayPromise.then(() => { 
-            // Start whatever you need to do only after playback 
-            // has begun. 
-          }).catch(error => {
-            if (error.name === "NotAllowedError") {
-              showPlayButton(videoElem);
-            } else {
-              // Handle a load or playback error
+          if(currentIndex <= newAudio.index && newAudio.index - currentIndex <= this.#songs.nextsToPlay.length)
+            this.#songs.nextsToPlay[newAudio.index - currentIndex] = {
+              name: newAudio.name,
+              type: newAudio.type,
+              buffer: newAudio.arrayBuffer,
+              index: newAudio.index
             }
-          });
         }
       }
+
+      stop () {
+
+        this.#source.stop();
+      }
+
+      pause_fadeOut () {
+        this.#audioContext.resume();
+      }
+
+      playNext (delay = 0) {
+        if (this.#audioContext.state === 'suspended') {
+          this.#audioContext.resume();
+        }
+      }
+
+      playIntro () {
+
+      }
+
       playTheme () {
         
       }
-      playSoundEffect () {
-        
+
+      playSoundEffect (role) {
+        this._startedAt = this.context.currentTime + delay;
+
+        const source = this.#audioContext.createBufferSource();
+        source.buffer = this.#SEList[role].audioBuffer;
+        source.loop = this.loop;
+        source.loopStart = this.loopStart;
+        source.loopEnd = this.loopEnd;
+        source.onended = this.onEnded.bind(this);
+        // source.start( this._startedAt, this._progress + this.offset, this.duration );
+        this.#isSEPlaying = true;
+        this.#source = source;
+        source.connect(this.#audioContext.destination);
       }
-      playDeadSound () {
-        
+
+      set loopStart (value) {
+        this.loopStart = value;
+        return this;
       }
+    
+      set loopEnd (value) {
+        this.loopEnd = value;
+        return this;
+      }
+
+      // get volume() {
+      //   return this.gain.gain.value;
+      // }
+    
+      // set volume( value ) {
+      //   this.gain.gain.setTargetAtTime( value, this.context.currentTime, 0.01 );
+      //   return this;
+      // }
+    
+
+      ///////// indexedDB related methods
       async openDB (DBname, storeName) {
         let request = indexedDB.open(DBname, 1);
         return new Promise((resolve, reject) => {
           request.onsuccess = event => resolve(event.target.result);
-          request.onerror = event => reject({name: 'indexDB', message: event.target.error});
+          request.onerror = event => reject({name: 'indexedDB', message: event.target.error});
           request.onupgradeneeded = e => {
             if(e.oldVersion === 0)
               e.target.result.createObjectStore(storeName, {keyPath: 'name', autoIncrement: false}).createIndex(`${storeName}NameIndex`, 'name', {unique: true});
@@ -169,7 +201,7 @@
         this.#forceLoad = true;
       }
       /**
-       * load specific source to or in indexDB
+       * load specific source to or in indexedDB
        * @param {Array<Object>} sourceList All stuff to load
        * @param {string} DBname
        * @param {string} storeName 
@@ -182,7 +214,7 @@
           let request = store.get(source.name);
           return new Promise((resolve, reject) => {
             request.onsuccess = e => {
-              if(e.target.result === undefined){
+              if(e.target.result === undefined) {
                 const loadSourceWithRetry = retriedTimes => { // 避免this丢失
                   this.newfetch(source.url)
                     .then(arrayBuffer => {
@@ -212,7 +244,7 @@
                 resolve();
               }
             };
-            request.onerror = e => reject({name: 'indexDB', message: e.error});
+            request.onerror = e => reject({name: 'indexedDB', message: e.error});
           })
         }))
       }
@@ -264,42 +296,59 @@
       #worker = null;
       constructor () {
         this.#worker = this.#newWorker(work);
-        this.#worker.onmessage = this.#onmessage;
+        this.#worker.onmessage = this.#onmessage.bind(this);
+
+        if(localStorage.interacted) // autoplay rules.
+          this.#assignWork("playTheme");
+        else {
+          document.addEventListener("click", () => {
+            localStorage.interacted = true;
+            if(this.#songPlaying === '') //
+              this.#assignWork("playTheme");
+          }, {passive: true, once: true}) 
+        }
+       /**
+        * https://developers.google.com/web/updates/2018/11/web-audio-autoplay
+        * We detect when users regularly let audio play for more than 7 seconds during most of their visits to a website, 
+        * and enable autoplay for that website.
+        * chrome://media-engagement/
+        */
       }
 
       #newWorker (workerFunction) {
         return new Worker(URL.createObjectURL(new Blob([`(${workerFunction})()`], {type: 'application/javascript'})), { type: 'module' });
       }
 
-      #onmessage = (that => {
-        return function (message) {
-          if(message.data.isError){
-            switch(message.data.name){
-              case 'saveDataModeOn':
-                // using default confirm method blocks script execution but setTimeout continues (^^;)
-                !existsCookie('rejectedForceLoad=true') && 
-                  Dialog.newConfirm("Your device is on lite mode", ["Downloading audio is paused to prevent data charges."], "Download anyway", "cancel").then(result => 
-                    result === true
-                    ? (that.#assignWork("forceLoad"), that.#assignWork("loadAll"))
-                    : setCookie("rejectedForceLoad=true", 1)
-                  ) || console.info('Cookie: rejectedForceLoad=true')
-                return ;
-              case 'exception':
-                return  Dialog.newError(message.data.name, message.data.message, 15000);;
-              case 'responseNotOk':
-                return Dialog.newError('📶 Network Error', message.data.message, 15000);
-              case 'indexDB':
-                Dialog.newError('can\' access indexDB😨', message.data.message)
-                return ;
-            }
-          } else if(message.data.isEvent){
-            switch(message.data.name){
-              case 'newAudioPlaying':
-                return;
-            }
+      #onmessage ({data}) {
+        if(data.isError){
+          switch(data.name){
+            case 'saveDataModeOn':
+              // using default confirm method blocks script execution but setTimeout continues (^^;)
+              !existsCookie('rejectedForceLoad=true') && 
+                Dialog.newConfirm("Your device is on lite mode", ["Downloading audio is paused to prevent data charges."], "Download anyway", "cancel").then(result => 
+                  result === true
+                  ? (that.#assignWork("forceLoad"), that.#assignWork("loadAll"))
+                  : setCookie("rejectedForceLoad=true", 1)
+                ) || console.info('Cookie: rejectedForceLoad=true')
+              return ;
+            case 'exception':
+              return  Dialog.newError(data.name, data.message, 15000);;
+            case 'responseNotOk':
+              return Dialog.newError('📶 Network Error', data.message, 15000);
+            case 'indexedDB':
+              Dialog.newError('can\' access indexedDB😨', data.message)
+              return ;
+          }
+        } else if(data.isEvent){
+          switch(data.name){
+            case 'newSongPlaying':
+              this.#songPlaying = data.message;
+              return ;
+            case 'songEnded':
+              return this.#songPlaying = '';
           }
         }
-      })(this)
+      }
 
       #assignWork (functionName, ...vars) {
         this.#worker.postMessage([
@@ -317,6 +366,6 @@
     }
     window.audioPlayer = new GlobalAudioPlayer();
   } else {
-    Dialog.newError('can\' access indexDB😨')
+    Dialog.newError('can\' access indexedDB😨')
   }
 }
