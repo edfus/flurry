@@ -32,6 +32,10 @@ class UserInteraction {
     return this.#relativePos;
   }
 
+  get absolutePos () {
+    return this.#absolutePos;
+  }
+
   get HEIGHT () {
     return this.#windowHeight;
   }
@@ -155,16 +159,16 @@ class UserInteraction {
     }).bind(this)
   ];
 
+  #resizeCallback () {
+    this.#resizeCallbackQueue.forEach(e => e())
+  }
+
   addResizeCallback (func) {
     this.#resizeCallbackQueue.push(func);
   }
 
-  resizeCallback () {
-    this.#resizeCallbackQueue.forEach(e => e())
-  }
-
   listenResize () {
-    window.addEventListener('resize', () => this.resizeCallback(), {passive: true});
+    window.addEventListener('resize', () => this.#resizeCallback(), {passive: true});
   }
   //this.#resizeCallback(); // [Violation] 'load' handler took 156ms
   // return this.#resizeCallback_debounce();  // [Violation] 'setTimeout' handler took 51ms
