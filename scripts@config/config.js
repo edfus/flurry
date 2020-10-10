@@ -210,15 +210,12 @@
     }
 
     static removeEventListener (eventName, callbackToRemove, isOnceEvent = false) {
-      while(
-        !this.#callbackQueue[eventName].every(({callback, once}, i, arr) => {
-          if(callback === callbackToRemove && once === isOnceEvent) {
-            arr.splice(i, 1);
-            return false;
-          }
-          else return true;
-        })
-      ) ; // 不shallow copy数组，提高效率
+      for(let i = this.#callbackQueue[eventName].length - 1; i >= 0; i--) {
+        if(callbackToRemove === this.#callbackQueue[eventName][i].callback
+          && isOnceEvent === this.#callbackQueue[eventName][i].once) {
+            this.#callbackQueue[eventName].splice(i, 1);
+        }
+      } // 不shallow copy数组，提高效率
     }
     // this.#observer.dataset.queue = [];
       // Note that the HTMLElement.dataset property is a DOMStringMap
