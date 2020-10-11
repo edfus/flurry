@@ -61,7 +61,6 @@ body {
 } 
 /* stick the entire page in a 100vw/vh block will disable Chrome's pull-to-refresh effect */
 /* https://developers.google.com/web/updates/2017/11/overscroll-behavior */
-/* FIX: pull-to-refresh */
 
 main, #ui {
   position: absolute;
