@@ -64,7 +64,7 @@
 			<div id="loader" data-credit="codepen.io/jczimm/pen/vEBpoL">
 				<script>
 				if(existsCookie("loaded=true"))
-					if(location.search.includes('app=1')) {
+					if(config.inApp) {
 						document.getElementById("loader").hidden = "true";
 						document.getElementById("loading-section").hidden = "true";
 					} else {
@@ -107,6 +107,7 @@
 		<main id="main">
 			<section id="ui">
 				<aside class="ui-buttons right top">
+					<!-- TODO: if config.inApp, hide full screen button -->
 					<button class="ui-button fullscreen" onmouseover="this.classList.add('hover')" onmouseout="this.classList.remove('hover')" onclick="this.classList.toggle('active'); toggleFullScreen(document.documentElement)" data-credit="codepen.io/dev_loop" title="Full screen (F)">
 						<div class="row">
 							<div class="box _1"></div>

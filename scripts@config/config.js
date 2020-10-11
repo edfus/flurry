@@ -8,6 +8,8 @@
   
   TestMode = /test=1|debug/.test(location.search) ? true : false,
 
+  InApp = /app=1/.test(location.search) ? true : false,
+
   ThemeColor = '#000', // used in , webmanifest
 
   BackgroundColor = '#f7d9aa', // used in index.html/meta-themeColor, style-background
@@ -30,6 +32,10 @@
 
   GetUIContainer = () => {
     return document.getElementById('ui')
+  },
+
+  GetScoreContainer = () => {
+    return document.getElementById('score')
   },
 
   GameStartCallback = async () => { // asynchronous 异步的，非同时的
@@ -67,7 +73,8 @@
   RotationSpeed_Sea = .005,
   RotationSpeed_Sky = .01,
   NumOfCloudsInSky = 20,
-  RotationSpeed_Propeller = .4
+  RotationSpeed_Propeller = .4,
+  scoreIncreasingSpeed = 5
 
   ;
 
@@ -75,14 +82,17 @@
   window.config = {
       useNewBasejs: UseNewBasejs,
       testMode: TestMode,
+      inApp: InApp,
       version: Version,
       cameraSetting: PerspectiveCameraSetting,
       getContainer: GetContainer,
       getUIContainer:  GetUIContainer,
+      getScoreContainer: GetScoreContainer,
       gameStartCallback: GameStartCallback,
       speed_sea: RotationSpeed_Sea,
       speed_sky: RotationSpeed_Sky,
       speed_propeller: RotationSpeed_Propeller,
+      speed_score: scoreIncreasingSpeed,
       numOfCloudsInSky: NumOfCloudsInSky,
       colors: {
         red: 0xf25346,

@@ -301,6 +301,10 @@
         if(localStorage.interacted) // autoplay rules.
           this.#assignWork("playTheme");
         else {
+          if(config.inApp){
+            localStorage.interacted = true;
+            this.#assignWork("playTheme");
+          }
           document.addEventListener("click", () => {
             localStorage.interacted = true;
             if(this.#songPlaying === '') //
