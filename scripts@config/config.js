@@ -3,7 +3,7 @@
   // inner
   const fadeOutSpeedLevel = 4;
 
-  // export
+  // exposed
   const UseNewBasejs = false,
   
   TestMode = /test=1|debug/.test(location.search) ? true : false,
@@ -74,7 +74,7 @@
   RotationSpeed_Sky = .01,
   NumOfCloudsInSky = 20,
   RotationSpeed_Propeller = .4,
-  scoreIncreasingSpeed = 5
+  scoreIncreasingSpeed = 200 // m / s (700 km/h ≈ 200m/s)
 
   ;
 

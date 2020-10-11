@@ -59,6 +59,15 @@ cloudres:
 
 ---
 
+关于碰撞检测：
+1. 用户行为驱动，当触发相关事件（如上下移动触发，旋转不触发，节流（比如碰撞边界需要一个至少的用户操作下界，下界以下节流检查，以上每帧检验））时，才检测
+2. 维护一个碰撞数组，每次只对碰撞数组内的检测，其他不管。class/障碍物生成函数自动shift push数组内容
+
+关于移动：
+    初定为用户不动，场景不动，相机和障碍物移动。相机旋转跟随飞机旋转，有一定延迟ease-in-out
+
+---
+
 ### Credits
 
 - [蓝飞互娱(kunpo)](https://kunpo.cc/) - [Loner](https://play.google.com/store/apps/details?id=com.kunpo.loner&hl=en_US) (Google Play)

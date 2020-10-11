@@ -35,12 +35,10 @@ class WhenPaused { // 没有construct的需要，所以全部使用static属性�
   static speed_sea = config.speed_sea / this.divideX;
   static speed_sky = config.speed_sky / this.divideX;
   static speed_propeller = config.speed_propeller / this.divideX;
-  static speed_score = config.speed_score / this.divideX;
 
   static #renderLoop () { // the renderLoop to be executed when paused
       updatePlane();
       updateBackground();
-      score.update();
       renderer.render(scene, camera);
       userInteraction.canvas2D.paint();
       requestAnimationFrame(() => this.#renderLoopPtr()); // invoked by window
@@ -54,7 +52,7 @@ class WhenPaused { // 没有construct的需要，所以全部使用static属性�
     sea.defaultSpeed = this.speed_sea;
     sky.defaultSpeed = this.speed_sky;
     airplane.defaultSpeed = this.speed_propeller;
-    score.speed = this.speed_score;
+    score.pause();
     this.#renderLoop();
   }
   static backTo (newRenderLoop) {
@@ -62,7 +60,7 @@ class WhenPaused { // 没有construct的需要，所以全部使用static属性�
     sea.defaultSpeed = config.speed_sea;
     sky.defaultSpeed = config.speed_sky;
     airplane.defaultSpeed = config.speed_propeller;
-    score.speed = config.speed_score;
+    score.start();
     this.#renderLoopPtr = newRenderLoop.bind(window); // .bind(window): can't access WhenPaused by this in newRenderLoop
   }
 }
@@ -73,44 +71,57 @@ class Score {
   #speed = 0;
   #timer = -1;
   #previousMS = Infinity;
-  constructor (domElement, initialSpeed, initialScore = 0) {
+  constructor (domElement, initialSpeed, initialScore = this.loadPrevious()) {
     this.#dom = domElement;
     this.#speed = initialSpeed;
     this.#value = initialScore;
   }
-  /**
-   * @param {number} newSpeed
-   */
-  set speed (newSpeed) {
-    this.update();
-    this.#speed = newSpeed;
-  }
-  begin () {
+  // /**
+  //  * @param {number} newSpeed
+  //  */
+  // set speed (newSpeed) {
+  //   this.update();
+  //   this.#speed = newSpeed;
+  // }
+
+  start () {
     this.#previousMS = performance.now();
+    this.update();
   }
+
   pause () {
     this.#previousMS = Infinity;
     if(this.#timer !== -1)
       clearInterval(this.#timer)
     this.#timer = -1;
   }
-  intervalUpdate (ms) {
+
+  #intervalUpdate (ms) {
     if(this.#timer !== -1)
       clearInterval(this.#timer)
-    this.#timer = setInterval(() => this.update(), ms)
+    this.#timer = setInterval(() => {
+      this.#dom.innerText = String((this.updateValue() / 1000).toFixed(1)).concat(" Km");
+    }, ms)
   }
+
   update () {
     if(this.#previousMS === Infinity)
-      return;
-    this.#value += this.#speed * (performance.now() - this.#previousMS) / 1000
-    this.#dom.innerText = this.convertUnit(this.#value)
+      return ;
+    if(this.#value < 10000) {
+      this.#dom.innerText = String(this.updateValue().toFixed(2)).concat(" m");
+      requestAnimationFrame(() => this.update())
+    } else {
+      this.#dom.innerText = String((this.#value / 1000).toFixed(1)).concat(" Km");
+      this.#intervalUpdate(1e5 / this.#speed) // ms per 0.1km
+    }
+  }
+
+  updateValue () {
+    this.#value += this.#speed * (performance.now() - this.#previousMS) / 1000;
     this.#previousMS = performance.now();
+    return this.#value;
   }
-  convertUnit (value) {
-    if(value < 999)
-      return String(value.toFixed(2)).concat(" m");
-    else return String((value / 1000).toFixed(1)).concat(" Km");
-  }
+
   store () {
     const dateId = new Date().toLocaleDateString(
         Intl.DateTimeFormat().resolvedOptions().locale, 
@@ -118,19 +129,43 @@ class Score {
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
         }
       );
-    localStorage.score ?? (localStorage.score = `{}`);
-    const store_obj = JSON.parse(localStorage.score)
+    localStorage.score_obj ?? (localStorage.score_obj = `{}`);
+    const store_obj = JSON.parse(localStorage.score_obj)
     store_obj[dateId] = store_obj[dateId] ? (this.#value > store_obj[dateId] ? this.#value : store_obj[dateId]) : this.#value;
-    localStorage.score = JSON.stringify(store_obj);
+    localStorage.score_obj = JSON.stringify(store_obj);
+    localStorage.score = this.#encrypt(this.#value);
   }
-  static loadPrevious () {
 
+  loadPrevious () {
+    return this.#decrypt(localStorage.score)
   }
-  static #encrypt () {
-
+  #map = new Array(1, 9, 5, 0, 3, 7, 2 ,8); // 2的n次方
+  #algorithm (value) { // 简单地散列useragent，以之异或为校验和转换为16进制到value末尾
+    let str = ''
+    let i = 0;
+    for(const ch of navigator.userAgent) {
+      str += (value[i] ^ this.#map[ch.codePointAt(0) & (this.#map.length - 1)]).toString(16);
+      if(++i >= value.length)
+        i = 0;
+    } // as navigator.userAgent length is usually longer...
+    return str;
   }
-  static #decrypt () {
-
+  
+  #decrypt (value) { 
+    if(typeof value !== "string")
+      return 0;
+    const separatorI = value.lastIndexOf('1ec')
+    if(separatorI === -1)
+      return 0;
+    const data = parseInt(value.substring(0, separatorI), 16); // parseInt
+    const check = value.substring(separatorI + 3, value.length);
+    if(this.#algorithm(data) === check)
+      return data;
+    else return 0;
+  }
+  
+  #encrypt (value) {
+    return value.toString(16) + '1ec' + this.#algorithm(value);
   }
 }
 
@@ -176,7 +211,7 @@ window.addEventListener('load', ()=>{
   // loading: 160.85498046875 ms
   score = new Score(config.getScoreContainer(), config.speed_score)
   userInteraction.addUnloadCallback(() => score.store());
-  score.begin();
+  score.start();
     
   (function renderLoop() { // immediate function前不加;会出各种各样奇奇怪怪的错
     if(!window.paused){
@@ -184,7 +219,6 @@ window.addEventListener('load', ()=>{
       updatePlane();
       updateBackground();
       updateCameraFov();
-      score.update();
       renderer.render(scene, camera);
       userInteraction.canvas2D.paint();
       requestAnimationFrame(renderLoop);
@@ -370,8 +404,6 @@ function normalize(mouseRP, mouseRP_min, mouseRP_max, position_min, position_max
   let positionRange = position_max - position_min;
   return position_min + (ratio * positionRange);
 } 
-
-//TODO: 相机旋转跟随飞机旋转的延迟问题
 
 
 ///////////////////////////////////////

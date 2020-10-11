@@ -45,7 +45,7 @@
 
       #SEList = {
 
-      }
+      } //TODO: use map instead of normal object
       #isSEPlaying = false;
       
       #audioContext = null;

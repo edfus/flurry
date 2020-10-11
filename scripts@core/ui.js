@@ -240,7 +240,6 @@ class Canvas2D {
     return newPath;
   }
   /**
-   * construct a new line object
    * @param {TouchPath} path
    * @return {TouchPathSegment} new line object
    */
