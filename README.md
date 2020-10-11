@@ -56,7 +56,6 @@ cloudres:
     https://developer.mozilla.org/en-US/docs/Web/Guide/Audio_and_video_delivery/Web_Audio_API_cross_browser
     https://developers.google.com/web/updates/2017/12/audio-worklet
 - [ ] 分数存储
-- [ ] 帮助、Credit、全屏、refresh button
 - [ ] vertices的概念
 
 ---

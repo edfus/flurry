@@ -376,4 +376,13 @@
     else 
       document.cookie = `${value}; expires=${date.toUTCString()}; HostOnly=true; Secure=true; path=/; SameSite=Strict;`;
   }
+  window.toggleFullScreen = e => {
+    if (!document.fullscreenElement) {
+      e.requestFullscreen().catch(err => {
+        Dialog.newError(`Error attempting to enable full-screen mode`, `${err.message} (${err.name})`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  }
 }

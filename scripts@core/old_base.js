@@ -99,6 +99,7 @@ window.addEventListener('load', ()=>{
   userInteraction.addListeners(); 
 
   config.getContainer().appendChild(renderer.domElement);
+  config.getUIContainer().append(userInteraction.canvas2D.domElement); // might be ''
   config.gameStartCallback();
 
   // loading: 160.85498046875 ms

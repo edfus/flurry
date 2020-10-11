@@ -19,7 +19,7 @@ class UserInteraction {
     this.#windowWidth = window.innerWidth;
 
     if(this.#isTouchDevice || config.testMode) {
-      this.canvas2D = new Canvas2D(config.getUIContainer(), this.WIDTH, this.HEIGHT);
+      this.canvas2D = new Canvas2D(this.WIDTH, this.HEIGHT);
       this.addResizeCallback(() => this.canvas2D.setSize(this.WIDTH, this.HEIGHT))
     }
   }
@@ -183,8 +183,8 @@ class Canvas2D {
 
   fadeOutSpeed = .035
 
-  constructor (container, width, height) {
-    this.#canvas = container;
+  constructor (width, height) {
+    this.#canvas = document.createElement('canvas');
 
     this.#canvas.width = width;
     this.#canvas.height = height;
@@ -209,6 +209,10 @@ class Canvas2D {
 
     this.#context.lineWidth = 3;
     this.#context.lineJoin = this.#context.lineCap = 'round';
+  }
+
+  get domElement () {
+    return this.#canvas;
   }
 
   /**
@@ -331,6 +335,9 @@ class Canvas2D {
       },
       paint () {
         ;
+      },
+      get domElement () {
+        return '';
       }
     }
   }

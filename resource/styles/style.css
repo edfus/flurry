@@ -63,22 +63,172 @@ body {
 /* https://developers.google.com/web/updates/2017/11/overscroll-behavior */
 /* FIX: pull-to-refresh */
 
-main {
+main, #ui {
   position: absolute;
   z-index: 2;
+  height: 100%;
+  width: 100%;
   top: 0;
   bottom: 0; 
   /* fix the unintended 4px more height compared with window.innerHeight */
 }
-main > canvas {
+main > canvas, #ui-canvas {
   position: absolute;
   top: 0;
   bottom: 0; 
-}
-main > #ui {
   z-index: 1;
   background: none;
 }
+
+.ui-buttons.left, .ui-buttons.right {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  display: flex;
+	justify-content: center;
+  align-items: center;
+  flex-direction: row-reverse;
+  margin: 1.25rem;
+}
+
+.ui-buttons.left {
+  left: 0;
+}
+
+.ui-buttons.right {
+  right: 0;
+}
+
+.ui-button {
+	width: 3.125rem;
+	height: 3.125rem;
+	border: none;
+  outline: none;
+  padding: 0;
+  cursor: pointer;
+  background: none;
+  margin-left: 0.625rem;
+  border-radius: 50%;
+  transition: background-color .2s ease-in-out;
+}
+
+/* TODO: https://stackoverflow.com/questions/54112231/is-it-possible-to-create-a-glow-effect-in-svg */
+/* full screen button */
+.fullscreen > .row {
+	display: flex;
+}
+
+.fullscreen .box {
+	position: relative;
+	width: 1.25rem;
+  height: 1.25rem;
+	overflow: hidden;
+}
+
+.fullscreen .box:before, .fullscreen .box:after {
+	content: '';
+	position: absolute;
+	width: 100%;
+	height: 100%;
+  transition: transform 200ms ease;
+  border: 0.1563rem solid transparent;
+} 
+
+.fullscreen .box:before {
+	border: 0.3125rem solid #fff;
+}
+
+.fullscreen.hover .box._1:before {
+	transform: translate(5%, 5%);
+}
+
+.fullscreen.hover .box._2:before {
+	transform: translate(-5%, 5%);
+}
+
+.fullscreen.hover .box._3:before {
+	transform: translate(5%, -5%);
+}
+
+.fullscreen.hover .box._4:before {
+	transform: translate(-5%, -5%);
+}
+
+.fullscreen.active .box._1:before {
+	transform: translate(-35%, -35%);
+}
+
+.fullscreen.active .box._2:before {
+	transform: translate(35%, -35%);
+}
+
+.fullscreen.active .box._3:before {
+	transform: translate(-35%, 35%);
+}
+
+.fullscreen.active .box._4:before {
+	transform: translate(35%, 35%);
+}
+
+.fullscreen .box._1:before {
+	left: 0;
+	top: 0;
+}
+
+.fullscreen .box._1:after {
+	right: 0;
+	bottom: 0;
+}
+
+.fullscreen .box._2:before {
+	right: 0;
+	top: 0;
+}
+
+.fullscreen .box._2:after {
+	left: 0;
+	bottom: 0;
+}
+
+.fullscreen .box._3:before {
+	left: 0;
+	bottom: 0;
+}
+
+.fullscreen .box._3:after {
+	right: 0;
+	top: 0;
+}
+
+.fullscreen .box._4:before {
+	right: 0;
+	bottom: 0;
+}
+
+.fullscreen .box._4:after {
+	left: 0;
+	top: 0;
+}
+/* hover & focus */
+.ui-buttons.right svg{
+  fill: #fff;
+  transition: fill .2s ease-in-out;
+}
+.ui-buttons.right .ui-button:hover svg{
+  fill: #aaaaaa6f;
+}
+.ui-buttons.right .ui-button:focus svg{
+  fill: #999999;
+}
+.ui-button.refresh:hover {
+  background-color: #cccccc9f;
+}
+.ui-button.refresh:focus {
+  background-color: #999999;
+}
+
+
+/* Dialog */
 .dialog {
   position: fixed;
   z-index: 5;
@@ -114,11 +264,9 @@ main > #ui {
   min-width: 6.6875rem;
   margin-top: 0.625rem;
   padding: 0.875rem 1.25rem;
-  /* text-align: center; */
   border: none;
   outline: none; 
   color: #ffffff;
-  /* disable the focus outline */
 }
 
 
@@ -153,7 +301,7 @@ main > #ui {
   box-shadow: none;
 }
 
-
+/* Loader */
 #loading-section {
   position: absolute;
   z-index: 3;
@@ -188,6 +336,7 @@ main > #ui {
   stroke-linecap: round;
 }
 
+/* Keyframes */
 @keyframes dialog-show {
   0% {
     opacity: 0;
