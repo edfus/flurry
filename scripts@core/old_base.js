@@ -35,10 +35,12 @@ class WhenPaused { // 没有construct的需要，所以全部使用static属性�
   static speed_sea = config.speed_sea / this.divideX;
   static speed_sky = config.speed_sky / this.divideX;
   static speed_propeller = config.speed_propeller / this.divideX;
+  static speed_score = config.speed_score / this.divideX;
 
   static #renderLoop () { // the renderLoop to be executed when paused
       updatePlane();
       updateBackground();
+      score.update();
       renderer.render(scene, camera);
       userInteraction.canvas2D.paint();
       requestAnimationFrame(() => this.#renderLoopPtr()); // invoked by window
@@ -52,6 +54,7 @@ class WhenPaused { // 没有construct的需要，所以全部使用static属性�
     sea.defaultSpeed = this.speed_sea;
     sky.defaultSpeed = this.speed_sky;
     airplane.defaultSpeed = this.speed_propeller;
+    score.speed = this.speed_score;
     this.#renderLoop();
   }
   static backTo (newRenderLoop) {
@@ -59,9 +62,79 @@ class WhenPaused { // 没有construct的需要，所以全部使用static属性�
     sea.defaultSpeed = config.speed_sea;
     sky.defaultSpeed = config.speed_sky;
     airplane.defaultSpeed = config.speed_propeller;
+    score.speed = config.speed_score;
     this.#renderLoopPtr = newRenderLoop.bind(window); // .bind(window): can't access WhenPaused by this in newRenderLoop
   }
 }
+
+class Score { 
+  #dom = null;
+  #value = 0;
+  #speed = 0;
+  #timer = -1;
+  #previousMS = Infinity;
+  constructor (domElement, initialSpeed, initialScore = 0) {
+    this.#dom = domElement;
+    this.#speed = initialSpeed;
+    this.#value = initialScore;
+  }
+  /**
+   * @param {number} newSpeed
+   */
+  set speed (newSpeed) {
+    this.update();
+    this.#speed = newSpeed;
+  }
+  begin () {
+    this.#previousMS = performance.now();
+  }
+  pause () {
+    this.#previousMS = Infinity;
+    if(this.#timer !== -1)
+      clearInterval(this.#timer)
+    this.#timer = -1;
+  }
+  intervalUpdate (ms) {
+    if(this.#timer !== -1)
+      clearInterval(this.#timer)
+    this.#timer = setInterval(() => this.update(), ms)
+  }
+  update () {
+    if(this.#previousMS === Infinity)
+      return;
+    this.#value += this.#speed * (performance.now() - this.#previousMS) / 1000
+    this.#dom.innerText = this.convertUnit(this.#value)
+    this.#previousMS = performance.now();
+  }
+  convertUnit (value) {
+    if(value < 999)
+      return String(value.toFixed(2)).concat(" m");
+    else return String((value / 1000).toFixed(1)).concat(" Km");
+  }
+  store () {
+    const dateId = new Date().toLocaleDateString(
+        Intl.DateTimeFormat().resolvedOptions().locale, 
+        {
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        }
+      );
+    localStorage.score ?? (localStorage.score = `{}`);
+    const store_obj = JSON.parse(localStorage.score)
+    store_obj[dateId] = store_obj[dateId] ? (this.#value > store_obj[dateId] ? this.#value : store_obj[dateId]) : this.#value;
+    localStorage.score = JSON.stringify(store_obj);
+  }
+  static loadPrevious () {
+
+  }
+  static #encrypt () {
+
+  }
+  static #decrypt () {
+
+  }
+}
+
+var score = null; // to fix
 
 let inQueue = false;
 function throttleLog () {
@@ -94,23 +167,24 @@ window.addEventListener('load', ()=>{
   if(config.testMode){
     userInteraction.addResizeCallback(() => config.cameraHelper.update());
   }
-  userInteraction.listenResize();
 
   userInteraction.addListeners(); 
 
   config.getContainer().appendChild(renderer.domElement);
   config.getUIContainer().append(userInteraction.canvas2D.domElement); // might be ''
   config.gameStartCallback();
-
   // loading: 160.85498046875 ms
-
+  score = new Score(config.getScoreContainer(), config.speed_score)
+  userInteraction.addUnloadCallback(() => score.store());
+  score.begin();
+    
   (function renderLoop() { // immediate function前不加;会出各种各样奇奇怪怪的错
     if(!window.paused){
       //TODO: if(crashed)
       updatePlane();
       updateBackground();
       updateCameraFov();
-      //TODO: updateScore();
+      score.update();
       renderer.render(scene, camera);
       userInteraction.canvas2D.paint();
       requestAnimationFrame(renderLoop);
@@ -301,16 +375,6 @@ function normalize(mouseRP, mouseRP_min, mouseRP_max, position_min, position_max
 
 
 ///////////////////////////////////////
-// handle score & game pause & window.unload
-
-function updateScore() {
-  // how to handle and record the speed of the plane?
-  //NOTE: _参考\TheAviator\js\game.js <- 参考
-}
-
-// Uncaught ReferenceError: Dialog is not defined
-// https://stackoverflow.com/questions/37711603/javascript-es6-class-definition-not-accessible-in-window-global
-
 async function waitForUserContinue() {
   return new Promise((resolve, reject) => {
     if(Dialog.isBusy)
@@ -325,12 +389,6 @@ async function waitForUserContinue() {
 async function backToTitle() {
 
 }
-/*
-pauseButton.addEventListener('click',()=>{
-  // do something...
-  songPlayer.stop_instantly()
-}, {passive: true})
-*/
 
 document.addEventListener("visibilitychange", () => {
   switch(document.visibilityState) {
@@ -347,7 +405,3 @@ window.addEventListener("pagehide", event => { // safari
     /* the page isn't being discarded, so it can be reused later */
   }
 }, {passive: true});
-
-window.addEventListener('unload', ()=>{
-  // restore the score
-}, {passive: true, once: true})

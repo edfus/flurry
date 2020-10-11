@@ -22,6 +22,8 @@ class UserInteraction {
       this.canvas2D = new Canvas2D(this.WIDTH, this.HEIGHT);
       this.addResizeCallback(() => this.canvas2D.setSize(this.WIDTH, this.HEIGHT))
     }
+    this.listenResize();
+    this.listenUnload();
   }
 
   get isTouchDevice () {
@@ -159,20 +161,25 @@ class UserInteraction {
     }).bind(this)
   ];
 
-  #resizeCallback () {
-    this.#resizeCallbackQueue.forEach(e => e())
-  }
-
   addResizeCallback (func) {
     this.#resizeCallbackQueue.push(func);
   }
 
   listenResize () {
-    window.addEventListener('resize', () => this.#resizeCallback(), {passive: true});
+    window.addEventListener('resize', () => this.#resizeCallbackQueue.forEach(e => e()), {passive: true});
   }
   //this.#resizeCallback(); // [Violation] 'load' handler took 156ms
   // return this.#resizeCallback_debounce();  // [Violation] 'setTimeout' handler took 51ms
   // in 2020 debounce on resize event still worthy?
+
+  #unloadCallbackQueue = [];
+  addUnloadCallback (func) {
+    this.#unloadCallbackQueue.push(func);
+  }
+
+  listenUnload () {
+    window.addEventListener('beforeunload', () => this.#unloadCallbackQueue.forEach(e => e()), {passive: true, once: true})
+  }
 }
 
 

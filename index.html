@@ -106,7 +106,7 @@
 		</section>
 		<main id="main">
 			<section id="ui">
-				<aside class="ui-buttons right">
+				<aside class="ui-buttons right top">
 					<button class="ui-button fullscreen" onmouseover="this.classList.add('hover')" onmouseout="this.classList.remove('hover')" onclick="this.classList.toggle('active'); toggleFullScreen(document.documentElement)" data-credit="codepen.io/dev_loop" title="Full screen (F)">
 						<div class="row">
 							<div class="box _1"></div>
@@ -140,13 +140,16 @@
 						</svg>
 					</button>
 				</aside>
-				<aside class="ui-buttons left">
+				<aside class="ui-buttons left top">
 						<!-- TODO: when not in game: location.reload(), when in game: go back to title animation  -->
 					<button class="ui-button refresh" onclick="location.reload()" data-credit="materialui.co" title="Refresh">
 						<svg fill="#fff"  width="100%" height="100%" viewBox="0 0 18 18" version="1.1">
 							<path d="M9 13.5c-2.49 0-4.5-2.01-4.5-4.5S6.51 4.5 9 4.5c1.24 0 2.36.52 3.17 1.33L10 8h5V3l-1.76 1.76C12.15 3.68 10.66 3 9 3 5.69 3 3.01 5.69 3.01 9S5.69 15 9 15c2.97 0 5.43-2.16 5.9-5h-1.52c-.46 2-2.24 3.5-4.38 3.5z"></path>
 						</svg>
 					</button>
+				</aside>
+				<aside class="ui-score left bottom">
+					<span id="score"></span>					
 				</aside>
 			</section>
 		</main>

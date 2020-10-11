@@ -70,6 +70,7 @@ main, #ui {
   width: 100%;
   top: 0;
   bottom: 0; 
+  user-select: none;
   /* fix the unintended 4px more height compared with window.innerHeight */
 }
 main > canvas, #ui-canvas {
@@ -80,10 +81,22 @@ main > canvas, #ui-canvas {
   background: none;
 }
 
-.ui-buttons.left, .ui-buttons.right {
+.left {
+  left: 0;
+}
+.right {
+  right: 0;
+}
+.top {
+  top: 0;
+}
+.bottom {
+  bottom: 0;
+}
+
+.ui-buttons {
   position: absolute;
   z-index: 2;
-  top: 0;
   display: flex;
 	justify-content: center;
   align-items: center;
@@ -91,12 +104,11 @@ main > canvas, #ui-canvas {
   margin: 1.25rem;
 }
 
-.ui-buttons.left {
-  left: 0;
-}
-
-.ui-buttons.right {
-  right: 0;
+.ui-score {
+  position: absolute;
+  color: #000;
+  padding: 1.25rem;
+  margin-left: .5rem;
 }
 
 .ui-button {
