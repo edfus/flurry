@@ -141,35 +141,39 @@ class Score {
   }
   #map = new Array(1, 9, 5, 0, 3, 7, 2 ,8); // 2的n次方
   #algorithm (value) { // 简单地散列useragent，以之异或为校验和转换为16进制到value末尾
-    let str = ''
+    let str = '';
     let i = 0;
+    const maxLength = value.length / 2;
     for(const ch of navigator.userAgent) {
-      str += (value[i] ^ this.#map[ch.codePointAt(0) & (this.#map.length - 1)]).toString(16);
-      if(++i >= value.length)
-        i = 0;
+      i = this.#map[ch.codePointAt(0) & (this.#map.length - 1)];
+      str += value[i] ^ i; // undefined will just be i
+      if(str.length >= maxLength)
+        break;
     } // as navigator.userAgent length is usually longer...
-    return str;
+    return parseInt(str).toString(16);
   }
   
+  #identifier = 'o'
   #decrypt (value) { 
     if(typeof value !== "string")
       return 0;
-    const separatorI = value.lastIndexOf('1ec')
+    const separatorI = value.lastIndexOf(this.#identifier);
     if(separatorI === -1)
       return 0;
-    const data = parseInt(value.substring(0, separatorI), 16); // parseInt
-    const check = value.substring(separatorI + 3, value.length);
-    if(this.#algorithm(data) === check)
-      return data;
+    const data = value.substring(0, separatorI);
+    const check = value.substring(separatorI + this.#identifier.length, value.length);
+    if(this.#algorithm(data) === check){
+      return parseInt(data, 16);
+    }
     else return 0;
   }
   
   #encrypt (value) {
-    return value.toString(16) + '1ec' + this.#algorithm(value);
+    return value.toString(16) + this.#identifier + this.#algorithm(value.toString(16));
   }
 }
 
-var score = null; // to fix
+var score = null; //FIX
 
 let inQueue = false;
 function throttleLog () {

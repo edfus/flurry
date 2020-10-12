@@ -6,6 +6,8 @@
 
 ---
 
+高内聚，低耦合！
+
 ### 流程规划
 
 - scene、perspective camera
@@ -56,6 +58,7 @@ cloudres:
     https://developer.mozilla.org/en-US/docs/Web/Guide/Audio_and_video_delivery/Web_Audio_API_cross_browser
     https://developers.google.com/web/updates/2017/12/audio-worklet
 - [ ] vertices的概念
+- [ ] FIX: 手机端无法点击按钮（onclick无效？）
 
 ---
 
