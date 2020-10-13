@@ -96,7 +96,7 @@ class Score {
     this.#timer = -1;
   }
 
-  #intervalUpdate (ms) {
+  intervalUpdate (ms) {
     if(this.#timer !== -1)
       clearInterval(this.#timer)
     this.#timer = setInterval(() => {
@@ -112,7 +112,7 @@ class Score {
       requestAnimationFrame(() => this.update())
     } else {
       this.#dom.innerText = String((this.#value / 1000).toFixed(1)).concat(" Km");
-      this.#intervalUpdate(1e5 / this.#speed) // ms per 0.1km
+      this.intervalUpdate(1e5 / this.#speed) // ms per 0.1km
     }
   }
 
@@ -120,6 +120,10 @@ class Score {
     this.#value += this.#speed * (performance.now() - this.#previousMS) / 1000;
     this.#previousMS = performance.now();
     return this.#value;
+  }
+
+  get value () {
+    return this.updateValue();
   }
 
   store () {

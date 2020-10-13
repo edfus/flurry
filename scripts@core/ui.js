@@ -76,9 +76,9 @@ class UserInteraction {
   */
 
   touch_addListeners = function () {
-    document.addEventListener('touchstart', this.#touch_startCallback, {passive: false});
-    document.addEventListener('touchmove', this.#touch_moveCallback, {passive: false});
-    document.addEventListener('touchend', this.#touch_endCallback, {passive: false});
+    document.addEventListener('touchstart', this.#touch_startCallback, {passive: true});
+    document.addEventListener('touchmove', this.#touch_moveCallback, {passive: true});
+    document.addEventListener('touchend', this.#touch_endCallback, {passive: true});
     // touchcancel is fired whenever it takes ~200 ms to return from a touchmove event handler.
   }
 
@@ -91,7 +91,6 @@ class UserInteraction {
   // 为了能够removeEventListenerr，此处不使用箭头函数而使用闭包（或bind）
   #touch_startCallback = (that => {
     return event => {
-      event.preventDefault();
       for (const touch of event.touches) {
         that.canvas2D.createLine(touch.pageX, touch.pageY, touch.identifier)
       }
@@ -100,7 +99,6 @@ class UserInteraction {
 
   #touch_moveCallback  = (that => {
     return event => {
-      event.preventDefault();
       let x = 0, y = 0;
       for (const touch of event.touches) {
         x += touch.pageX;
@@ -115,7 +113,6 @@ class UserInteraction {
 
   #touch_endCallback = (that => {
     return event => {
-      event.preventDefault();
       for (const touch of event.changedTouches) {
         that.canvas2D.endLine(touch.identifier)
       }
