@@ -22,7 +22,7 @@
     } 
     const soundEffectObjSample = {
       type: "audio/mpeg",
-      audioBuffer: '',
+      arrayBuffer: '',
       usage: "se",
       role: ''
       // name: ''
@@ -32,113 +32,152 @@
 
     /* class AudioPlayer - BEGIN */
     class AudioPlayer {
-      #rolesToReserve = ["intro"];
+      rolesToReserve = ["intro"];
 
-      #songs = {
+      songs = {
         intro: null,
         nextsToPlay: new Array(2), // for next two songs to play, reserve their array buffer 
         currentIndex: 0,
         theme: null
       };
-      #sequenceArr = [];
-      #isSongPlaying = false;
+      sequenceArr = [];
+      isSongPlaying = false;
 
-      #SEList = {
+      SEList = {
 
       } //TODO: use map instead of normal object
-      #isSEPlaying = false;
+      isSEPlaying = false;
       
-      #audioContext = null;
-      #source = null;
+      context = null;
+      SEsource = null;
 
-      #maxRetryTimes = 3;
-      #retryGap = 3000; // ms
-      #forceLoad = false;
+      maxRetryTimes = 3;
+      retryGap = 3000; // ms
+      forceLoad = false;
 
       constructor () {
         this.loadAll();
+        // this.context = new AudioContext();
+        // this.SEsource = this.context.createBufferSource();
+        // this.nodes = {
+        //   destination: this.context.destination,
+        //   masterGain: this.context.createGain(),
+        //   songsGain: this.context.createGain(),
+        //   effectsGain: this.context.createGain()
+        // };
+        // this.nodes.masterGain.connect(this.nodes.destination);
+        // this.nodes.songsGain.connect(this.nodes.masterGain);
+        // this.nodes.effectsGain.connect(this.nodes.masterGain);
+        // // this.play(this.context.createBufferSource(), )
+      }
+
+      setVolume (newVolume) {
+        this.nodes.masterGain.gain.value = newVolume;
+      }
+
+      setBGMVolume (newVolume) {
+        this.nodes.songsGain.gain.value = newVolume;
+      }
+
+      setSEVolume (newVolume) {
+        this.nodes.effectsGain.gain.value = newVolume;
+      }
+
+      crossFade (track1, track2) {
+        // https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/linearRampToValueAtTime
+        track1.gain.linearRampToValueAtTime( 0, 1 );
+        track2.gain.linearRampToValueAtTime( 1, 1 );
+      }
+
+      pauseSE () {
+        this.nodes.effectsGain.disconnect();
+      }
+
+      resumeSE () {
+        this.nodes.effectsGain.connect(this.nodes.masterGain);
+      }
+
+      pauseBGM () {
+        this.nodes.songsGain.disconnect();
+      }
+
+      resumeBGM () {
+        this.nodes.songsGain.connect(this.nodes.masterGain);
+      }
+
+      pause () {
+        this.nodes.masterGain.disconnect();
+      }
+
+      resume () {
+        this.nodes.masterGain.connect(this.nodes.destination);
       }
 
       /**
-       * @param {{ name?: string; index?: number; type: string; role: string; audioBuffer?: ArrayBuffer; buffer?: ArrayBuffer; }} newAudio
+       * @param {{ name?: string; index?: number; type: string; role: string; buffer?: ArrayBuffer; }} newAudio
        */
       set newLoadedAudio (newAudio) {
         // has check for repeat
         if(newAudio.usage === 'se'){
-          this.#SEList[newAudio.role] 
-          ?? (this.#SEList[newAudio.role] = {
-            audioBuffer: ''
+          this.SEList[newAudio.role] 
+          ?? (this.SEList[newAudio.role] = {
+            arrayBuffer: ''
           }) // one role one se
           return ;
         }
 
-        if(this.#rolesToReserve.includes(newAudio.role)){
-          this.#songs[newAudio.role]
-          ?? (this.#songs[newAudio.role] = {
+        if(this.rolesToReserve.includes(newAudio.role)){
+          this.songs[newAudio.role]
+          ?? (this.songs[newAudio.role] = {
             name: newAudio.name,
             type: newAudio.type,
-            buffer: newAudio.arrayBuffer
+            arrayBuffer: newAudio.arrayBuffer
           })
         } else {
-          if(this.#sequenceArr[newAudio.index] != undefined) // undefined or null
+          if(this.sequenceArr[newAudio.index] != undefined) // undefined or null
             return ;
-          this.#sequenceArr[newAudio.index] = newAudio.name;
-          if(currentIndex <= newAudio.index && newAudio.index - currentIndex <= this.#songs.nextsToPlay.length)
-            this.#songs.nextsToPlay[newAudio.index - currentIndex] = {
+          this.sequenceArr[newAudio.index] = newAudio.name;
+          if(currentIndex <= newAudio.index && newAudio.index - currentIndex <= this.songs.nextsToPlay.length)
+            this.songs.nextsToPlay[newAudio.index - currentIndex] = {
               name: newAudio.name,
               type: newAudio.type,
-              buffer: newAudio.arrayBuffer,
+              arrayBuffer: newAudio.arrayBuffer,
               index: newAudio.index
             }
         }
       }
 
       stop () {
-
-        this.#source.stop();
+        this.source.stop();
       }
 
       pause_fadeOut () {
-        this.#audioContext.resume();
+        this.context.resume();
+      }
+
+      async play (source, arrayBuffer, callback, onEnded) {
+        source.buffer = await this.context.decodeAudioData(arrayBuffer);
+        source.loop = true;
+        // source.loopStart = 0;
+        // source.loopEnd = Infinity;
+        source.onended = onEnded.bind(this);
+        // source.start( this._startedAt, this._progress + this.offset, this.duration );
+        source.start(0);
+        source.connect(this.context.destination);
+        callback();
       }
 
       playNext (delay = 0) {
-        if (this.#audioContext.state === 'suspended') {
-          this.#audioContext.resume();
+        const _startedAt = this.context.currentTime + delay;
+        if (this.context.state === 'suspended') {
+          this.context.resume();
         }
       }
 
-      playIntro () {
-
-      }
-
-      playTheme () {
-        
-      }
-
       playSoundEffect (role) {
-        this._startedAt = this.context.currentTime + delay;
-
-        const source = this.#audioContext.createBufferSource();
-        source.buffer = this.#SEList[role].audioBuffer;
-        source.loop = this.loop;
-        source.loopStart = this.loopStart;
-        source.loopEnd = this.loopEnd;
-        source.onended = this.onEnded.bind(this);
-        // source.start( this._startedAt, this._progress + this.offset, this.duration );
-        this.#isSEPlaying = true;
-        this.#source = source;
-        source.connect(this.#audioContext.destination);
-      }
-
-      set loopStart (value) {
-        this.loopStart = value;
-        return this;
-      }
-    
-      set loopEnd (value) {
-        this.loopEnd = value;
-        return this;
+        if(this.SEList[role])
+          this.play(this.SEsource, this.SEList[role].arrayBuffer, () => void (this.isSEPlaying = true), () => void (this.isSEPlaying = false))
+        else newError('audioNotFound', 'SE: ' + role);
       }
 
       // get volume() {
@@ -149,7 +188,6 @@
       //   this.gain.gain.setTargetAtTime( value, this.context.currentTime, 0.01 );
       //   return this;
       // }
-    
 
       ///////// indexedDB related methods
       async openDB (DBname, storeName) {
@@ -173,7 +211,7 @@
        */
       async newfetch (url, type) {
         return new Promise((resolve, reject) => {
-          if(this.#forceLoad || (navigator.connection && !navigator.connection.saveData)){
+          if(this.forceLoad || (navigator.connection && !navigator.connection.saveData)){
             fetch(
               new Request(url,
                 { method: 'GET',
@@ -183,7 +221,7 @@
                 })
               ).then(response => {
                     if(response.ok)
-                      resolve(response.arrayBuffer()); 
+                      resolve(response.arrayBuffer()); //TODO: to audio buffer directly
                     else reject({name: 'responseNotOk', message: response.url})
                   })
             /*
@@ -198,7 +236,7 @@
       }
 
       forceLoad () {
-        this.#forceLoad = true;
+        this.forceLoad = true;
       }
       /**
        * load specific source to or in indexedDB
@@ -231,9 +269,9 @@
                       switch(err.name) {
                         case 'saveDataModeOn': return reject(err);                           
                         case 'responseNotOk': 
-                          return ++retriedTimes > this.#maxRetryTimes 
+                          return ++retriedTimes > this.maxRetryTimes 
                           ? reject(err)
-                          : setTimeout(() => loadSourceWithRetry(retriedTimes), this.#retryGap)
+                          : setTimeout(() => loadSourceWithRetry(retriedTimes), this.retryGap)
                         default: reject({name: 'exception', message: err.message})
                       }
                     })
@@ -261,18 +299,31 @@
                 return Promise.reject(result.reason)
             }
           }).catch(err => 
-            postMessage(
-              newMessage({
-                isError: true,
-                name: err.name,
-                message: err.message
-              })
-            )
+            newError(err.name, err.message)
           )
       }
     }
+    const audioPlayer = new AudioPlayer();
     /* class AudioPlayer - END */
-    const newMessage = message_obj => {
+    function newError (name, message) {
+      postMessage(
+        newMessage({
+          isError: true,
+          name: name,
+          message: message
+        })
+      )
+    }
+    function newEvent (name, message) {
+      postMessage(
+        newMessage({
+          isEvent: true,
+          name: name,
+          message: message
+        })
+      )
+    }
+    function newMessage (message_obj) {
       const defaultMessage = {
         isError: false,
         isEvent: false,
@@ -282,12 +333,11 @@
       return Object.assign(defaultMessage, message_obj);
     }
 
-    onmessage = message => {
+    self.onmessage = message => {
       const [functionName, ...vars] = message.data;
+      console.log(functionName, vars)
       audioPlayer[functionName].apply(audioPlayer, vars);
     }
-
-    const audioPlayer = new AudioPlayer();
   }
 
   if("indexedDB" in window && "Worker" in window){
@@ -299,18 +349,27 @@
         this.#worker.onmessage = this.#onmessage.bind(this);
 
         if(localStorage.interacted) // autoplay rules.
-          this.#assignWork("playTheme");
+          ;// this.#assignWork("playTheme");
         else {
           if(config.inApp){
             localStorage.interacted = true;
-            this.#assignWork("playTheme");
+            // this.#assignWork("playTheme");
           }
           document.addEventListener("click", () => {
             localStorage.interacted = true;
             if(this.#songPlaying === '') //
-              this.#assignWork("playTheme");
+              ;// this.#assignWork("playTheme");
           }, {passive: true, once: true}) 
         }
+        // document.addEventListener("visibilitychange", () => {
+        //   switch(document.visibilityState) {
+        //     case 'visible' : this.resume();
+        //       break;
+        //     case 'hidden' : // this.pause(); 
+        //       break;
+        //     default: ; 
+        //   }
+        // }, {passive: true});
        /**
         * https://developers.google.com/web/updates/2018/11/web-audio-autoplay
         * We detect when users regularly let audio play for more than 7 seconds during most of their visits to a website, 
@@ -363,6 +422,14 @@
 
       get songPlaying () {
         return this.#songPlaying;
+      }
+
+      resume () {
+        this.#assignWork('resume')
+      }
+
+      pause () {
+        this.#assignWork('pause')
       }
 
       // ...

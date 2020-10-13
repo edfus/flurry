@@ -52,11 +52,10 @@ naiziguai:
 cloudres: 
 
 - [ ] 完成web worker - audio开发 
-    https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
-    https://developer.mozilla.org/en-US/docs/Web/API/AudioBufferSourceNode
+    https://www.html5rocks.com/en/tutorials/webaudio/fieldrunners/
     https://developer.mozilla.org/en-US/docs/Games/Techniques/Audio_for_Web_Games
-    https://developer.mozilla.org/en-US/docs/Web/Guide/Audio_and_video_delivery/Web_Audio_API_cross_browser
     https://developers.google.com/web/updates/2017/12/audio-worklet
+    https://developer.mozilla.org/en-US/docs/Web/API/AudioWorkletNode
 - [ ] vertices的概念
 - [ ] FIX: 手机端无法点击按钮（onclick无效？）
 
