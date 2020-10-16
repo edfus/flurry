@@ -1,24 +1,20 @@
 class UserInteraction {
-  #relativePos = { x: 0, y: 0 };
-  #absolutePos = { x: 0, y: 0 };
-
-  #isTouchDevice = false;
-  #identifier = "mouse_";
+  absolutePos = { x: 0, y: 0 };
+  
+  isTouchDevice = false;
 
   #windowHeight = 0;
-  #windowWidth =  0;
+  #windowWidth  = 0;
 
   canvas2D = Canvas2D.emptyCanvas; // hacky LOL
-  #mouseMove_triggered = false;
 
   constructor() {
-    this.#isTouchDevice = this.#testTouchDevice();
-    this.#identifier = ["mouse_","touch_"][Number(this.#isTouchDevice)];
+    this.isTouchDevice = this.testTouchDevice();
 
     this.#windowHeight = window.innerHeight;
     this.#windowWidth = window.innerWidth;
 
-    if(this.#isTouchDevice || config.testMode) {
+    if(this.isTouchDevice || config.testMode) {
       this.canvas2D = new Canvas2D(this.WIDTH, this.HEIGHT);
       this.addResizeCallback(() => this.canvas2D.setSize(this.WIDTH, this.HEIGHT))
     }
@@ -26,16 +22,8 @@ class UserInteraction {
     this.listenUnload();
   }
 
-  get isTouchDevice () {
-    return this.#isTouchDevice;
-  }
-
   get relativePos () {
-    return this.#relativePos;
-  }
-
-  get absolutePos () {
-    return this.#absolutePos;
+    return this.updateRelativePos();
   }
 
   get HEIGHT () {
@@ -46,12 +34,14 @@ class UserInteraction {
     return this.#windowWidth;
   }
 
-  #updateRelativePos (x = this.#absolutePos.x, y = this.#absolutePos.y) {
-    this.#relativePos.x = -1 + (x / this.WIDTH) * 2,
-    this.#relativePos.y = 1 - (y / this.HEIGHT) * 2
+  #relativePos = { x: 0, y: 0 };
+  updateRelativePos (x = this.absolutePos.x, y = this.absolutePos.y) {
+    this.#relativePos.x = -1 + (x / this.WIDTH) * 2;
+    this.#relativePos.y = 1 - (y / this.HEIGHT) * 2;
+    return this.#relativePos;
   }
 
-  #testTouchDevice () {
+  testTouchDevice () {
     if ("ontouchstart" in window) 
       return true;
     else return false;
@@ -59,13 +49,21 @@ class UserInteraction {
   }
 
   addListeners () {
-    // this['#mouse_addListeners'] - undefined
-    this[`${this.#identifier}addListeners`]();
-    // 不能动态访问private field
+    if(this.isTouchDevice)
+      this._addListeners("touch", ['start', 'move', 'end'])
+    else {
+      this._addListeners("mouse", ['move', 'leave'])
+      this._addListeners("key", ['down', 'up'])
+    }
   }
 
   removeListeners () {
-    this[`${this.#identifier}removeListeners`]();
+    if(this.isTouchDevice)
+      this._removeListeners("touch", ['start', 'move', 'end'])
+    else {
+      this._removeListeners("mouse", ['move', 'leave'])
+      this._removeListeners("key", ['down', 'up'])
+    }
   }
 
  /**
@@ -75,21 +73,20 @@ class UserInteraction {
   * the element's touch event handlers should call preventDefault() and no additional mouse events will be dispatched.
   */
 
-  touch_addListeners = function () {
-    document.addEventListener('touchstart', this.#touch_startCallback, {passive: true});
-    document.addEventListener('touchmove', this.#touch_moveCallback, {passive: true});
-    document.addEventListener('touchend', this.#touch_endCallback, {passive: true});
-    // touchcancel is fired whenever it takes ~200 ms to return from a touchmove event handler.
+  _addListeners (identifier, namesArray) {
+    namesArray.forEach(name => 
+      document.addEventListener(identifier.concat(name), this[`${identifier}_${name}Callback`], {passive: true})
+    )
   }
 
-  touch_removeListeners = function () {
-    document.removeEventListener('touchstart', this.#touch_startCallback);
-    document.removeEventListener('touchmove', this.#touch_moveCallback);
-    document.removeEventListener('touchend', this.#touch_endCallback);
+  _removeListeners (identifier, namesArray) {
+    namesArray.forEach(name => 
+      document.removeEventListener(identifier.concat(name), this[`${identifier}_${name}Callback`])
+    )
   }
 
-  // 为了能够removeEventListenerr，此处不使用箭头函数而使用闭包（或bind）
-  #touch_startCallback = (that => {
+  /* callbacks */
+  touch_startCallback = (that => {
     return event => {
       for (const touch of event.touches) {
         that.canvas2D.createLine(touch.pageX, touch.pageY, touch.identifier)
@@ -97,43 +94,36 @@ class UserInteraction {
     }
   })(this)
 
-  #touch_moveCallback  = (that => {
+  touch_moveCallback  = (that => {
     return event => {
       let x = 0, y = 0;
-      for (const touch of event.touches) {
-        x += touch.pageX;
-        y += touch.pageY;
+      for (const {pageX, pageY} of event.touches) {
+        x += pageX;
+        y += pageY;
       }
-      that.#updateRelativePos(x / event.touches.length, y / event.touches.length);
+      that.absolutePos.x = x / event.touches.length;
+      that.absolutePos.y = y / event.touches.length;
+
       for (const touch of event.changedTouches) {
         that.canvas2D.pushPoint(touch.pageX, touch.pageY, touch.identifier)
       } // Is touchmove event fire once in per frame? macrotasks queue necessary?
     }
   })(this)
 
-  #touch_endCallback = (that => {
+  touch_endCallback = (that => {
     return event => {
       for (const touch of event.changedTouches) {
         that.canvas2D.endLine(touch.identifier)
       }
     }
   })(this)
+  // touchcancel is fired whenever it takes ~200 ms to return from a touchmove event handler.
 
-  mouse_addListeners = function () {
-    document.addEventListener('mousemove', this.#mouse_moveCallback, {passive: true});
-    document.addEventListener('mouseleave', this.#mouse_leaveCallback, {passive: true});
-  }
-
-  mouse_removeListeners = function () {
-    document.removeEventListener('mousemove', this.#mouse_moveCallback);
-    document.removeEventListener('mouseleave', this.#mouse_leaveCallback);
-  }
-
-  #mouse_moveCallback = (that => {
+  #mouseMove_triggered = false;
+  mouse_moveCallback = (that => {
     return event => {
-      that.#absolutePos.x = event.clientX;
-      that.#absolutePos.y = event.clientY;
-      that.#updateRelativePos();
+      that.absolutePos.x = event.clientX;
+      that.absolutePos.y = event.clientY;
 
       if(that.#mouseMove_triggered)
         that.canvas2D.pushPoint(event.clientX, event.clientY, 0); // 0 - identifier of this touch
@@ -144,12 +134,64 @@ class UserInteraction {
   }
   })(this)
 
-  #mouse_leaveCallback = (that => {
-    return event => {
+  mouse_leaveCallback = (that => {
+    return () => {
       that.#mouseMove_triggered = false;
       that.canvas2D.endLine(0);
     }
   })(this)
+
+  codeMap = {
+    ArrowUp: () => {
+      console.info('↑')
+    },
+    ArrowDown: () => {
+      console.info('↓')
+    },
+    ArrowLeft: () => {
+      console.info('←')
+    },
+    ArrowRight: () => {
+      console.info('→')
+    },
+    KeyW () {
+      return this.ArrowUp();
+    },
+    KeyS () {
+      return this.ArrowDown();
+    },
+    KeyA () {
+      return this.ArrowLeft();
+    },
+    KeyD () {
+      return this.ArrowRight();
+    },
+    Numpad5 () {
+      return this.ArrowUp();
+    },
+    Numpad2 () {
+      return this.ArrowDown();
+    },
+    Numpad1 () {
+      return this.ArrowLeft();
+    },
+    Numpad3 () {
+      return this.ArrowRight();
+    }
+  }
+  key_downCallback = (that => {
+    return event => {
+      if(this.codeMap.hasOwnProperty(event.code))
+        this.codeMap[event.code]();
+    }
+  })(this)
+
+  key_upCallback = (that => {
+    return event => {
+      // console.dir(event);
+    }
+  })(this)
+  /* callbacks END */
 
   #resizeCallbackQueue = [
     (() => { // default

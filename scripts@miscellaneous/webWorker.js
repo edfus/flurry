@@ -109,6 +109,12 @@
         this.nodes.masterGain.disconnect();
       }
 
+      // myAudio.addEventListener('timeupdate', function() {
+      //   if (this.currentTime > stopTime) {
+      //     this.pause();
+      //   }
+      // }, false);
+
       resume () {
         this.nodes.masterGain.connect(this.nodes.destination);
       }
