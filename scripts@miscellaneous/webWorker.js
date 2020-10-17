@@ -126,7 +126,7 @@
         // has check for repeat
         if(newAudio.usage === 'se'){
           if(newAudio.role in this.SEList)
-            ; //TODO 
+            ;
           else {
             this.SEList[newAudio.role] = {
               arrayBuffer: ''
@@ -228,7 +228,7 @@
                 })
               ).then(response => {
                     if(response.ok)
-                      resolve(response.arrayBuffer()); //TODO: to audio buffer directly
+                      resolve(response.arrayBuffer());
                     else reject({name: 'responseNotOk', message: response.url})
                   })
             /*
