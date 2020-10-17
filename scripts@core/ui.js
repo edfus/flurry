@@ -86,60 +86,50 @@ class UserInteraction {
   }
 
   /* callbacks */
-  touch_startCallback = (that => {
-    return event => {
-      for (const touch of event.touches) {
-        that.canvas2D.createLine(touch.pageX, touch.pageY, touch.identifier)
-      }
+  touch_startCallback = event => {
+    for (const touch of event.touches) {
+      this.canvas2D.createLine(touch.pageX, touch.pageY, touch.identifier)
     }
-  })(this)
+  }
 
-  touch_moveCallback  = (that => {
-    return event => {
-      let x = 0, y = 0;
-      for (const {pageX, pageY} of event.touches) {
-        x += pageX;
-        y += pageY;
-      }
-      that.absolutePos.x = x / event.touches.length;
-      that.absolutePos.y = y / event.touches.length;
-
-      for (const touch of event.changedTouches) {
-        that.canvas2D.pushPoint(touch.pageX, touch.pageY, touch.identifier)
-      } // Is touchmove event fire once in per frame? macrotasks queue necessary?
+  touch_moveCallback  = event => {
+    let x = 0, y = 0;
+    for (const {pageX, pageY} of event.touches) {
+      x += pageX;
+      y += pageY;
     }
-  })(this)
+    this.absolutePos.x = x / event.touches.length;
+    this.absolutePos.y = y / event.touches.length;
 
-  touch_endCallback = (that => {
-    return event => {
-      for (const touch of event.changedTouches) {
-        that.canvas2D.endLine(touch.identifier)
-      }
+    for (const touch of event.changedTouches) {
+      this.canvas2D.pushPoint(touch.pageX, touch.pageY, touch.identifier)
+    } // Is touchmove event fire once in per frame? macrotasks queue necessary?
+  }
+
+  touch_endCallback = event => {
+    for (const touch of event.changedTouches) {
+      this.canvas2D.endLine(touch.identifier)
     }
-  })(this)
+  }
   // touchcancel is fired whenever it takes ~200 ms to return from a touchmove event handler.
 
   #mouseMove_triggered = false;
-  mouse_moveCallback = (that => {
-    return event => {
-      that.absolutePos.x = event.clientX;
-      that.absolutePos.y = event.clientY;
+  mouse_moveCallback = event => {
+    this.absolutePos.x = event.clientX;
+    this.absolutePos.y = event.clientY;
 
-      if(that.#mouseMove_triggered)
-        that.canvas2D.pushPoint(event.clientX, event.clientY, 0); // 0 - identifier of this touch
-      else {
-        that.canvas2D.createLine(event.clientX, event.clientY, 0);
-        that.#mouseMove_triggered = true;
-      }
-  }
-  })(this)
-
-  mouse_leaveCallback = (that => {
-    return () => {
-      that.#mouseMove_triggered = false;
-      that.canvas2D.endLine(0);
+    if(this.#mouseMove_triggered)
+      this.canvas2D.pushPoint(event.clientX, event.clientY, 0); // 0 - identifier of this touch
+    else {
+      this.canvas2D.createLine(event.clientX, event.clientY, 0);
+      this.#mouseMove_triggered = true;
     }
-  })(this)
+  }
+
+  mouse_leaveCallback = () => {
+    this.#mouseMove_triggered = false;
+    this.canvas2D.endLine(0);
+  }
 
   codeMap = {
     ArrowUp: () => {
@@ -179,18 +169,14 @@ class UserInteraction {
       return this.ArrowRight();
     }
   }
-  key_downCallback = (that => {
-    return event => {
-      if(this.codeMap.hasOwnProperty(event.code))
-        this.codeMap[event.code]();
-    }
-  })(this)
+  key_downCallback = event => {
+    if(this.codeMap.hasOwnProperty(event.code))
+      this.codeMap[event.code]();
+  }
 
-  key_upCallback = (that => {
-    return event => {
-      // console.dir(event);
-    }
-  })(this)
+  key_upCallback = event => {
+    // console.dir(event);
+  }
   /* callbacks END */
 
   #resizeCallbackQueue = [

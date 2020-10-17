@@ -397,7 +397,7 @@
               !existsCookie('rejectedForceLoad=true') && 
                 Dialog.newConfirm("Your device is on lite mode", ["Downloading audio is paused to prevent data charges."], "Download anyway", "cancel").then(result => 
                   result === true
-                  ? (that.#assignWork("forceLoad"), that.#assignWork("loadAll"))
+                  ? (this.#assignWork("forceLoad"), this.#assignWork("loadAll"))
                   : setCookie("rejectedForceLoad=true", 1)
                 ) || console.info('Cookie: rejectedForceLoad=true')
               return ;
