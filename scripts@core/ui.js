@@ -1,5 +1,5 @@
 class UserInteraction {
-  absolutePos = { x: 0, y: 0 };
+  absolutePos = {}; // init in constructor func
   
   isTouchDevice = false;
 
@@ -20,6 +20,34 @@ class UserInteraction {
     }
     this.listenResize();
     this.listenUnload();
+
+    let x = 0, y = 0;
+    Object.defineProperties(this.absolutePos, {
+      x: {
+        get() {
+          return x;
+        },
+        set: value => {
+          if(value < 0)
+            x = 0;
+          else if(value >= this.WIDTH)
+            x = this.WIDTH;
+          else x = value;
+        }
+      },
+      y: {
+        get() {
+          return y;
+        },
+        set: value => {
+          if(value < 0)
+            y = 0;
+          else if(value >= this.HEIGHT)
+            y = this.HEIGHT;
+          else y = value;
+        }
+      }
+    })
   }
 
   get relativePos () {
@@ -55,6 +83,8 @@ class UserInteraction {
       this._addListeners("mouse", ['move', 'leave'])
       if(!this.codeHandler.hasOwnProperty("mapAdded")){
         this.codeHandler.addMapping(this.codeMap);
+        this.codeHandler.updateDistance();
+        this.addResizeCallback(() => this.codeHandler.updateDistance())
       }
       this._addListeners("key", ['down', 'up'])
     }
@@ -133,7 +163,6 @@ class UserInteraction {
     this.#mouseMove_triggered = false;
     this.canvas2D.endLine(0);
   }
-
   codeHandler = {
     addMapping (codeMap) {
       Object.entries(codeMap)
@@ -145,17 +174,36 @@ class UserInteraction {
                 this[code] = func;
             });
     },
-    ArrowUp: () => {
-      console.info('↑')
+    invoke: (ui => {
+      return function (func) {
+        func.call(this, ui);
+      }
+    })(this),
+    distance: 100,
+    updateDistance () {
+      this.invoke(ui => {
+        this.distance = Math.min(ui.HEIGHT, ui.WIDTH) / 12
+      })
     },
-    ArrowDown: () => {
-      console.info('↓')
+    ArrowUp () { 
+      this.invoke(ui => {
+        ui.absolutePos.y -= this.distance
+      })
     },
-    ArrowLeft: () => {
-      console.info('←')
+    ArrowDown () { 
+      this.invoke(ui => {
+        ui.absolutePos.y += this.distance
+      })
     },
-    ArrowRight: () => {
-      console.info('→')
+    ArrowLeft () { 
+      this.invoke(ui => {
+        ui.absolutePos.x -= this.distance
+      })
+    },
+    ArrowRight () { 
+      this.invoke(ui => {
+        ui.absolutePos.x += this.distance
+      })
     }
   }
   codeMap = {
