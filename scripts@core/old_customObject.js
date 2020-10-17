@@ -189,10 +189,8 @@ class Sea {
     const geometry = new THREE.CylinderGeometry(600, 600, 800, 40, 10); 
     // CylinderGeometry(radiusTop, radiusBottom, height, radialSegments, heightSegments, openEnded: Boolean, thetaStart, thetaLength)
     geometry.applyMatrix4(new THREE.Matrix4().makeRotationX(-Math.PI / 2)); 
-    // .applyMatrix4 ( m : Matrix4 ) :  Multiplies this vector (with an implicit 1 in the 4th dimension) and m, and divides by perspective.
-    // 简单来说参数用-Math.PI / 2可以让圆柱体最接近球体
-
-    //NOTE: 那为什么要先建立圆柱体再把其切为球体呢？为何不直接new一个SphereGeometry？
+    //NOTE: 这里是将圆柱体横置，而非切成一个球
+    // Geometry本质上是点和面的集合，比如对与Geometry对象做旋转、缩放之类的矩阵操作，实质还是遍历点和面分别做一遍相应的矩阵变换（applyMatrix4）
     const vertices = geometry.vertices,
           length = vertices.length;
     for (let i = 0; i < length; i++){
@@ -232,6 +230,7 @@ class Sea {
       this.#waves[i].ang += speed;
     }
     this.mesh.geometry.verticesNeedUpdate = true;
+    // https://stackoverflow.com/questions/36699389/verticesneedupdate-in-three-js
     this.mesh.rotation.z += rotation;
   }
 }

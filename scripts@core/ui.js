@@ -22,6 +22,7 @@ class UserInteraction {
     this.listenUnload();
 
     let x = this.WIDTH / 2, y = this.HEIGHT / 2;
+    // this.addResizeCallback((prHEIGHT, prWIDTH) => {}) 
     Object.defineProperties(this.absolutePos, {
       x: {
         get() {
@@ -223,10 +224,10 @@ class UserInteraction {
   /* callbacks END */
 
   #resizeCallbackQueue = [
-    (() => { // default
+    () => { // default
       this.#windowHeight = window.innerHeight;
       this.#windowWidth = window.innerWidth;
-    }).bind(this)
+    }
   ];
 
   addResizeCallback (func) {

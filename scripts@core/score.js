@@ -8,14 +8,8 @@ class Score {
     this.#speed = initialSpeed;
     this.#value = initialScore;
   }
-  // /**
-  //  * @param {number} newSpeed
-  //  */
-  // set speed (newSpeed) {
-  //   this.update();
-  //   this.#speed = newSpeed;
-  // }
-
+  // set speed (newSpeed) {}
+  
   bind (domElement) {
     const tempText = this.#dom.innerText;
     this.#dom = domElement;

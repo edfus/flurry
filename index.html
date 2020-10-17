@@ -91,7 +91,8 @@
 					setTimeout(()=>{
 						if(document.getElementById('loading-section').hidden !== true){
 							document.getElementById('loading-section').hidden = true;
-							Dialog.newError('Loading takes too long.😥', 10000)
+							if(document.visibilityState !== 'hidden') //一个bug，大概和浏览器idle的机制有关吧
+								Dialog.newError('Loading takes too long.😥', 10000)
 						}
 					}, 30000)
 					if(window.matchMedia('screen and (orientation: portrait) and (max-width: 767px)').matches){
