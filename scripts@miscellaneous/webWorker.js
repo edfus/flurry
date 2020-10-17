@@ -125,22 +125,23 @@
       set newLoadedAudio (newAudio) {
         // has check for repeat
         if(newAudio.usage === 'se'){
-          this.SEList[newAudio.role] 
-          ?? (this.SEList[newAudio.role] = {
-            arrayBuffer: ''
-          }) // one role one se
+          if(newAudio.role in this.SEList)
+            ; //TODO 
+          else {
+            this.SEList[newAudio.role] = {
+              arrayBuffer: ''
+            } // one role one se
+          }
           return ;
         }
-
-        if(this.rolesToReserve.includes(newAudio.role)){
-          this.songs[newAudio.role]
-          ?? (this.songs[newAudio.role] = {
+        if(this.rolesToReserve.includes(newAudio.role) && newAudio.role != null){ // null or undefined
+          this.songs[newAudio.role] = {
             name: newAudio.name,
             type: newAudio.type,
             arrayBuffer: newAudio.arrayBuffer
-          })
+          }
         } else {
-          if(this.sequenceArr[newAudio.index] != undefined) // undefined or null
+          if(newAudio.index in this.sequenceArr || !("index" in newAudio))
             return ;
           this.sequenceArr[newAudio.index] = newAudio.name;
           if(currentIndex <= newAudio.index && newAudio.index - currentIndex <= this.songs.nextsToPlay.length)

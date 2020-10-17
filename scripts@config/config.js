@@ -210,12 +210,12 @@
     }
 
     static addOnceListener (eventName, callback) {
-      this.#callbackQueue[eventName] ?? (this.#callbackQueue[eventName] = new Array)
+      eventName in this.#callbackQueue ? void 0 : (this.#callbackQueue[eventName] = new Array)
       this.#callbackQueue[eventName].push({callback, once: true}) // shorthand
     }
 
     static addEventListener (eventName, callback) {
-      this.#callbackQueue[eventName] ?? (this.#callbackQueue[eventName] = new Array)
+      eventName in this.#callbackQueue ? void 0 : (this.#callbackQueue[eventName] = new Array)
       this.#callbackQueue[eventName].push({callback, once: false}) // shorthand
     }
 

@@ -257,7 +257,6 @@ function createPlane(){
     //TODO: 在base.js使用队列等来enable动态添加update逻辑
     scene.add(airplane.boxHelper);
   }
-  console.log(airplane)
 }
 
 function createSea(){

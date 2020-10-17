@@ -72,10 +72,10 @@ class Score {
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
         }
       );
-    localStorage.score_obj ?? (localStorage.score_obj = `{}`);
-    const store_obj = JSON.parse(localStorage.score_obj)
+    const store_obj = JSON.parse("score_obj" in localStorage ? localStorage.score_obj : `{}`)
     store_obj[dateId] = store_obj[dateId] ? (this.#value > store_obj[dateId] ? this.#value : store_obj[dateId]) : this.#value;
     localStorage.score_obj = JSON.stringify(store_obj);
+
     localStorage.score = this.#encrypt(this.#value);
   }
 
