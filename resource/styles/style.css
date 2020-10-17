@@ -99,7 +99,7 @@ main > canvas, #ui-canvas {
   display: flex;
 	justify-content: center;
   align-items: center;
-  flex-direction: row-reverse;
+  flex-direction: row;
   margin: 1.25rem;
 }
 

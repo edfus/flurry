@@ -369,7 +369,12 @@
 
   Dialog.addEventListener('dialogShow', () => {
     window.paused = true;
-  })
+    Array.from(document.querySelectorAll('button')).forEach(e => e.setAttribute("tabindex", "-1"))
+  }) // 暂时如此
+
+  Dialog.addEventListener('dialogHide', () => {
+    Array.from(document.querySelectorAll('button')).forEach(e => e.removeAttribute("tabindex"))
+  }) //FIX: the tabindex error of shadow root
 
   window.existsCookie = value => document.cookie.includes(value)
   /**
