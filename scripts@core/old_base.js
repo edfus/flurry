@@ -13,6 +13,15 @@ import Score from '../scripts@core/score.js';
   const titleStyle = "padding: 1px; border-radius: 3px 0 0 3px; color: #fff; background: #606060;",
         subStyle = "padding: 1px; border-radius: 0 3px 3px 0; color: #fff; background";
   const ua = navigator.userAgent.toString();
+  console.info([
+    ' ______   __       __  __   ______    ______    __  __    ',
+    '/_____/\\ /_/\\     /_/\\/_/\\ /_____/\\  /_____/\\  /_/\\/_/\\   ',
+    '\\::::_\\/_\\:\\ \\    \\:\\ \\:\\ \\\\:::_ \\ \\ \\:::_ \\ \\ \\ \\ \\ \\ \\  ',
+    ' \\:\\/___/\\\\:\\ \\    \\:\\ \\:\\ \\\\:(_) ) )_\\:(_) ) )_\\:\\_\\ \\ \\ ',
+    '  \\:::._\\/ \\:\\ \\____\\:\\ \\:\\ \\\\: __ `\\ \\\\: __ `\\ \\\\::::_\\/ ',
+    '   \\:\\ \\    \\:\\/___/\\\\:\\_\\:\\ \\\\ \\ `\\ \\ \\\\ \\ `\\ \\ \\ \\::\\ \\ ',
+    '    \\_\\/     \\_____\\/ \\_____\\/ \\_\\/ \\_\\/ \\_\\/ \\_\\/  \\__\\/ ',
+  ].join('\n'))
   console.info(`%c Version %c ${config.version} `, titleStyle, `${subStyle}: #F5986E;`)
   console.info(`%c Environment %c ${mode[0]} `, titleStyle, `${subStyle}: ${mode[1]};`)
   console.info(`%c Browser %c ${ua.slice(ua.lastIndexOf(') ') + 2, ua.length)} `, titleStyle, `${subStyle}: #1475b2;`)
@@ -243,6 +252,12 @@ function createPlane(){
   airplane.mesh.position.y = 100;
   airplane.defaultSpeed = config.speed_propeller;
   scene.add(airplane.mesh);
+  if(config.testMode) {
+    airplane.boxHelper = new THREE.BoxHelper(airplane.mesh, 0x00ff00);
+    //TODO: 在base.js使用队列等来enable动态添加update逻辑
+    scene.add(airplane.boxHelper);
+  }
+  console.log(airplane)
 }
 
 function createSea(){
@@ -268,6 +283,9 @@ function updatePlane(speed_propeller) {
   airplane.mesh.rotation.z = (targetY - airplane.mesh.position.y) * 0.0128; // 飞机与x轴角度随鼠标上下移动而变化
   airplane.mesh.rotation.x = (airplane.mesh.position.y - targetY) * 0.0064; // 飞机与z轴角度随鼠标上下移动而变化
   airplane.propellerSpin(speed_propeller); // 螺旋桨旋转(默认速度0.6)
+  if(config.testMode) { 
+    airplane.boxHelper.update();
+  }
 }
 /**
  * @param {number | undefined} speed_sea
