@@ -21,7 +21,7 @@ class UserInteraction {
     this.listenResize();
     this.listenUnload();
 
-    let x = 0, y = 0;
+    let x = this.WIDTH / 2, y = this.HEIGHT / 2;
     Object.defineProperties(this.absolutePos, {
       x: {
         get() {
