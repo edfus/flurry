@@ -54,10 +54,6 @@ cloudres:
 - [ ] 完成web worker - audio开发 
     https://www.html5rocks.com/en/tutorials/webaudio/fieldrunners/
     https://developer.mozilla.org/en-US/docs/Games/Techniques/Audio_for_Web_Games
-    https://developers.google.com/web/updates/2017/12/audio-worklet
-    https://developer.mozilla.org/en-US/docs/Web/API/AudioWorkletNode
-    https://developers.google.com/web/updates/2018/06/audio-worklet-design-pattern
-    https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Using_AudioWorklet
 - [ ] vertices的概念
 - [ ] FIX: 手机端无法点击按钮（onclick无效？）
 
@@ -72,43 +68,6 @@ cloudres:
     - GJK 物理引擎中计算碰撞的主流方案 http://www.dtecta.com/papers/jgt98convex.pdf
     - https://stackoverflow.com/questions/11473755/how-to-detect-collision-in-three-js
         > The idea is this: let's say that we want to check if a given mesh, called "Player", intersects any meshes contained in an array called "collidableMeshList". What we can do is create a set of rays which start at the coordinates of the Player mesh (Player.position), and extend towards each vertex in the geometry of the Player mesh. Each Ray has a method called "intersectObjects" which returns an array of objects that the Ray intersected with, and the distance to each of these objects (as measured from the origin of the Ray). If the distance to an intersection is less than the distance between the Player's position and the geometry's vertex, then the collision occurred on the interior of the player's mesh -- what we would probably call an "actual" collision.
-```js
-// http://stemkoski.github.io/Three.js/Collision-Detection.html
-for (var vertexIndex = 0; vertexIndex < Player.geometry.vertices.length; vertexIndex++)
-{       
-    var localVertex = Player.geometry.vertices[vertexIndex].clone();
-    var globalVertex = Player.matrix.multiplyVector3(localVertex);
-    var directionVector = globalVertex.subSelf( Player.position );
-
-    var ray = new THREE.Ray( Player.position, directionVector.clone().normalize() );
-    var collisionResults = ray.intersectObjects( collidableMeshList );
-    if ( collisionResults.length > 0 && collisionResults[0].distance < directionVector.length() ) 
-    {
-        // a collision occurred... do something...
-    }
-}
-
-function rt(a,b) {
-  let d = [b]; 
-  let e = a.position.clone();
-  let f = a.geometry.vertices.length;
-  let g = a.position;
-  let h = a.matrix;
-  let i = a.geometry.vertices;
-    for (var vertexIndex = f-1; vertexIndex >= 0; vertexIndex--) {      
-        let localVertex = i[vertexIndex].clone();
-        let globalVertex = localVertex.applyMatrix4(h);
-        let directionVector = globalVertex.sub(g);
-        
-        let ray = new THREE.Raycaster(e,directionVector.clone().normalize());
-        let collisionResults = ray.intersectObjects(d);
-        if ( collisionResults.length > 0 && collisionResults[0].distance < directionVector.length() ) { 
-            return true;
-    }
-    }
- return false;
-}
-```
 
 关于移动：
     初定为用户不动，场景不动，相机和障碍物移动。相机旋转跟随飞机旋转，有一定延迟ease-in-out

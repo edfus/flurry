@@ -46,6 +46,21 @@ class game {
 
 
   }
+  isCollided(obj3d, collidableMeshList) {
+    const vertices = obj3d.geometry.vertices;
+    const position = obj3d.position;
+    for(let i = vertices.length - 1; i >= 0; i--) {
+      const localVertex = vertices[i].clone();
+      const globalVertex = localVertex.applyMatrix4(obj3d.matrix);
+      const directionVector = globalVertex.sub(position);
+  
+      const ray = new THREE.Raycaster(position, directionVector.clone().normalize());
+      const collisionResults = ray.intersectObjects(collidableMeshList);
+      if(collisionResults.length > 0 && collisionResults[0].distance < directionVector.length())
+          return true;
+    }
+    return false;
+  }
   #update () { // private field function
      // renderloop在外界调用，以便更好的执行暂停等
   }
