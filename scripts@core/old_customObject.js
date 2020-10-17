@@ -36,6 +36,8 @@ class Airplane {
     cockpit.castShadow = true;
     cockpit.receiveShadow = true;
     this.mesh.add(cockpit);
+    cockpit.name = 'airplane-cabin'
+    this._cabin = cockpit;
 
     // Create Engine
     const geomEngine = new THREE.BoxGeometry(20, 50, 50, 1, 1, 1);
@@ -48,6 +50,8 @@ class Airplane {
     engine.castShadow = true;
     engine.receiveShadow = true;
     this.mesh.add(engine);
+    engine.name = 'airplane-engine'
+    this._engine = engine;
 
     // Create Tailplane *横尾翼
     const geomTailPlane = new THREE.BoxGeometry(15, 20, 5, 1, 1, 1);
@@ -60,6 +64,8 @@ class Airplane {
     tailPlane.castShadow = true;
     tailPlane.receiveShadow = true;
     this.mesh.add(tailPlane);
+    tailPlane.name = 'airplane-tailPlane'
+    this._tailPlane = tailPlane;
 
     // Create Wing *机翼
     const geomSideWing = new THREE.BoxGeometry(30, 5, 120, 1, 1, 1);
@@ -72,6 +78,8 @@ class Airplane {
     sideWing.castShadow = true;
     sideWing.receiveShadow = true;
     this.mesh.add(sideWing);
+    sideWing.name = 'airplane-wing'
+    this._wing = sideWing;
 
     // Propeller *螺旋桨杆
     const geomPropeller = new THREE.BoxGeometry(20, 10, 10, 1, 1, 1);
@@ -79,9 +87,9 @@ class Airplane {
       color: colors.brown,
       flatShading: THREE.FlatShading
     });
-    this.propeller = new THREE.Mesh(geomPropeller, matPropeller);
-    this.propeller.castShadow = true;
-    this.propeller.receiveShadow = true;
+    this._propeller = new THREE.Mesh(geomPropeller, matPropeller);
+    this._propeller.castShadow = true;
+    this._propeller.receiveShadow = true;
 
     // Blades *叶片
     const geomBlade = new THREE.BoxGeometry(1, 100, 20, 1, 1, 1);
@@ -101,13 +109,14 @@ class Airplane {
     blade2.castShadow = true;
     blade2.receiveShadow = true;
 
-    this.propeller.add(blade1);
-    this.propeller.add(blade2);
-    this.propeller.position.set(60, 0, 0);
-    this.mesh.add(this.propeller); // propeller的旋转在updatePlane()中控制
+    this._propeller.add(blade1);
+    this._propeller.add(blade2);
+    this._propeller.position.set(60, 0, 0);
+    this.mesh.add(this._propeller); // propeller的旋转在updatePlane()中控制
+    this._propeller.name = 'airplane-propeller'
   }
   propellerSpin(speed = this.defaultSpeed) { 
-    this.propeller.rotation.x += speed; // 螺旋桨旋转速度
+    this._propeller.rotation.x += speed; // 螺旋桨旋转速度
   }
 }
 
@@ -144,6 +153,7 @@ class Sky {
   defaultSpeed = 0;
   constructor() {
     this.mesh = new THREE.Object3D();
+    this.mesh.name = "sky";
     this.nClouds = config.numOfCloudsInSky;
     this.clouds = [];
     const stepAngle = Math.PI * 2 / this.nClouds;
@@ -163,7 +173,7 @@ class Sky {
 
       const scaleRatio = 1 + Math.random() * 2; // random scale
       newCloud.mesh.scale.set(scaleRatio, scaleRatio, scaleRatio);
-
+      newCloud.mesh.name = "cloud"
       this.mesh.add(newCloud.mesh);
     }
   }
@@ -173,7 +183,6 @@ class Sky {
 }
 
 class Sea {
-  #length = 0; // sea对象的vertices个数，waves数组的length
   #waves = [];
   defaultSpeed = 0;
   constructor() {
@@ -184,18 +193,13 @@ class Sea {
     // 简单来说参数用-Math.PI / 2可以让圆柱体最接近球体
 
     //NOTE: 那为什么要先建立圆柱体再把其切为球体呢？为何不直接new一个SphereGeometry？
-    // 另外，一句注释过长请分段
-    // 还有，如CylinderGeometry(radiusTop : float中的float大可去掉以方便查看
-    // 最后，请在注释下方附上官网链接来源，如：https://threejs.org/docs/#api/en/geometries/CylinderGeometry
-    // api注释并非必须，一切都只是为了方便他人和未来的自己理解。
-    // 因此，请站在实用性的角度去处理api注释，而非单纯复制粘贴。Create, not work.
-    this.#length  = geometry.vertices.length;
-
-    for (let i = 0; i < this.#length; i++){
+    const vertices = geometry.vertices,
+          length = vertices.length;
+    for (let i = 0; i < length; i++){
       this.#waves.push({
-        x: geometry.vertices[i].x,
-        y: geometry.vertices[i].y,
-        z: geometry.vertices[i].z,
+        x: vertices[i].x,
+        y: vertices[i].y,
+        z: vertices[i].z,
         ang: Math.random()  * Math.PI * 2, // 海浪的角度 angle
         amp: 5 + Math.random() * 15, // 海浪高度 amplitude
         speed: 0.016 + Math.random() * 0.032, // angle的变化速度
@@ -210,18 +214,22 @@ class Sea {
     });
 
     this.mesh = new THREE.Mesh(geometry, material);
-    this.mesh.receiveShadow = true; // airplane cast shadow
+    this.mesh.name = "sea";
+    this.mesh.receiveShadow = true;
   }
   move(rotation = this.defaultSpeed) {
     this.mesh.rotation.z += rotation;
   }
   moveWaves(rotation = this.defaultSpeed) {
-    const vertices = this.mesh.geometry.vertices;
-    for (let i = 0; i < this.#length; i++){
-      const waveProperties = this.#waves[i];
-      vertices[i].x =  waveProperties.x + Math.cos(waveProperties.ang) * waveProperties.amp;
-      vertices[i].y = waveProperties.y + Math.sin(waveProperties.ang) * waveProperties.amp;
-      waveProperties.ang += waveProperties.speed;
+    const vertices = this.mesh.geometry.vertices,
+          length = vertices.length;
+
+    for (let i = 0; i < length; i++){
+      const {x, y, speed, ang: currentAng, amp: amplitude} = this.#waves[i];
+
+      vertices[i].x = x + Math.cos(currentAng) * amplitude;
+      vertices[i].y = y + Math.sin(currentAng) * amplitude;
+      this.#waves[i].ang += speed;
     }
     this.mesh.geometry.verticesNeedUpdate = true;
     this.mesh.rotation.z += rotation;
