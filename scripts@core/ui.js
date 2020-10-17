@@ -53,6 +53,9 @@ class UserInteraction {
       this._addListeners("touch", ['start', 'move', 'end'])
     else {
       this._addListeners("mouse", ['move', 'leave'])
+      if(!this.codeHandler.hasOwnProperty("mapAdded")){
+        this.codeHandler.addMapping(this.codeMap);
+      }
       this._addListeners("key", ['down', 'up'])
     }
   }
@@ -131,7 +134,17 @@ class UserInteraction {
     this.canvas2D.endLine(0);
   }
 
-  codeMap = {
+  codeHandler = {
+    addMapping (codeMap) {
+      Object.entries(codeMap)
+            .forEach(([key, arr]) => {
+              const func = function () {
+                return this[key]();
+              }
+              for(const code of arr)
+                this[code] = func;
+            });
+    },
     ArrowUp: () => {
       console.info('↑')
     },
@@ -143,39 +156,21 @@ class UserInteraction {
     },
     ArrowRight: () => {
       console.info('→')
-    },
-    KeyW () {
-      return this.ArrowUp();
-    },
-    KeyS () {
-      return this.ArrowDown();
-    },
-    KeyA () {
-      return this.ArrowLeft();
-    },
-    KeyD () {
-      return this.ArrowRight();
-    },
-    Numpad5 () {
-      return this.ArrowUp();
-    },
-    Numpad2 () {
-      return this.ArrowDown();
-    },
-    Numpad1 () {
-      return this.ArrowLeft();
-    },
-    Numpad3 () {
-      return this.ArrowRight();
     }
   }
+  codeMap = {
+    ArrowUp: ['KeyW', 'Numpad5'],
+    ArrowDown: ['KeyS', 'Numpad2'],
+    ArrowLeft: ['KeyA', 'Numpad1'],
+    ArrowRight: ['KeyD', 'Numpad3']
+  }
   key_downCallback = event => {
-    if(this.codeMap.hasOwnProperty(event.code))
-      this.codeMap[event.code]();
+    if(this.codeHandler.hasOwnProperty(event.code))
+      this.codeHandler[event.code]();
   }
 
   key_upCallback = event => {
-    // console.dir(event);
+     ;
   }
   /* callbacks END */
 
