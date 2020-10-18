@@ -145,7 +145,7 @@
           )
       }
       async loadSongs(list) {
-        load(list, 'songs_Database', 'songs', true).catch(err => 
+        this.load(list, 'songs_Database', 'songs', true).catch(err => 
           newError(err.name, err.message)
         )
       }
@@ -154,7 +154,6 @@
     function newError (name, message) {
       postMessage({
           isError: true,
-          isEvent: false,
           name: name,
           message: message
         }
@@ -162,7 +161,6 @@
     }
     function newEvent (eventName, message_obj, transferableArray) {
       const messageToSend =  {
-        isError: false,
         isEvent: true,
         eventName: eventName,
         ...message_obj
@@ -186,8 +184,8 @@
         return ;
       }
       const [functionName, ...vars] = data;
-      console.log(functionName, vars)
-      audioPlayer[functionName].apply(audioPlayer, vars);
+      // console.log(functionName, vars)
+      audioLoader[functionName].apply(audioLoader, vars);
     }
   }
   /* worker function - END */
@@ -248,11 +246,12 @@
     preloadLength = 2
     songs = {
       nextsToPlay: new Array(this.preloadLength), // for next two songs to play, reserve their array buffer 
-      currentIndex: 0
+      currentIndex: 0,
+      shuffle: true
     };
     sequenceArr = [];
-    songPlaying = '';
-    playTriggered = false;
+    songPlaying = {name: '', source: null};
+    
 
     context = null;
     #worker = null;
@@ -261,7 +260,7 @@
       this.#worker.onmessage = this.#onmessage.bind(this);
       this.#worker.postMessage({
         initLoader: true, 
-        songs: {...songs, ...themes},
+        songs: [...songs, ...themes],
         preloadIndex: this.preloadLength
       })
       this.context = new AudioContext();
@@ -272,30 +271,67 @@
       };
       this.nodes.masterGain.connect(this.nodes.destination);
       this.nodes.songsGain.connect(this.nodes.masterGain);
+
+      Object.defineProperty(this.songPlaying, 'empty', {
+        value() {
+          this.name = '';
+          this.source = null;
+        }
+      })
     }
 
     autoPlay () {
-      if(!this.playTriggered)
-        if(localStorage.interacted) // autoplay rules.
-          this.play(this.songs.intro);
-        else {
-          if(config.inApp){
-            localStorage.interacted = true;
-            this.play(this.songs.intro);
-          }
-          document.addEventListener("click", () => {
-            localStorage.interacted = true;
-            if(!this.playTriggered) //
-              this.play(this.songs.intro);
-          }, {passive: true, once: true}) 
-        }
+      if(this.playTriggered)
+        return;
+
+      const playF = () => {
+        this.playSong(this.songs.intro).then(() => this.playNext());
+        this.playTriggered = true;
+      }
+      const callback = () => {
+        this.context.resume();
+        if(!this.playTriggered)
+          playF();
+        ["click", "mousemove", "touchstart", "keydown"].forEach(name => 
+            document.removeEventListener(name, callback, {once: true})
+          )
+      }
+
+      if(config.inApp || config.testMode){
+        playF();
+      } else {
+        if(localStorage.allowAutoPlay === 'true') {
+          if (this.context.state === 'suspended') {
+            ["click", "mousemove", "touchstart", "keydown"].forEach(name => 
+              document.addEventListener(name, callback, {passive: true, once: true})
+            )
+          } else playF();
+        } else if(!localStorage.hasOwnProperty('allowAutoPlay'))
+          Dialog.newConfirm('Hello!', ["can we autoplay audio once you arrived at this site?", "you can change this in setting whenever you want"], "Sure", "no.")
+            .then(result => {
+              if(result === true) {
+                callback();
+                localStorage.allowAutoPlay = 'true';
+              } else {
+                localStorage.allowAutoPlay = 'false';
+                //TODO: volume button
+              }
+            })
+        else ; // localStorage.allowAutoPlay = false;
+      }
+     /**
+      * https://developers.google.com/web/updates/2018/11/web-audio-autoplay
+      * We detect when users regularly let audio play for more than 7 seconds during most of their visits to a website, 
+      * and enable autoplay for that website.
+      * chrome://media-engagement/
+      */
     }
 
     #newWorker (workerFunction) {
       return new Worker(URL.createObjectURL(new Blob([`(${workerFunction})()`], {type: 'application/javascript'})), { type: 'module' });
     }
 
-    #onmessage ({data}) {
+    async #onmessage ({data}) {
       if(data.isError){
         switch(data.name){
           case 'saveDataModeOn':
@@ -307,20 +343,19 @@
                 : setCookie("rejectedForceLoad=true", 1)
               ) || console.info('Cookie: rejectedForceLoad=true')
             return ;
-          case 'exception':
-            return  Dialog.newError(data.name, data.message, 15000);
           case 'responseNotOk':
             return Dialog.newError('📶 Network Error', data.message, 15000);
           case 'indexedDB':
             return Dialog.newError('can\' access indexedDB😨', data.message);
+          default:
+            return Dialog.newError(data.name, data.message, 15000);
         }
       } else if(data.isEvent){
         switch(data.eventName){
           case 'newSongLoaded': 
-            console.log(data);
             if(data.reserve === true) {
               this.songs[data.role] = {
-                arrayBuffer: data.arrayBuffer,
+                audioBuffer: await this.context.decodeAudioData(data.arrayBuffer),
                 name: data.name
               } // 直接在song中保留
               if(data.role === 'intro') //
@@ -330,29 +365,25 @@
               // preload的非themes
               if(data.arrayBuffer) 
                 this.songs.nextsToPlay[data.index] = {
-                  arrayBuffer: data.arrayBuffer,
+                  audioBuffer: await this.context.decodeAudioData(data.arrayBuffer),
                   name: data.name,
                   index: data.index
                 }
               this.sequenceArr[data.index] = {
-                name: data.name
+                name: data.name,
+                index: data.index
               } //NOTE: indexedDB以name作为非重复的index索引，而此时data已添加入indexedDB，无需保留url。
             }
             return ;
           case 'requestFulfilled': 
-            console.log(data);
-            if(this.currentIndex >= data.index) {
-              console.log(data, this.sequenceArr[this.currentIndex])
-              return ;
-            }
-            this.songs.nextsToPlay[data.requestIndex] = {
-              arrayBuffer: data.arrayBuffer,
+            this.songs.nextsToPlay.push({
+              audioBuffer: await this.context.decodeAudioData(data.arrayBuffer), // only takes arrayBuffer as input param
               name: data.name,
               index: data.index
-            }
+            })
             return ; 
           case 'allLoaded': 
-            return console.log(data) || (this.allLoaded = true); 
+            return this.allLoaded = true; 
           default:  Dialog.newError(data.eventName, data);
         }
       } else {
@@ -367,68 +398,120 @@
       ])
     }
 
-    play () {
-      this._play(this.SEsource, this.SEList[role].arrayBuffer, () => void (this.isSEPlaying = true), () => void (this.isSEPlaying = false))
-
+    /**
+     * 播放歌曲。
+     * @param {string | Object} param 要播放歌曲的role或包含其信息的对象
+     * @param {boolean} loop 是否循环
+     */
+    async playSong (param, loop = false) {
+      if(typeof param === "string")
+        param = this.songs[param]
+      if(!param)
+        return false;      
+      return this._play(param.name, param.audioBuffer, this.nodes.songsGain, loop)
     }
 
-    async _play(source, arrayBuffer, callback, onEnded) {
-      source.buffer = await this.context.decodeAudioData(arrayBuffer);
-      source.loop = true;
-      // source.loopStart = 0;
-      // source.loopEnd = Infinity;
-      source.onended = onEnded.bind(this);
-      // source.start( this._startedAt, this._progress + this.offset, this.duration );
+    async _play(name, audioBuffer, destination, loop) {
+      if(this.songPlaying.source) {
+        this.songPlaying.source.onended = null; // in case async error
+        this.stop();
+        console.info("Force stopped: " + this.songPlaying.name);
+        this.songPlaying.empty();
+      }
+      const source =  this.context.createBufferSource();
+      source.buffer = audioBuffer;
+      source.loop = loop; 
       source.start(0);
-      source.connect(this.context.destination);
-      callback();
-    }
+      // source.start( this._startedAt, this._progress + this.offset, this.duration );
+      source.connect(destination);
 
-    playNext (delay = 0) {
-      const _startedAt = this.context.currentTime + delay;
-      if (this.context.state === 'suspended') {
-        this.context.resume();
+      this.songPlaying.source = source
+      this.songPlaying.name = name;
+      console.info("Playing: " + this.songPlaying.name)
+      return new Promise((resolve, reject) => {
+          if(this.context.state === 'suspended')
+            reject();
+          source.onended = () => {
+            console.info("Ended: " + this.songPlaying.name)
+            this.songPlaying.empty();
+            resolve();
+          }
+        })
+    }
+    /**
+     * 播放按顺序的下一首歌
+     */
+    playNext () {
+      let nextSong;
+      if(this.songs.nextsToPlay.length)
+        nextSong = this.songs.nextsToPlay.shift();
+      else return ; //FIX
+      this.songs.currentIndex = nextSong.index;
+      this.request(nextSong.index)
+      return this._play(nextSong.name, nextSong.audioBuffer, this.nodes.songsGain, false);
+    }
+    /**
+     * 加载对应音乐到内存
+     * @param {number | string | Object | Array<Object>} param 播放的index（会求余），或包含信息的对象（对象数组），或要播放的role名
+     */
+    request(param) {
+      switch(typeof param) {
+        case 'number': 
+          this.#assignWork('loadSongs', [this.sequenceArr[(param + this.preloadLength) % this.sequenceArr.length]]) // mod
+          break;
+        case 'string':
+          const arr = [...songs, ...themes];
+          for(let i = arr.length - 1; i >= 0; i--) {
+            if(arr[i].name === param) {
+              this.#assignWork('loadSongs', [arr[i]])
+              break;
+            }
+          }
+          break;
+        case 'object':
+          if(Array.isArray(param))
+            this.#assignWork('loadSongs', param)
+          else this.#assignWork('loadSongs', [param])
+          break;
+        default: console.warn("GlobalAudioPlayer: in function request: wrong parameter. ", param);
       }
     }
 
-    
-    setBGMVolume (newVolume) {
-      this.nodes.songsGain.gain.value = newVolume;
-    }
-
-    crossFade (track1, track2) {
-      // https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/linearRampToValueAtTime
-      track1.gain.linearRampToValueAtTime( 0, 1 );
-      track2.gain.linearRampToValueAtTime( 1, 1 );
-    }
+    // crossFade (track1, track2) {
+    //   // https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/linearRampToValueAtTime
+    //   track1.gain.linearRampToValueAtTime( 0, 1 );
+    //   track2.gain.linearRampToValueAtTime( 1, 1 );
+    // }
 
     pause () {
       this.nodes.songsGain.disconnect();
     }
 
     resume () {
+      if (this.context.state === 'suspended') {
+        this.context.resume();
+      }
       this.nodes.songsGain.connect(this.nodes.masterGain);
     }
 
-    stop () {
-      this.source.stop();
+    stop (delay = 0) {
+      if(this.songPlaying.source)
+        this.songPlaying.source.stop(delay);
+      // An AudioBufferSourceNode can only be played once;
+      // this.songPlaying.empty() - will execute in source.onend
+      /*
+       * The ended event is only sent to a node configured to loop automatically 
+       * when the node is stopped using its stop() method. 
+       */
     }
 
-    timeupdateCallback() {
-      if (this.currentTime > stopTime) {
-          this.pause();
-        }
+    get volume() {
+      return this.nodes.songsGain.gain.value;
     }
-
-    // get volume() {
-    //   return this.gain.gain.value;
-    // }
   
-    // set volume( value ) {
-    //   this.gain.gain.setTargetAtTime( value, this.context.currentTime, 0.01 );
-    //   return this;
-    // }
-    // ...
+    set volume( value ) {
+      this.nodes.songsGain.gain.setTargetAtTime( value, this.context.currentTime, 0.01 );
+    }
   }
   window.audioPlayer = new GlobalAudioPlayer();
 }
