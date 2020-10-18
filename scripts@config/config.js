@@ -74,7 +74,7 @@
   RotationSpeed_Sky = .01,
   NumOfCloudsInSky = 20,
   RotationSpeed_Propeller = .4,
-  scoreIncreasingSpeed = 200 // m / s (700 km/h ≈ 200m/s)
+  scoreIncreasingSpeed = 150 // m / s (700 km/h ≈ 200m/s)
 
   ;
 

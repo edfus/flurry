@@ -51,11 +51,7 @@ naiziguai:
 
 cloudres: 
 
-- [ ] 完成web worker - audio开发 
-    https://www.html5rocks.com/en/tutorials/webaudio/fieldrunners/
-    https://developer.mozilla.org/en-US/docs/Games/Techniques/Audio_for_Web_Games
-- [ ] vertices的概念
-- [ ] FIX: 手机端无法点击按钮（onclick无效？）
+- [ ] 迁移old_base.js到base.js
 
 ---
 
