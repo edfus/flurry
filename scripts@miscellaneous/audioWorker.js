@@ -285,7 +285,7 @@
         return;
 
       const playF = () => {
-        this.playSong(this.songs.intro).then(() => this.playNext());
+        this.playSong(this.songs.intro).then(() => this.playNext(true));
         this.playTriggered = true;
       }
       const callback = () => {
@@ -413,10 +413,7 @@
 
     async _play(name, audioBuffer, destination, loop) {
       if(this.songPlaying.source) {
-        this.songPlaying.source.onended = null; // in case async error
         this.stop();
-        console.info("Force stopped: " + this.songPlaying.name);
-        this.songPlaying.empty();
       }
       const source =  this.context.createBufferSource();
       source.buffer = audioBuffer;
@@ -429,26 +426,33 @@
       this.songPlaying.name = name;
       console.info("Playing: " + this.songPlaying.name)
       return new Promise((resolve, reject) => {
-          if(this.context.state === 'suspended')
-            reject();
           source.onended = () => {
             console.info("Ended: " + this.songPlaying.name)
             this.songPlaying.empty();
             resolve();
           }
+          source.beforeForceStopped = () => {
+            console.info("Force stopped: " + this.songPlaying.name);
+            this.songPlaying.source.onended = null; // in case async error
+            reject();
+          }
         })
     }
     /**
      * 播放按顺序的下一首歌
+     * @param {undefined | boolean} autoPlay
      */
-    playNext () {
+    playNext (autoPlay = false) {
       let nextSong;
       if(this.songs.nextsToPlay.length)
         nextSong = this.songs.nextsToPlay.shift();
       else return ; //FIX
       this.songs.currentIndex = nextSong.index;
       this.request(nextSong.index)
-      return this._play(nextSong.name, nextSong.audioBuffer, this.nodes.songsGain, false);
+      if(autoPlay)
+        return this._play(nextSong.name, nextSong.audioBuffer, this.nodes.songsGain, false).then(() => this.playNext(true));
+      else 
+        return this._play(nextSong.name, nextSong.audioBuffer, this.nodes.songsGain, false);
     }
     /**
      * 加载对应音乐到内存
@@ -495,8 +499,13 @@
     }
 
     stop (delay = 0) {
-      if(this.songPlaying.source)
+      if(this.songPlaying.source) {
+        const handleFunc = this.songPlaying.source.beforeForceStopped
+        if(handleFunc && typeof handleFunc === "function")
+          handleFunc();
         this.songPlaying.source.stop(delay);
+        this.songPlaying.empty();
+      }
       // An AudioBufferSourceNode can only be played once;
       // this.songPlaying.empty() - will execute in source.onend
       /*
