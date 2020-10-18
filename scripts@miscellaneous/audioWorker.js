@@ -247,7 +247,7 @@
     songs = {
       nextsToPlay: new Array(this.preloadLength), // for next two songs to play, reserve their array buffer 
       currentIndex: 0,
-      shuffle: true
+      shuffle: false
     };
     sequenceArr = [];
     songPlaying = {name: '', source: null};
@@ -440,9 +440,13 @@
     }
     /**
      * 播放按顺序的下一首歌
-     * @param {undefined | boolean} autoPlay
+     * 注意，当autoPlay为true时，playNext会不断递归执行
+     * 即playNext(true).then中的语句永远不会被执行。
+     * audioPlayer.stop()可终止其自动顺序循环播放。终止后playNext(true)返回reject的promise，注意catch。
+     * @param {undefined | boolean} autoPlay 默认false。若为true，则自动顺序循环播放
+     * @return {Promise} 
      */
-    playNext (autoPlay = false) {
+    async playNext (autoPlay = false) {
       let nextSong;
       if(this.songs.nextsToPlay.length)
         nextSong = this.songs.nextsToPlay.shift();

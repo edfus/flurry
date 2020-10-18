@@ -52,6 +52,8 @@ naiziguai:
 cloudres: 
 
 - [ ] 迁移old_base.js到base.js
+- [ ] 实现audioPlayer的Event Loop
+- [ ] 将audioPlayer改为module
 
 ---
 
