@@ -5,7 +5,6 @@ import OBJLoader from '../lib/OBJLoader.min.js';
 import EventLoop from '../scripts@miscellaneous/eventLoop.js';
 
 class Game {
-  tolerance = 3;
   constructor() { 
     this.config = window.config;
     this.colors = this.config.colors;
@@ -16,6 +15,7 @@ class Game {
     this.init();
   }
 
+  /* main functions */
   async init() {
     this._createScene(this.ui.WIDTH, this.ui.HEIGHT);
 
@@ -25,8 +25,9 @@ class Game {
     this.objects = await this._createObjects();
     this.scene.add.apply(this.scene, Object.values(this.objects));
     
-    this.camera.position.set(200, 200, 0);
-    this.camera.lookAt(0, 0, 0)
+    this.camera.position.set(200, 200, 200);
+    this.camera.lookAt(100, 100, 100);
+    // this.camera.rotation.set(-180, 0, 180)
     // this.camera.lookAt(this.objects.plane.position);
 
     this.ui.addResizeCallback(() => {
@@ -34,12 +35,16 @@ class Game {
       this.camera.aspect = this.ui.WIDTH / this.ui.HEIGHT; 
       this.camera.updateProjectionMatrix(); 
     })
+    this.score = new Score(this.config.speed_score);
+    this.ui.addUnloadCallback(() => this.score.store());
+
     this.config.testMode ? this._debug() : void 0;
     this.event.dispatch("inited");
     this.state.inited = true;
   }
 
   _debug () {
+    this.scene.add(new THREE.AxesHelper(500))
     this.addCameraHelper(this.camera)
     this.addBoxHelper(Object.values(this.objects))
   }
@@ -47,13 +52,11 @@ class Game {
   start () {
     this.event.dispatch("start");
     this.ui.addListeners(); 
-    this.config.getContainer().appendChild(this.renderer.domElement);
+    this.config.getContainer().append(this.renderer.domElement);
     this.config.getUIContainer().append(this.ui.canvas2D.domElement);
     this.config.gameStartCallback();
   
-    this.score = new Score(this.config.speed_score);
-    this.ui.addUnloadCallback(() => this.score.store());
-    this.score.bind(config.getScoreContainer());
+    this.score.bind(this.config.getScoreContainer());
     this.score.start();
     this._log();
     this.state.started = true;
@@ -67,6 +70,7 @@ class Game {
     this.#updateCallbackQueue.forEach(e => void e());
   }
 
+  /* scene and camera */
   _createScene (width, height) {
     this.scene = new THREE.Scene();
     // this.scene.background = new THREE.Color(0x000000);
@@ -85,6 +89,7 @@ class Game {
     this.renderer.shadowMap.enabled = true;
   }
 
+  /* lights */
   _createLights () {
     const shadowLight = new THREE.DirectionalLight(0xffffff, .9);
     shadowLight.position.set(150, 350, 350);
@@ -104,8 +109,15 @@ class Game {
     };
   }
 
+  /* createObjects */
   async _createObjects () {
     // other objects
+    const geometry = new THREE.BoxGeometry(100, 100, 100);
+    const material = new THREE.MeshPhongMaterial({
+      color: this.colors.red,
+      flatShading: THREE.FlatShading
+    });
+    const testCube = new THREE.Mesh(geometry, material);
     return new Promise(resolve => {
       new OBJLoader().load('/test/plane.obj', plane => {
         plane.traverse(child => {
@@ -118,16 +130,20 @@ class Game {
         });
         plane.scale.set(0.05, 0.05, 0.05);
         this.addUpdateFunc(() => {
-          plane.rotation.x += .008
-          plane.rotation.z += .003
+          plane.rotation.x += .008;
+          plane.rotation.z += .003;
+          testCube.rotation.x += .008
+          testCube.rotation.z += .003
         });
-        resolve({
-          plane: plane
+        resolve({ 
+          plane,
+          testCube
         })
       });
     })
   }
 
+  /* Helpers(used in _debug) */
   addCameraHelper (camera) {
     const helper = new THREE.CameraHelper(camera);
     this.scene.add(helper);
@@ -149,9 +165,9 @@ class Game {
     }
   }
 
-  // examples
+  /* Examples */
   #broadPhaseDetect (obj_vector3) {
-    return this.airplane.mesh.position.clone().sub(obj_vector3).length - this.tolerance;
+    return this.airplane.mesh.position.clone().sub(obj_vector3).length - 3; // 3 - tolerance
   }
 
   #createPointCloud(size, transparent, opacity, vertexColors, sizeAttenuation, color) {
@@ -250,12 +266,12 @@ game.pause = new class { // result in changing game.paused
     })
 
     this.pauseButton = document.querySelector(".ui-button.pause");
-    this._addButtonListenr = () => this.pauseButton.addEventListener("click", () => {
+    this._addButtonListener = () => this.pauseButton.addEventListener("click", () => {
       game.paused = true;
       game.audio.fadeOut();
       this.pauseButton.dataset.triggered = "true";
     }, {passive: true, once: true});
-    this._addButtonListenr();
+    this._addButtonListener();
   }
 
   async waitForUserContinue () {
