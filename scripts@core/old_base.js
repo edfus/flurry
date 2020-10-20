@@ -3,8 +3,8 @@
 // config = window.config; - not necessary
 // type="module" can still get access to config directly
 import { Airplane, Sky, Sea } from '../scripts@core/old_customObject.js';
-import UserInteraction from '../scripts@core/ui.js';
-import Score from '../scripts@core/score.js';
+import UserInteraction from '../scripts@miscellaneous/ui.js';
+import Score from '../scripts@miscellaneous/score.js';
 /////////////////////////////////
 {
   let mode = ['production', '#42c02e'];
