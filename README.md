@@ -52,6 +52,7 @@ cloudres:
 - [ ] 学习svg
 - [ ] https://tympanus.net/Development/ClickEffects/
 - [ ] 测试isCollided
+- [ ] https://github.com/JordanDelcros/OBJImg
 
 ---
 

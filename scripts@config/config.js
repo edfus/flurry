@@ -396,4 +396,16 @@
       document.exitFullscreen();
     }
   }
+  let inQueue = false;
+  window.throttleLog = function throttleLog () {
+    if(inQueue)
+      return;
+    else {
+      console.log.apply(window, arguments);
+      setTimeout(() => {
+        inQueue = false;
+      }, 500)
+      inQueue = true;
+    }
+  }
 }

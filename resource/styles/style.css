@@ -1,5 +1,5 @@
 :root {
-  --main-bg-gradient-color: #000;
+  --main-bg-gradient-color: #aaa;
   --loader-width: 6.25rem;
   --google-style-loader-green: #008744;
   --google-style-loader-blue: #0057e7;
@@ -346,6 +346,18 @@ main > canvas, #ui-canvas {
   stroke-dashoffset: 0;
   animation: dash 1.5s ease-in-out infinite, color 6s ease-in-out infinite;
   stroke-linecap: round;
+}
+
+#start-button {
+  position: fixed;
+  width: 30px;
+  height: 30px;
+  bottom: 8rem;
+  left: calc(50% - 15px);
+  padding: 0;
+  outline: 0;
+  border: 0;
+  background: none;
 }
 
 /* Keyframes */

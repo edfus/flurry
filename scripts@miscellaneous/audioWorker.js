@@ -514,7 +514,7 @@ class GlobalAudioPlayer {
   fadeOut (fadeTime = 10) {
     const currTime = this.context.currentTime;
     // const duration = this.songPlaying.buffer.duration
-    this.nodes.songsGain.gain.linearRampToValueAtTime(this.#volume, currTime);
+    this.nodes.songsGain.gain.linearRampToValueAtTime(1, currTime);
     this.nodes.songsGain.gain.linearRampToValueAtTime(0, currTime + fadeTime);
     setTimeout(() => this.pause(), fadeTime * 1000);
   }
@@ -527,7 +527,7 @@ class GlobalAudioPlayer {
     const currTime = this.context.currentTime;
     this.nodes.songsGain.gain.linearRampToValueAtTime(0, currTime);
     this.resume();
-    this.nodes.songsGain.gain.linearRampToValueAtTime(this.#volume, currTime + fadeTime);
+    this.nodes.songsGain.gain.linearRampToValueAtTime(1, currTime + fadeTime);
   }
 
   get volume() {

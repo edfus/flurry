@@ -1,7 +1,7 @@
 import UserInteraction from '../scripts@miscellaneous/ui.js';
 import Score from '../scripts@miscellaneous/score.js';
 import audio from '../scripts@miscellaneous/audioWorker.js';
-import OBJLoader from '../lib/OBJLoader.min.js';
+import load from '../scripts@miscellaneous/loader.js';
 import EventLoop from '../scripts@miscellaneous/eventLoop.js';
 
 class Game {
@@ -11,19 +11,21 @@ class Game {
     this.ui = new UserInteraction();
     this.audio = audio;
     this.event = new EventLoop();
-    this.state = {}; //
+    this.state = {};
+    this.load = load;
     this.init();
   }
 
   /* main functions */
-  async init() {
+  init() {
     this._createScene(this.ui.WIDTH, this.ui.HEIGHT);
 
     this.lights = this._createLights();
     this.scene.add.apply(this.scene, Object.values(this.lights));
 
-    this.objects = await this._createObjects();
+    this.objects = this._createObjects();
     this.scene.add.apply(this.scene, Object.values(this.objects));
+    this._loadObjects(); // multi thread
     
     this.camera.position.set(200, 200, 200);
     this.camera.lookAt(100, 100, 100);
@@ -39,6 +41,7 @@ class Game {
     this.ui.addUnloadCallback(() => this.score.store());
 
     this.config.testMode ? this._debug() : void 0;
+  
     this.event.dispatch("inited");
     this.state.inited = true;
   }
@@ -110,7 +113,7 @@ class Game {
   }
 
   /* createObjects */
-  async _createObjects () {
+  _createObjects () {
     // other objects
     const geometry = new THREE.BoxGeometry(100, 100, 100);
     const material = new THREE.MeshPhongMaterial({
@@ -118,29 +121,45 @@ class Game {
       flatShading: THREE.FlatShading
     });
     const testCube = new THREE.Mesh(geometry, material);
-    return new Promise(resolve => {
-      new OBJLoader().load('/test/plane.obj', plane => {
-        plane.traverse(child => {
-          if (child instanceof THREE.Mesh) {
-            child.material = new THREE.MeshBasicMaterial({
-              map: new THREE.TextureLoader().load("/test/naitou.jpg"),
-              side: THREE.DoubleSide
-            });
-          }
-        });
-        plane.scale.set(0.05, 0.05, 0.05);
-        this.addUpdateFunc(() => {
-          plane.rotation.x += .008;
-          plane.rotation.z += .003;
-          testCube.rotation.x += .008
-          testCube.rotation.z += .003
-        });
-        resolve({ 
-          plane,
-          testCube
-        })
-      });
+    this.addUpdateFunc(() => {
+      testCube.rotation.x += .008
+      testCube.rotation.z += .003
+    });
+    return ({ 
+      testCube
     })
+  }
+
+  async _loadObjects () {
+    return Promise.allSettled(
+      [
+        ['/resource/lib/obj/biplane7.obj', 
+          plane => {
+            plane.traverse(child => {
+              if (child instanceof THREE.Mesh) {
+                child.material = new THREE.MeshBasicMaterial({
+                  // map: new THREE.TextureLoader().load("/test/naitou.jpg"),
+                  color: 0xfff,
+                  side: THREE.DoubleSide
+                });
+              }
+            });
+            plane.scale.set(0.05, 0.05, 0.05);
+            this.addUpdateFunc(() => {
+              plane.rotation.x += .008;
+              plane.rotation.z += .003;
+            });
+            this.objects.plane = plane;
+          }
+        ]
+      ].map(([path, callback]) => this.load(path, callback)))
+       .then(results => {
+        for (const result of results) {
+          if (result.status !== "fulfilled")
+            return Promise.reject(result.reason);
+        }
+        this.event.dispatch("objAllLoaded");
+      })
   }
 
   /* Helpers(used in _debug) */
@@ -253,11 +272,11 @@ game.pause = new class { // result in changing game.paused
     // all methods related to changing game state
     document.addEventListener("visibilitychange", () => {
       if(document.visibilityState === 'visible') {
-        game.audio.fadeOut(4);
+        // game.audio.fadeIn(4);
         game.paused = false; 
       } else {
         game.paused = true;
-        game.audio.fadeOut(20);
+        // game.audio.fadeOut(20);
       }
     }, {passive: true});
 
@@ -331,6 +350,10 @@ game.renderLoop = function () {
 game.event.addListener("start", () => {
   game.pause.init();
   game.renderLoop();
+}, {once: true});
+
+game.event.addListener("objAllLoaded", () => {
+  console.log(game.objects)
 }, {once: true});
 
 window.addEventListener("load", () => {
