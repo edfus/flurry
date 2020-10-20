@@ -5,6 +5,7 @@
 import { Airplane, Sky, Sea } from '../scripts@core/old_customObject.js';
 import UserInteraction from '../scripts@miscellaneous/ui.js';
 import Score from '../scripts@miscellaneous/score.js';
+import audioPlayer from '../scripts@miscellaneous/audioWorker.js';
 /////////////////////////////////
 {
   let mode = ['production', '#42c02e'];
@@ -41,7 +42,10 @@ var sea = null, // createdBy new Sea()
 
 const score = new Score(config.speed_score);
 const userInteraction = new UserInteraction();
-
+window.audioPlayer = audioPlayer;
+Dialog.addEventListener('dialogShow', () => {
+  window.paused = true;
+})
 class WhenPaused { // 没有construct的需要，所以全部使用static属性通过WhenPaused访问
   static divideX = 6;
   static speed_sea = config.speed_sea / this.divideX;

@@ -1,51 +1,105 @@
-class game {
-  #pi = Math.PI; // private field
-  #scene = null;
-  #camera = null;
-  #songPlayer = window.songPlayer;
-  #paused = false;
+import UserInteraction from '../scripts@miscellaneous/ui.js';
+import Score from '../scripts@miscellaneous/score.js';
+import audio from '../scripts@miscellaneous/audioWorker.js';
+
+class Game {
+  tolerance = 3;
   constructor() { 
-    function createScene() {
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x000000);
-      scene.fog = new THREE.Fog(0xf7d9aa, 100, 950);
-      
-      const setting = config.cameraSetting;
-      camera = new THREE.PerspectiveCamera(
-          setting.fieldOfView,
-          setting.aspectRatio,
-          setting.nearPlane,
-          setting.farPlane
-        );
-      camera.lookAt(airplane.mesh.position);
-      Object.assign(camera.position, new THREE.Vector3(0, 100, 200));
-      if(config.testMode){
-        config.cameraHelper = new THREE.CameraHelper(camera);
-        scene.add(config.cameraHelper)
-      }
-      
-      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-      renderer.setSize(userInteraction.WIDTH, userInteraction.HEIGHT); 
-      renderer.shadowMap.enabled = true;
-    }
-
-
-    
-  } 
-  init() {
-    // 创建灯光、隧道等静态物体
-    // trigger an event
-    function normalize(mouseRP, mouseRP_min, mouseRP_max, position_min, position_max) {
-      let mouseRPinBox = Math.max(Math.min(mouseRP, mouseRP_max), mouseRP_min);
-      let mouseRPrange = mouseRP_max - mouseRP_min;
-      let ratio = (mouseRPinBox - mouseRP_min) / mouseRPrange;
-      let positionRange = position_max - position_min;
-      return position_min + (ratio * positionRange);
-    }
-
-
-
+    this.config = window.config;
+    this.colors = this.config.colors;
+    this.ui = new UserInteraction();
+    this.audio = audio;
+    this.init();
   }
+  init() {
+    this._createScene(this.ui.WIDTH, this.ui.HEIGHT);
+    if(this.config.testMode){
+      this.addCameraHelper(this.camera)
+    }
+    this.lights = this._createLights();
+    this.scene.add.apply(this.scene, Object.values(this.lights));
+
+    this.objects = this._createObjects();
+    this.scene.add.apply(this.scene, Object.values(this.objects));
+
+    this.camera.lookAt(this.objects.test.position);
+
+    this.ui.addResizeCallback(() => {
+      this.renderer.setSize(this.ui.WIDTH, this.ui.HEIGHT);
+      this.camera.aspect = this.ui.WIDTH / this.ui.HEIGHT; 
+      this.camera.updateProjectionMatrix(); 
+    })
+  }
+
+  start () {
+    this.ui.addListeners(); 
+    this.config.getContainer().appendChild(this.renderer.domElement);
+    this.config.getUIContainer().append(this.ui.canvas2D.domElement);
+    this.config.gameStartCallback();
+  
+    this.score = new Score(this.config.speed_score);
+    this.ui.addUnloadCallback(() => this.score.store());
+    this.score.bind(config.getScoreContainer());
+    this.score.start();
+    this.log();
+  }
+
+  updateMain () {
+    this.objects.test.rotation.x += .008
+    this.objects.test.rotation.z += .003
+  }
+
+  _createScene (width, height) {
+    this.scene = new THREE.Scene();
+    // this.scene.background = new THREE.Color(0x000000);
+    this.scene.fog = new THREE.Fog(0xf7d9aa, 100, 950);
+    
+    const setting = this.config.cameraSetting;
+    this.camera = new THREE.PerspectiveCamera(
+        setting.fieldOfView,
+        setting.aspectRatio,
+        setting.nearPlane,
+        setting.farPlane
+      );
+
+    Object.assign(this.camera.position, new THREE.Vector3(0, 100, 200));
+
+    this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    this.renderer.setSize(width, height);
+    this.renderer.shadowMap.enabled = true;
+  }
+  _createLights () {
+    const shadowLight = new THREE.DirectionalLight(0xffffff, .9);
+    shadowLight.position.set(150, 350, 350);
+    shadowLight.castShadow = true;
+    shadowLight.shadow.camera.left = -400;
+    shadowLight.shadow.camera.right = 400;
+    shadowLight.shadow.camera.top = 400;
+    shadowLight.shadow.camera.bottom = -400;
+    shadowLight.shadow.camera.near = 1;
+    shadowLight.shadow.camera.far = 1000;
+    shadowLight.shadow.mapSize.width = 2048;
+    shadowLight.shadow.mapSize.height = 2048;
+    return {
+      ambientLight: new THREE.AmbientLight(0xdc8874, .5),
+      hemisphereLight: new THREE.HemisphereLight(0xaaaaaa, 0x000000, .9),
+      shadowLight: shadowLight
+    };
+  }
+
+  _createObjects () {
+    const geometry = new THREE.BoxGeometry(100, 100, 100);
+    const material = new THREE.MeshPhongMaterial({
+      color: this.colors,
+      transparent: true,
+      opacity: .8,
+      flatShading: THREE.FlatShading,
+    });
+    return {
+      test: new THREE.Mesh(geometry, material)
+    }
+  }
+
   isCollided(obj3d, collidableMeshList) {
     const vertices = obj3d.geometry.vertices;
     const position = obj3d.position;
@@ -61,21 +115,8 @@ class game {
     }
     return false;
   }
-  #update () { // private field function
-     // renderloop在外界调用，以便更好的执行暂停等
-  }
-  stop_audio() {
-    return songPlayer.stop_instantly();
-  }
-  pause () {
-    this.#paused = true;
-  }
-
-  get paused() {
-    return this.#paused;
-  }
   // examples
-  #createPointCloud(size, transparent, opacity, vertexColors, sizeAttenuation, color) {
+  createPointCloud(size, transparent, opacity, vertexColors, sizeAttenuation, color) {
     let geometry = new THREE.Geometry();
     const material = new THREE.PointCloudMaterial({
           size: size,
@@ -101,45 +142,54 @@ class game {
     }
     return new THREE.PointCloud(geometry, material);
     // group = new THREE.Group();
-    //             scene.add(group);
+    // scene.add(group);
   }
-  #onASameLine (THREEobj_arr) {
-    const intersects = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize())
-                                .intersectObjects(THREEobj_arr);
-    if (intersects.length > 0) {
-        intersects[0].object.material.transparent = true;
-        intersects[0].object.material.opacity = 0.1;
-    }
-  }
-  #flyControls () {
+  flyControls () {
     //TODO: 调查此，检查其是否符合我们的需求
     var flyControls = new THREE.FlyControls(camera);
     flyControls.movementSpeed = 25;
-    flyControls.domElement = window.config.getContainer();
+    flyControls.domElement = this.config.getContainer();
     flyControls.rollSpeed = Math.PI / 24;
     flyControls.autoForward = true;
   }
-  #addCameraHelper (camera) { 
-    scene.add(new THREE.CameraHelper(camera));
+  addCameraHelper (camera) {
+    let helper = new THREE.CameraHelper(camera);
+    scene.add(helper);
+    this.ui.addResizeCallback(() => helper.update());
   }
-  #collisionDetect (obj_vector3) {
-    return airplane.mesh.position.clone().sub(obj_vector3).length - this.#tolerance;
+  broadPhaseDetect (obj_vector3) {
+    return airplane.mesh.position.clone().sub(obj_vector3).length - this.tolerance;
     // clone is a must
+  }
+  log () {
+    let mode = ['production', '#42c02e'];
+    if(this.config.testMode)
+      mode = ['development', '#f25346'];
+    const titleStyle = "padding: 1px; border-radius: 3px 0 0 3px; color: #fff; background: #606060;",
+          subStyle = "padding: 1px; border-radius: 0 3px 3px 0; color: #fff; background";
+    const ua = navigator.userAgent.toString();
+    console.info([
+      ' ______   __       __  __   ______    ______    __  __    ',
+      '/_____/\\ /_/\\     /_/\\/_/\\ /_____/\\  /_____/\\  /_/\\/_/\\   ',
+      '\\::::_\\/_\\:\\ \\    \\:\\ \\:\\ \\\\:::_ \\ \\ \\:::_ \\ \\ \\ \\ \\ \\ \\  ',
+      ' \\:\\/___/\\\\:\\ \\    \\:\\ \\:\\ \\\\:(_) ) )_\\:(_) ) )_\\:\\_\\ \\ \\ ',
+      '  \\:::._\\/ \\:\\ \\____\\:\\ \\:\\ \\\\: __ `\\ \\\\: __ `\\ \\\\::::_\\/ ',
+      '   \\:\\ \\    \\:\\/___/\\\\:\\_\\:\\ \\\\ \\ `\\ \\ \\\\ \\ `\\ \\ \\ \\::\\ \\ ',
+      '    \\_\\/     \\_____\\/ \\_____\\/ \\_\\/ \\_\\/ \\_\\/ \\_\\/  \\__\\/ ',
+    ].join('\n'))
+    console.info(`%c Version %c ${this.config.version} `, titleStyle, `${subStyle}: #F5986E;`)
+    console.info(`%c Environment %c ${mode[0]} `, titleStyle, `${subStyle}: ${mode[1]};`)
+    console.info(`%c Browser %c ${ua.slice(ua.lastIndexOf(') ') + 2, ua.length)} `, titleStyle, `${subStyle}: #1475b2;`)
+    console.info(`%c Platform %c ${ua.match(/(?<=\().*?(?=\))/)[0]} `, titleStyle, `${subStyle}: #1475b2;`)
   }
 }
 
-window.game = new game();
-//////////////////////////////// game's child objects
-import UserInteraction from '../scripts@core/ui.js';
-import Score from '../scripts@core/score.js';
-
-game.ui = new UserInteraction();
-game.score = new Score(config.speed_score);
-
+window.game = new Game();
+////////////////////////////////
 game.paused = false; // explicit
 
-game.pause = class { // result in changing game.paused
-  static init () { 
+game.pause = new class { // result in changing game.paused
+  init () { 
     // all methods related to changing game state
     document.addEventListener("visibilitychange", () => {
       if(document.visibilityState === 'visible')
@@ -153,29 +203,58 @@ game.pause = class { // result in changing game.paused
       game.paused = true;
     })
   }
-  static async waitForUserContinue () {
+  async waitForUserContinue () {
     return new Promise((resolve, reject) => {
       if(Dialog.isBusy)
         Dialog.addOnceListener('dialogHide', () => 
-          resolve(window.paused = false)
+          resolve(game.paused = false)
         )
     })
   }
-  //////////////////////// logic when game paused
-  static #renderLoop_whenPaused () { // the renderLoop to be executed when paused
+  /* logic when game paused */
+  #renderLoop_whenPaused () {
     // do sth...
-    requestAnimationFrame(() => this.#renderLoopPtr()); // invoked by window
+    requestAnimationFrame(() => this.#renderLoopPtr());
   }
 
-  static #renderLoopPtr = this.#renderLoop_whenPaused; // must after static #renderLoop's declaration
+  #renderLoopPtr = this.#renderLoop_whenPaused;
 
-  static start () {
+  start () {
     game.ui.removeListeners();
     this.#renderLoopPtr = this.#renderLoop_whenPaused;
     this.#renderLoop_whenPaused();
+    // game.audio.pause();
+    this.waitForUserContinue()
+      .then(() => {
+        this.backTo(game.renderLoop.bind(game));
+        // game.audio.resume();
+      })
+      .catch(err => {
+        backToTitle().then(() => game.renderLoop())
+        game.audio.playSong("intro")
+      })
   }
-  static backTo (newRenderLoop) {
+  backTo (newRenderLoop) {
     game.ui.addListeners();
-    this.#renderLoopPtr = newRenderLoop.bind(window); // .bind(window): can't access WhenPaused by this in newRenderLoop
+    this.#renderLoopPtr = newRenderLoop;
   }
 }
+
+game.renderLoop = function () {
+  if(!this.paused){
+    //TODO: if(crashed)
+    this.updateMain();
+    this.renderer.render(this.scene, this.camera);
+    this.ui.canvas2D.paint();
+    requestAnimationFrame(() => this.renderLoop());
+  } else {
+    console.info('RenderLoop: game paused');
+    this.pause.start();
+  }
+}
+
+window.addEventListener("load", () => {
+  game.start();
+  game.pause.init();
+  game.renderLoop();
+}, {passive: true, once: true})

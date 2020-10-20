@@ -4,7 +4,7 @@
   const fadeOutSpeedLevel = 4;
 
   // exposed
-  const UseNewBasejs = false,
+  const UseNewBasejs = true,
   
   TestMode = /test=1|debug/.test(location.search) ? true : false,
 
@@ -15,7 +15,7 @@
   BackgroundColor = '#f7d9aa', // used in index.html/meta-themeColor, style-background
 
 
-  Version = '7.6.1' + '--dev', //NOTE: 添加功能后记得更改这个
+  Version = '7.6.2' + '--dev', //NOTE: 添加功能后记得更改这个
 
   PerspectiveCameraSetting = {
       fieldOfView: 60, 
@@ -368,7 +368,6 @@
   };
 
   Dialog.addEventListener('dialogShow', () => {
-    window.paused = true;
     Array.from(document.querySelectorAll('button')).forEach(e => e.setAttribute("tabindex", "-1"))
   }) // 暂时如此
 
