@@ -2,6 +2,7 @@ import UserInteraction from '../scripts@miscellaneous/ui.js';
 import Score from '../scripts@miscellaneous/score.js';
 import audio from '../scripts@miscellaneous/audioWorker.js';
 import OBJLoader from '../lib/OBJLoader.min.js';
+import EventLoop from '../scripts@miscellaneous/eventLoop.js';
 
 class Game {
   tolerance = 3;
@@ -10,29 +11,41 @@ class Game {
     this.colors = this.config.colors;
     this.ui = new UserInteraction();
     this.audio = audio;
+    this.event = new EventLoop();
+    this.state = {}; //
     this.init();
   }
-  init() {
+
+  async init() {
     this._createScene(this.ui.WIDTH, this.ui.HEIGHT);
-    if(this.config.testMode){
-      this.addCameraHelper(this.camera)
-    }
+
     this.lights = this._createLights();
     this.scene.add.apply(this.scene, Object.values(this.lights));
 
-    this.objects = this._createObjects();
+    this.objects = await this._createObjects();
     this.scene.add.apply(this.scene, Object.values(this.objects));
-
-    this.camera.lookAt(this.objects.test.position);
+    
+    this.camera.position.set(200, 200, 0);
+    this.camera.lookAt(0, 0, 0)
+    // this.camera.lookAt(this.objects.plane.position);
 
     this.ui.addResizeCallback(() => {
       this.renderer.setSize(this.ui.WIDTH, this.ui.HEIGHT);
       this.camera.aspect = this.ui.WIDTH / this.ui.HEIGHT; 
       this.camera.updateProjectionMatrix(); 
     })
+    this.config.testMode ? this._debug() : void 0;
+    this.event.dispatch("inited");
+    this.state.inited = true;
+  }
+
+  _debug () {
+    this.addCameraHelper(this.camera)
+    this.addBoxHelper(Object.values(this.objects))
   }
 
   start () {
+    this.event.dispatch("start");
     this.ui.addListeners(); 
     this.config.getContainer().appendChild(this.renderer.domElement);
     this.config.getUIContainer().append(this.ui.canvas2D.domElement);
@@ -43,11 +56,15 @@ class Game {
     this.score.bind(config.getScoreContainer());
     this.score.start();
     this._log();
+    this.state.started = true;
   }
-
-  updateMain () {
-    this.objects.test.rotation.x += .008
-    this.objects.test.rotation.z += .003
+  
+  #updateCallbackQueue = []
+  addUpdateFunc (func) {
+    this.#updateCallbackQueue.push(func);
+  }
+  update () {
+    this.#updateCallbackQueue.forEach(e => void e());
   }
 
   _createScene (width, height) {
@@ -63,12 +80,11 @@ class Game {
         setting.farPlane
       );
 
-    Object.assign(this.camera.position, new THREE.Vector3(0, 100, 200));
-
     this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     this.renderer.setSize(width, height);
     this.renderer.shadowMap.enabled = true;
   }
+
   _createLights () {
     const shadowLight = new THREE.DirectionalLight(0xffffff, .9);
     shadowLight.position.set(150, 350, 350);
@@ -88,29 +104,49 @@ class Game {
     };
   }
 
-  _createObjects () {
-    let plane = null;
-    new OBJLoader().load('/test/store/biplane7.obj', roughPlane => {
-      plane = roughPlane;
-      plane.traverse(child => {
-        if (child instanceof THREE.Mesh) {
-          child.material = new THREE.MeshBasicMaterial({
-            map: new THREE.TextureLoader().load("/test/store/naitou.jpg"),
-            side: THREE.DoubleSide
-          });
-        }
-      })
-    });
-    plane.scale.set(100, 100, 100);
-    return plane;
+  async _createObjects () {
+    // other objects
+    return new Promise(resolve => {
+      new OBJLoader().load('/test/plane.obj', plane => {
+        plane.traverse(child => {
+          if (child instanceof THREE.Mesh) {
+            child.material = new THREE.MeshBasicMaterial({
+              map: new THREE.TextureLoader().load("/test/naitou.jpg"),
+              side: THREE.DoubleSide
+            });
+          }
+        });
+        plane.scale.set(0.05, 0.05, 0.05);
+        this.addUpdateFunc(() => {
+          plane.rotation.x += .008
+          plane.rotation.z += .003
+        });
+        resolve({
+          plane: plane
+        })
+      });
+    })
   }
-
-  
 
   addCameraHelper (camera) {
     const helper = new THREE.CameraHelper(camera);
-    scene.add(helper);
+    this.scene.add(helper);
     this.ui.addResizeCallback(() => helper.update());
+  }
+
+  addBoxHelper (obj3D) {
+    if(Array.isArray(obj3D))
+      obj3D.forEach(e => {
+        e.boxHelper = new THREE.BoxHelper(e.mesh, 0x00ff00);
+        this.scene.add(e.boxHelper);
+        this.addUpdateFunc(() => e.boxHelper.update());
+        return ;
+      })
+    else {
+      obj3D.boxHelper = new THREE.BoxHelper(obj3D.mesh, 0x00ff00);
+      this.scene.add(obj3D.boxHelper);
+      this.addUpdateFunc(() => obj3D.boxHelper.update());
+    }
   }
 
   // examples
@@ -200,10 +236,12 @@ game.pause = new class { // result in changing game.paused
   init () { 
     // all methods related to changing game state
     document.addEventListener("visibilitychange", () => {
-      if(document.visibilityState === 'visible')
+      if(document.visibilityState === 'visible') {
+        game.audio.fadeOut(4);
         game.paused = false; 
-      else {
-        game.paused = true; 
+      } else {
+        game.paused = true;
+        game.audio.fadeOut(20);
       }
     }, {passive: true});
 
@@ -264,7 +302,7 @@ game.pause = new class { // result in changing game.paused
 game.renderLoop = function () {
   if(!this.paused){
     //TODO: if(crashed)
-    this.updateMain();
+    this.update();
     this.renderer.render(this.scene, this.camera);
     this.ui.canvas2D.paint();
     requestAnimationFrame(() => this.renderLoop());
@@ -274,8 +312,13 @@ game.renderLoop = function () {
   }
 }
 
-window.addEventListener("load", () => {
-  game.start();
+game.event.addListener("start", () => {
   game.pause.init();
   game.renderLoop();
+}, {once: true});
+
+window.addEventListener("load", () => {
+  game.state.inited 
+  ? game.start()
+  : game.event.addListener("inited", () => game.start(), {once: true});
 }, {passive: true, once: true})
