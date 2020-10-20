@@ -75,7 +75,7 @@ function work() {
       });
     }
 
-    forceLoad() {
+    enableForceLoad() {
       this.forceLoad = true;
     }
 
@@ -188,7 +188,7 @@ function work() {
 }
   /* worker function - END */
 
-const host = `https://flurry.ml/`;
+const host = config.testMode ? `//${location.host}/` : `https://flurry.ml/`;
 // type: "audio/mpeg",
 const themes = [
   {
@@ -338,7 +338,7 @@ class GlobalAudioPlayer {
           !existsCookie('rejectedForceLoad=true') && 
             Dialog.newConfirm("Your device is on lite mode", ["Downloading audio is paused to prevent data charges."], "Download anyway", "cancel").then(result => 
               result === true
-              ? (this.#assignWork("forceLoad"), this.#assignWork("loadAll"))
+              ? (this.#assignWork("enableForceLoad"), this.#assignWork("loadAll"))
               : setCookie("rejectedForceLoad=true", 1)
             ) || console.info('Cookie: rejectedForceLoad=true')
           return ;
@@ -448,7 +448,9 @@ class GlobalAudioPlayer {
     let nextSong;
     if(this.songs.nextsToPlay.length)
       nextSong = this.songs.nextsToPlay.shift();
-    else return ; //FIX
+    else {
+      return this._play(this.songPlaying.name, this.songPlaying.audioBuffer, this.nodes.songsGain, false).then(() => this.playNext(autoPlay));
+    }
     this.songs.currentIndex = nextSong.index;
     this.request(nextSong.index)
     if(autoPlay)
@@ -483,12 +485,6 @@ class GlobalAudioPlayer {
     }
   }
 
-  // crossFade (track1, track2) {
-  //   // https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/linearRampToValueAtTime
-  //   track1.gain.linearRampToValueAtTime( 0, 1 );
-  //   track2.gain.linearRampToValueAtTime( 1, 1 );
-  // }
-
   pause () {
     this.nodes.songsGain.disconnect();
   }
@@ -509,11 +505,29 @@ class GlobalAudioPlayer {
       this.songPlaying.empty();
     }
     // An AudioBufferSourceNode can only be played once;
-    // this.songPlaying.empty() - will execute in source.onend
-    /*
-      * The ended event is only sent to a node configured to loop automatically 
-      * when the node is stopped using its stop() method. 
-      */
+  }
+  #volume = 1
+  /**
+   * pause the audio, not stop.
+   * @param {number} fadeTime seconds to fade
+   */
+  fadeOut (fadeTime = 10) {
+    const currTime = this.context.currentTime;
+    // const duration = this.songPlaying.buffer.duration
+    this.nodes.songsGain.gain.linearRampToValueAtTime(this.#volume, currTime);
+    this.nodes.songsGain.gain.linearRampToValueAtTime(0, currTime + fadeTime);
+    setTimeout(() => this.pause(), fadeTime * 1000);
+  }
+
+  /**
+   * resume the last paused audio
+   * @param {number} fadeTime seconds to fade
+   */
+  fadeIn (fadeTime = 10) {
+    const currTime = this.context.currentTime;
+    this.nodes.songsGain.gain.linearRampToValueAtTime(0, currTime);
+    this.resume();
+    this.nodes.songsGain.gain.linearRampToValueAtTime(this.#volume, currTime + fadeTime);
   }
 
   get volume() {
@@ -522,6 +536,7 @@ class GlobalAudioPlayer {
 
   set volume( value ) {
     this.nodes.songsGain.gain.setTargetAtTime( value, this.context.currentTime, 0.01 );
+    this.#volume = value;
   }
 }
 export default new GlobalAudioPlayer();

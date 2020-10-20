@@ -49,9 +49,8 @@ naiziguai:
 
 cloudres: 
 
-- [ ] crossFade
-- [ ] 实现audioPlayer的Event Loop
 - [ ] 学习svg
+- [ ] https://tympanus.net/Development/ClickEffects/
 - [ ] 测试isCollided
 
 ---
