@@ -24,7 +24,7 @@
 		<script id="temp">
 			let script = document.createElement('SCRIPT');
 			script.type = "module";
-			script.src = config.useNewBasejs ? "scripts@core/base.js" : "scripts@core/old_base.js";
+			script.src = config.useNewBasejs ? "scripts@core/main.js" : "scripts@core/old_base.js";
 			document.head.append(script);
 			document.getElementById('temp').remove();
 		</script>
