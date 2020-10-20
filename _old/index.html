@@ -11,8 +11,8 @@
 		<meta name="google" content="notranslate">
 		<meta name="format-detection" content="telphone=no, email=no">
 		<!-- Preload -->
-		<link rel="modulepreload" href="/scripts@core/main.js">
-		<link rel="modulepreload" href="/scripts@core/customObjects.js">
+		<link rel="modulepreload" href="/_old/base.js">
+		<link rel="modulepreload" href="/_old/customObject.js">
 		<link rel="modulepreload" href="/scripts@miscellaneous/ui.js">
 		<link rel="modulepreload" href="/scripts@miscellaneous/score.js">
 		<link rel="modulepreload" href="/scripts@miscellaneous/audioWorker.js">
@@ -21,7 +21,7 @@
 		<script src="/scripts@config/config.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js"></script>
 		<script>try{THREE}catch(e){let script = document.createElement('SCRIPT'); script.src = "lib/three.min.js"; document.head.append(script)}</script>
-		<script type="module" src="/scripts@core/main.js"></script>
+		<script type="module" src="/_old/base.js" ></script>
 		<script type="module" async>
 			if("caches" in window && "serviceWorker" in navigator){
 				window.addEventListener("load", ()=>{
@@ -51,7 +51,7 @@
 		<link rel="manifest" href="/resource/favicons/manifest.webmanifest">
 		<meta name="msapplication-config" content="/resource/favicons/browserconfig.xml">
 		<!-- styles -->
-		<link href="/resource/styles/style.css" rel="stylesheet" type="text/css">
+		<link href="./style-old.css" rel="stylesheet" type="text/css">
 	</head>
 	<body>
 		<section id="loading-section">
@@ -110,7 +110,8 @@
 					</button>
 				</aside>
 				<aside class="ui-buttons right top">
-					<button class="ui-button pause" data-credit="youtube" title="Pause (P)">
+					<!-- TODO: window.pause() function  -->
+					<button class="ui-button pause" onclick="window.paused = true" data-credit="youtube" title="Pause (P)">
 						<svg height="100%" width="100%" viewBox="0 0 36 36" version="1.1">
 							<g transform="translate(-11, -11) scale(1.6, 1.6)">
 								<path d="M 12,26 16,26 16,10 12,10 z M 21,26 25,26 25,10 21,10 z"></path>

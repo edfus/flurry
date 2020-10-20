@@ -1,5 +1,5 @@
 :root {
-  --main-bg-gradient-color: #000;
+  --main-bg-gradient-color: linear-gradient(#e4e0ba, #f7d9aa);
   --loader-width: 6.25rem;
   --google-style-loader-green: #008744;
   --google-style-loader-blue: #0057e7;
@@ -9,7 +9,6 @@
   --confirm-color: #4787ed;
   --error-color: #666;
   --light-sky-blue: #b3e5fc;
-  --color: #fff;
 }
 
 @font-face {
@@ -106,7 +105,7 @@ main > canvas, #ui-canvas {
 
 .ui-score {
   position: absolute;
-  color: var(--color);
+  color: #000;
   padding: 1.25rem;
   margin-left: .5rem;
 }
@@ -147,7 +146,7 @@ main > canvas, #ui-canvas {
 } 
 
 .fullscreen .box:before {
-	border: 0.3125rem solid var(--color);
+	border: 0.3125rem solid #fff;
 }
 
 .fullscreen.hover .box._1:before {
@@ -223,7 +222,7 @@ main > canvas, #ui-canvas {
 }
 /* hover & focus */
 .ui-buttons.right svg{
-  fill: var(--color);
+  fill: #fff;
   transition: fill .2s ease-in-out;
 }
 .ui-buttons.right .ui-button:hover svg{
@@ -250,7 +249,7 @@ main > canvas, #ui-canvas {
   box-shadow: 0px 0px 0px -4px rgba(39,55,74,.25), 0 15px 40px 10px rgba(39,55,74,.25);
   padding: 0.625rem;
   border-radius: 0.25rem;
-  background: var(--color);
+  background: #fff;
   opacity: 0;
   top: 1.25rem;
   transition: opacity .4s ease-out;
@@ -278,7 +277,7 @@ main > canvas, #ui-canvas {
   padding: 0.875rem 1.25rem;
   border: none;
   outline: none; 
-  color: var(--color);
+  color: #ffffff;
 }
 
 
@@ -305,7 +304,7 @@ main > canvas, #ui-canvas {
 }
 
 ::part(reject-button) {
-  background-color: var(--color);
+  background-color: #ffffff;
   color:var(--confirm-color);
 }
 

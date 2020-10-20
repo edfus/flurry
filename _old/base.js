@@ -2,7 +2,7 @@
 // import config from '../scripts@config/config.js'; - deprecated
 // config = window.config; - not necessary
 // type="module" can still get access to config directly
-import { Airplane, Sky, Sea } from '../scripts@core/old_customObject.js';
+import { Airplane, Sky, Sea } from './customObject.js';
 import UserInteraction from '../scripts@miscellaneous/ui.js';
 import Score from '../scripts@miscellaneous/score.js';
 import audioPlayer from '../scripts@miscellaneous/audioWorker.js';

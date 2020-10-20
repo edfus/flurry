@@ -203,13 +203,26 @@ game.pause = new class { // result in changing game.paused
     Dialog.addEventListener('dialogShow', () => {
       game.paused = true;
     })
+
+    this.pauseButton = document.querySelector(".ui-button.pause");
+    this._addButtonListenr = () => this.pauseButton.addEventListener("click", () => {
+      game.paused = true;
+      game.audio.fadeOut();
+      this.pauseButton.dataset.triggered = "true";
+    }, {passive: true, once: true});
+    this._addButtonListenr();
   }
+
   async waitForUserContinue () {
     return new Promise((resolve, reject) => {
       if(Dialog.isBusy)
         Dialog.addOnceListener('dialogHide', () => 
           resolve(game.paused = false)
         )
+      else if(this.pauseButton.dataset.triggered) {
+        delete this.pauseButton.dataset.triggered;
+        //TODO
+      }
     })
   }
   /* logic when game paused */
@@ -221,18 +234,18 @@ game.pause = new class { // result in changing game.paused
   #renderLoopPtr = this.renderLoop_whenPaused;
 
   start () {
+    game.score.pause()
     game.ui.removeListeners();
     this.#renderLoopPtr = this.renderLoop_whenPaused;
     this.renderLoop_whenPaused();
-    // game.audio.pause();
     this.waitForUserContinue()
       .then(() => {
         this.backTo(game.renderLoop.bind(game));
-        // game.audio.resume();
+        game.score.start()
       })
       .catch(err => {s
         backToTitle().then(() => game.renderLoop())
-        game.audio.playSong("intro")
+        // game.audio.playSong("intro")
       })
   }
   backTo (newRenderLoop) {
