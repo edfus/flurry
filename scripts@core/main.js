@@ -1,6 +1,7 @@
 import UserInteraction from '../scripts@miscellaneous/ui.js';
 import Score from '../scripts@miscellaneous/score.js';
 import audio from '../scripts@miscellaneous/audioWorker.js';
+import OBJLoader from '../lib/OBJLoader.min.js';
 
 class Game {
   tolerance = 3;
@@ -88,17 +89,23 @@ class Game {
   }
 
   _createObjects () {
-    const geometry = new THREE.BoxGeometry(100, 100, 100);
-    const material = new THREE.MeshPhongMaterial({
-      color: this.colors,
-      transparent: true,
-      opacity: .8,
-      flatShading: THREE.FlatShading,
+    let plane = null;
+    new OBJLoader().load('/test/store/biplane7.obj', roughPlane => {
+      plane = roughPlane;
+      plane.traverse(child => {
+        if (child instanceof THREE.Mesh) {
+          child.material = new THREE.MeshBasicMaterial({
+            map: new THREE.TextureLoader().load("/test/store/naitou.jpg"),
+            side: THREE.DoubleSide
+          });
+        }
+      })
     });
-    return {
-      test: new THREE.Mesh(geometry, material)
-    }
+    plane.scale.set(100, 100, 100);
+    return plane;
   }
+
+  
 
   addCameraHelper (camera) {
     const helper = new THREE.CameraHelper(camera);
