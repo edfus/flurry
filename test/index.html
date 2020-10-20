@@ -3,59 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <title>Three Test</title>
-    <script src="three.js"></script>
-    <script src="OBJLoader.js"></script>
+    <script src="../lib/three.min.js"></script>
+    <script type="module" src="./OBJLoader.js"></script>
 </head>
 <body>
-<script>
-var scene, camera, renderer,trackballControls;
-scene = new THREE.Scene();
-camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight);
-camera.position.set(300,400,500);
-camera.lookAt(new THREE.Vector3(0,0,0));
-scene.add(new THREE.CameraHelper(camera));
-scene.add(camera);
+<script type="module">
+  import OBJLoader from './OBJLoader.js';
+  var scene, camera, renderer,trackballControls;
 
-var geometry = new THREE.BoxGeometry(4,4,4);
-var material = new THREE.MeshNormalMaterial();
-var loader = new OBJLoader();//在init函数中，创建loader变量，用于导入模型
-loader.load('plane.obj', plane => {//第一个表示模型路径，第二个表示完成导入后的回调函数，一般我们需要在这个回调函数中将导入的模型添加到场景中
-  plane.traverse(child => {
-    if (child instanceof THREE.Mesh) {
-      child.material.side = THREE.DoubleSide;
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight);
+  camera.position.set(300,400,500);
+  camera.lookAt(new THREE.Vector3(0,0,0));
+  scene.add(new THREE.CameraHelper(camera));
+  scene.add(camera);
+  new OBJLoader().load('plane.obj', plane => {//第一个表示模型路径，第二个表示完成导入后的回调函数，一般我们需要在这个回调函数中将导入的模型添加到场景中
+    plane.traverse(child => {
+      if (child instanceof THREE.Mesh) {
+        child.material.side = THREE.DoubleSide;
+        /* .side :
+         * Defines which side of faces will be rendered - front, back or both. 
+         * Default is THREE.FrontSide. Other options are THREE.BackSide and THREE.DoubleSide. 
+         */
+      }
+      plane.scale.set(0.1, 0.1, 0.1);
+    });
+    for(var i=1;i<5;i++){
+      plane.children[i].material = new THREE.MeshBasicMaterial({
+          map: new THREE.TextureLoader().load("naitou.jpg")
+      });
     }
-    plane.scale.set(0.1, 0.1, 0.1);
+    scene.add(plane);
+    const boxHelper = new THREE.BoxHelper(plane, 0x00ff00);
+    scene.add(boxHelper);
+    renderer = new THREE.WebGLRenderer({ alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    (function render() {
+      plane.rotation.x += 0.01;
+      plane.rotation.y += 0.01;
+      boxHelper.update()
+      renderer.render(scene, camera);
+      requestAnimationFrame(render);
+      throttleLog("Max width: " + boxHelper.geometry.boundingSphere.radius) // 大小
+    })()
   });
-// for(var i=1;i<5;i++){
-//   plane.children[i].material = new THREE.MeshBasicMaterial({
-//       map: new THREE.TextureLoader().load("naitou.jpg")
-//   });
-// }
-    console.dir(plane)
-
-scene.add(plane);
-
-  var cube = new THREE.Mesh(geometry, material);
-  scene.add(cube);
-  cube.scale.set(500, 500, 500);
-  renderer = new THREE.WebGLRenderer({ alpha: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
-  function render() {
-    // boxMesh.rotation.x += 0.01;
-    // boxMesh.rotation.y += 0.01;
-    renderer.render(scene, camera);
-    requestAnimationFrame(render);
+  let inQueue = false;
+  function throttleLog () {
+    if(inQueue)
+      return;
+    else {
+      console.log.apply(this, arguments);
+      setTimeout(() => {
+        inQueue = false;
+      }, 500)
+      inQueue = true;
+    }
   }
-
-
-  render();
-});
-
-
-
-
-// render();
 </script>
 </body>
 </html>

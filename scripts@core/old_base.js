@@ -77,19 +77,6 @@ class WhenPaused { // 没有construct的需要，所以全部使用static属性�
   }
 }
 
-let inQueue = false;
-function throttleLog () {
-  if(inQueue)
-    return;
-  else {
-    console.log.apply(this, arguments);
-    setTimeout(() => {
-      inQueue = false;
-    }, 500)
-    inQueue = true;
-  }
-}
-
 ////////////////////////////////////////
 
 window.addEventListener('load', ()=>{
