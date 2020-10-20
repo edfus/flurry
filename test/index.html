@@ -21,20 +21,21 @@
       if (child instanceof THREE.Mesh) {
         child.material.side = THREE.DoubleSide;
         /* .side :
-         * Defines which side of faces will be rendered - front, back or both. 
-         * Default is THREE.FrontSide. Other options are THREE.BackSide and THREE.DoubleSide. 
-         */
-      }
-      plane.scale.set(0.1, 0.1, 0.1);
-    });
-    for(var i=1;i<5;i++){
-      plane.children[i].material = new THREE.MeshBasicMaterial({
+        * Defines which side of faces will be rendered - front, back or both. 
+        * Default is THREE.FrontSide. Other options are THREE.BackSide and THREE.DoubleSide. 
+        */
+        child.material = new THREE.MeshBasicMaterial({
           map: new THREE.TextureLoader().load("naitou.jpg")
-      });
-    }
+        });
+      }
+    });
+
+    plane.scale.set(0.1, 0.1, 0.1);
     scene.add(plane);
+
     const boxHelper = new THREE.BoxHelper(plane, 0x00ff00);
     scene.add(boxHelper);
+
     renderer = new THREE.WebGLRenderer({ alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
