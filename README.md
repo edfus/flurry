@@ -49,7 +49,7 @@ naiziguai:
 
 cloudres: 
 
-- [ ] 迁移old_base.js到base.js
+- [ ] crossFade
 - [ ] 实现audioPlayer的Event Loop
 - [ ] 学习svg
 - [ ] 测试isCollided

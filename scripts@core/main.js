@@ -41,7 +41,7 @@ class Game {
     this.ui.addUnloadCallback(() => this.score.store());
     this.score.bind(config.getScoreContainer());
     this.score.start();
-    this.log();
+    this._log();
   }
 
   updateMain () {
@@ -100,23 +100,18 @@ class Game {
     }
   }
 
-  isCollided(obj3d, collidableMeshList) {
-    const vertices = obj3d.geometry.vertices;
-    const position = obj3d.position;
-    for(let i = vertices.length - 1; i >= 0; i--) {
-      const localVertex = vertices[i].clone();
-      const globalVertex = localVertex.applyMatrix4(obj3d.matrix);
-      const directionVector = globalVertex.sub(position);
-  
-      const ray = new THREE.Raycaster(position, directionVector.clone().normalize());
-      const collisionResults = ray.intersectObjects(collidableMeshList);
-      if(collisionResults.length > 0 && collisionResults[0].distance < directionVector.length())
-          return true;
-    }
-    return false;
+  addCameraHelper (camera) {
+    const helper = new THREE.CameraHelper(camera);
+    scene.add(helper);
+    this.ui.addResizeCallback(() => helper.update());
   }
+
   // examples
-  createPointCloud(size, transparent, opacity, vertexColors, sizeAttenuation, color) {
+  #broadPhaseDetect (obj_vector3) {
+    return this.airplane.mesh.position.clone().sub(obj_vector3).length - this.tolerance;
+  }
+
+  #createPointCloud(size, transparent, opacity, vertexColors, sizeAttenuation, color) {
     let geometry = new THREE.Geometry();
     const material = new THREE.PointCloudMaterial({
           size: size,
@@ -144,7 +139,7 @@ class Game {
     // group = new THREE.Group();
     // scene.add(group);
   }
-  flyControls () {
+  #flyControls () {
     //TODO: 调查此，检查其是否符合我们的需求
     var flyControls = new THREE.FlyControls(camera);
     flyControls.movementSpeed = 25;
@@ -152,16 +147,22 @@ class Game {
     flyControls.rollSpeed = Math.PI / 24;
     flyControls.autoForward = true;
   }
-  addCameraHelper (camera) {
-    let helper = new THREE.CameraHelper(camera);
-    scene.add(helper);
-    this.ui.addResizeCallback(() => helper.update());
+  #isCollided(obj3d, collidableMeshList) {
+    const vertices = obj3d.geometry.vertices;
+    const position = obj3d.position;
+    for(let i = vertices.length - 1; i >= 0; i--) {
+      const localVertex = vertices[i].clone();
+      const globalVertex = localVertex.applyMatrix4(obj3d.matrix);
+      const directionVector = globalVertex.sub(position);
+  
+      const ray = new THREE.Raycaster(position, directionVector.clone().normalize());
+      const collisionResults = ray.intersectObjects(collidableMeshList);
+      if(collisionResults.length > 0 && collisionResults[0].distance < directionVector.length())
+          return true;
+    }
+    return false;
   }
-  broadPhaseDetect (obj_vector3) {
-    return airplane.mesh.position.clone().sub(obj_vector3).length - this.tolerance;
-    // clone is a must
-  }
-  log () {
+  _log () {
     let mode = ['production', '#42c02e'];
     if(this.config.testMode)
       mode = ['development', '#f25346'];
@@ -212,24 +213,24 @@ game.pause = new class { // result in changing game.paused
     })
   }
   /* logic when game paused */
-  #renderLoop_whenPaused () {
+  renderLoop_whenPaused () {
     // do sth...
     requestAnimationFrame(() => this.#renderLoopPtr());
   }
 
-  #renderLoopPtr = this.#renderLoop_whenPaused;
+  #renderLoopPtr = this.renderLoop_whenPaused;
 
   start () {
     game.ui.removeListeners();
-    this.#renderLoopPtr = this.#renderLoop_whenPaused;
-    this.#renderLoop_whenPaused();
+    this.#renderLoopPtr = this.renderLoop_whenPaused;
+    this.renderLoop_whenPaused();
     // game.audio.pause();
     this.waitForUserContinue()
       .then(() => {
         this.backTo(game.renderLoop.bind(game));
         // game.audio.resume();
       })
-      .catch(err => {
+      .catch(err => {s
         backToTitle().then(() => game.renderLoop())
         game.audio.playSong("intro")
       })
