@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin="anonymous">
+		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin="anonymous">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
 		<!-- meta -->
 		<title>The Aviator</title>
@@ -12,15 +12,10 @@
 		<meta name="format-detection" content="telphone=no, email=no">
 		<!-- Preload -->
 		<link rel="modulepreload" href="/scripts@core/main.js">
-		<link rel="modulepreload" href="/scripts@core/customObjects.js">
-		<link rel="modulepreload" href="/scripts@miscellaneous/ui.js">
-		<link rel="modulepreload" href="/scripts@miscellaneous/score.js">
-		<link rel="modulepreload" href="/scripts@miscellaneous/audioWorker.js">
+		<link rel="modulepreload" href="/lib/OBJLoader.min.js">
 		<link rel="preload" href="https://www.googletagmanager.com/gtag/js?id=UA-179239422-1" as="script">		
 		<!-- scripts -->
 		<script src="/scripts@config/config.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js"></script>
-		<script>try{THREE}catch(e){let script = document.createElement('SCRIPT'); script.src = "lib/three.min.js"; document.head.append(script)}</script>
 		<script type="module" src="/scripts@core/main.js"></script>
 		<script type="module" async>
 			if("caches" in window && "serviceWorker" in navigator){
