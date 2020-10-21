@@ -1,7 +1,7 @@
 import UserInteraction from '../scripts@miscellaneous/ui.js';
 import Score from '../scripts@miscellaneous/score.js';
 import audio from '../scripts@miscellaneous/audioWorker.js';
-import load from '../scripts@miscellaneous/loader.js';
+import load from '../scripts@loader/loader.js';
 import EventLoop from '../scripts@miscellaneous/eventLoop.js';
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@v0.121.0/build/three.module.min.js';
 
