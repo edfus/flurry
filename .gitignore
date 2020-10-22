@@ -2,3 +2,5 @@
 *.psd
 .vscode
 test
+*.lnk
+*.c4d

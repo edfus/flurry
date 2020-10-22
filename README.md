@@ -52,9 +52,15 @@ cloudres:
 - [ ] 学习svg
 - [ ] https://tympanus.net/Development/ClickEffects/
 - [ ] 测试isCollided
-- [ ] https://github.com/JordanDelcros/OBJImg
+- [ ] 加载obj，用worker解析成json后存入indexedDB来加快加载速度 THREE.JSONLoader  ufferGeometryLoader()
+- [ ] https://threejs.org/docs/#api/en/loaders/BufferGeometryLoader
+- [ ] https://threejs.org/docs/#api/en/loaders/ObjectLoader
+- [ ] https://discoverthreejs.com/book/first-steps/load-models/
+- [ ] http://www.kadrmasconcepts.com/blog/2011/11/06/subdivision-surfaces-with-three-js/
 
 ---
+
+The recommended format for importing and exporting assets is glTF (GL Transmission Format). Because glTF is focused on runtime asset delivery, it is compact to transmit and fast to load.
 
 关于碰撞检测：
 1. 用户行为驱动，当触发相关事件（如上下移动触发，旋转不触发，节流（比如碰撞边界需要一个至少的用户操作下界，下界以下节流检查，以上每帧检验））时，才直接用xxx.mesh.position.clone().sub(Vector3).length检测。
