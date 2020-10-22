@@ -3,6 +3,7 @@ import UserInteraction from '../scripts@miscellaneous/ui.js';
 import Score from '../scripts@miscellaneous/score.js';
 import EventLoop from '../scripts@miscellaneous/eventLoop.js';
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@v0.121.0/build/three.module.min.js';
+import OBJLoader from '../lib/OBJLoader.min.js';
 /* objects */
 import audioPlayer from '../scripts@miscellaneous/audioWorker.js';
 import objLoader from '../scripts@loader/loader.js';
@@ -16,7 +17,6 @@ class Game {
     this.audio = audioPlayer;
     this.event = new EventLoop();
     this.state = {};
-    this.load = objLoader;
     this.init();
   }
 
@@ -30,7 +30,8 @@ class Game {
     this.objects = this._createObjects();
     this.scene.add.apply(this.scene, Object.values(this.objects));
     this.models = {};
-    this._loadModels(); // multi thread
+    this._loadModels(this.path_callback_Array);
+    this.event.addListener("modelsAllLoaded", () => this.scene.add.apply(this.scene, Object.values(this.models)), {once: true})
     
     this.camera.position.set(200, 200, 200);
     this.camera.lookAt(100, 100, 100);
@@ -127,34 +128,56 @@ class Game {
     })
   }
 
-  /* load obj files */
-  async _loadModels () {
-    return Promise.allSettled(
-      [
-        ['/resource/obj/biplane0.obj', //FIX: biplane7.obj加载后无法显示
-          plane => {
-            plane = new THREE.ObjectLoader().parse(plane)
-            plane.traverse(child => {
-              if (child instanceof THREE.Mesh) {
-                child.material = new THREE.MeshBasicMaterial({
-                  // map: new THREE.TextureLoader().load("/test/naitou.jpg"),
-                  color: 0xffffff,
-                  side: THREE.DoubleSide
-                });
-              }
+  path_callback_Array = [
+    ['/resource/obj/biplane0.obj', //FIX: biplane7.obj加载后无法显示
+      plane => {
+        plane.traverse(child => {
+          if (child instanceof THREE.Mesh) {
+            child.material = new THREE.MeshBasicMaterial({
+              // map: new THREE.TextureLoader().load("/test/naitou.jpg"),
+              color: 0xffffff,
+              side: THREE.DoubleSide
             });
-            plane.scale.set(0.05, 0.05, 0.05);
-            this.models.plane = plane;
           }
-        ]
-      ].map(([path, callback]) => this.load(path, callback)))
+        });
+        plane.scale.set(0.05, 0.05, 0.05);
+        this.models.plane = plane;
+      }
+    ]
+  ]
+
+  /* load obj files using main thread */
+  async _loadModels (path_callback_Array) {
+    if(!this._load) {
+      const temp = new OBJLoader();
+      this._load = temp.load.bind(temp);
+    }
+    return Promise.allSettled(
+      path_callback_Array.map(([path, callback]) => new Promise(resolve => this._load(path, result => resolve(callback(result)))) ))
        .then(results => {
         for (const result of results) {
           if (result.status !== "fulfilled")
             return Promise.reject(result.reason);
         }
         this.event.dispatch("modelsAllLoaded");
-        this.scene.add.apply(this.scene, Object.values(this.models));
+      })
+  }
+
+  /* load obj files by worker */
+  async _loadModelsByWorker (path_callback_Array) {
+    if(!this._workerLoad) {
+      this._workerLoad = objLoader;
+      const temp = new THREE.ObjectLoader();
+      this._workerLoad.parse = temp.parse.bind(temp);
+    }
+    return Promise.allSettled(
+      path_callback_Array.map(([path, callback]) => this._workerLoad(path, () => callback(this._workerLoad.parse(result)))))
+       .then(results => {
+        for (const result of results) {
+          if (result.status !== "fulfilled")
+            return Promise.reject(result.reason);
+        }
+        this.event.dispatch("modelsAllLoaded");
       })
   }
 
