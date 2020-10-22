@@ -1,19 +1,22 @@
+/* constructors */
 import UserInteraction from '../scripts@miscellaneous/ui.js';
 import Score from '../scripts@miscellaneous/score.js';
-import audio from '../scripts@miscellaneous/audioWorker.js';
-import load from '../scripts@loader/loader.js';
 import EventLoop from '../scripts@miscellaneous/eventLoop.js';
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@v0.121.0/build/three.module.min.js';
+/* objects */
+import audioPlayer from '../scripts@miscellaneous/audioWorker.js';
+import objLoader from '../scripts@loader/loader.js';
 
+/* class Game */
 class Game {
   constructor() { 
     this.config = window.config;
     this.colors = this.config.colors;
     this.ui = new UserInteraction();
-    this.audio = audio;
+    this.audio = audioPlayer;
     this.event = new EventLoop();
     this.state = {};
-    this.load = load;
+    this.load = objLoader;
     this.init();
   }
 
@@ -48,6 +51,7 @@ class Game {
     this.state.inited = true;
   }
 
+  /* debugger */
   _debug () {
     this.scene.add(new THREE.AxesHelper(500))
     this.addCameraHelper(this.camera)
@@ -55,6 +59,7 @@ class Game {
     this.event.addListener("modelsAllLoaded", () => {
       this.addBoxHelper(Object.values(this.models))
     }, {once: true});
+    /* dynamic import */
     import("../lib/OrbitControls.js").then(({OrbitControls}) => {
       this._controls = new OrbitControls( this.camera, this.renderer.domElement );
       const throttleLog = new ThrottleLog(1600);
@@ -63,27 +68,6 @@ class Game {
         `\nrotation: (${this.camera.rotation._x.toFixed(1)}, ${this.camera.rotation._y.toFixed(1)}, ${this.camera.rotation._z.toFixed(1)})`)
       )
     })
-  }
-
-  start () {
-    this.event.dispatch("start");
-    this.ui.addListeners(); 
-    this.config.getContainer().append(this.renderer.domElement);
-    this.config.getUIContainer().append(this.ui.canvas2D.domElement);
-    this.config.gameStartCallback();
-  
-    this.score.bind(this.config.getScoreContainer());
-    this.score.start();
-    this._log();
-    this.state.started = true;
-  }
-  
-  #updateCallbackQueue = []
-  addUpdateFunc (func) {
-    this.#updateCallbackQueue.push(func);
-  }
-  update () {
-    this.#updateCallbackQueue.forEach(e => void e());
   }
 
   /* scene and camera */
@@ -143,10 +127,11 @@ class Game {
     })
   }
 
+  /* load obj files */
   async _loadModels () {
     return Promise.allSettled(
       [
-        ['/resource/obj/biplane0.obj', 
+        ['/resource/obj/biplane0.obj', //FIX: biplane7.obj加载后无法显示
           plane => {
             plane = new THREE.ObjectLoader().parse(plane)
             plane.traverse(child => {
@@ -159,11 +144,6 @@ class Game {
               }
             });
             plane.scale.set(0.05, 0.05, 0.05);
-            // plane.scale.set(1, 1, 1);
-            // this.addUpdateFunc(() => {
-            //   plane.rotation.x += .008;
-            //   plane.rotation.z += .003;
-            // });
             this.models.plane = plane;
           }
         ]
@@ -176,6 +156,28 @@ class Game {
         this.event.dispatch("modelsAllLoaded");
         this.scene.add.apply(this.scene, Object.values(this.models));
       })
+  }
+
+  /* Unvarying functions */
+  start () {
+    this.event.dispatch("start");
+    this.ui.addListeners(); 
+    this.config.getContainer().append(this.renderer.domElement);
+    this.config.getUIContainer().append(this.ui.canvas2D.domElement);
+    this.config.gameStartCallback();
+  
+    this.score.bind(this.config.getScoreContainer());
+    this.score.start();
+    this._log();
+    this.state.started = true;
+  }
+  
+  #updateCallbackQueue = []
+  addUpdateFunc (func) {
+    this.#updateCallbackQueue.push(func);
+  }
+  update () {
+    this.#updateCallbackQueue.forEach(e => void e());
   }
 
   /* Helpers(used in _debug) */
