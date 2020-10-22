@@ -26,7 +26,8 @@ class Game {
 
     this.objects = this._createObjects();
     this.scene.add.apply(this.scene, Object.values(this.objects));
-    this._loadObjects(); // multi thread
+    this.models = {};
+    this._loadModels(); // multi thread
     
     this.camera.position.set(200, 200, 200);
     this.camera.lookAt(100, 100, 100);
@@ -51,6 +52,17 @@ class Game {
     this.scene.add(new THREE.AxesHelper(500))
     this.addCameraHelper(this.camera)
     this.addBoxHelper(Object.values(this.objects))
+    this.event.addListener("modelsAllLoaded", () => {
+      this.addBoxHelper(Object.values(this.models))
+    }, {once: true});
+    import("../lib/OrbitControls.js").then(({OrbitControls}) => {
+      this._controls = new OrbitControls( this.camera, this.renderer.domElement );
+      const throttleLog = new ThrottleLog(1600);
+      this.addUpdateFunc(() => 
+        throttleLog.log(`position: (${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)})`, 
+        `\nrotation: (${this.camera.rotation._x.toFixed(1)}, ${this.camera.rotation._y.toFixed(1)}, ${this.camera.rotation._z.toFixed(1)})`)
+      )
+    })
   }
 
   start () {
@@ -131,26 +143,28 @@ class Game {
     })
   }
 
-  async _loadObjects () {
+  async _loadModels () {
     return Promise.allSettled(
       [
-        ['/resource/lib/obj/biplane7.obj', 
+        ['/resource/obj/biplane0.obj', 
           plane => {
+            plane = new THREE.ObjectLoader().parse(plane)
             plane.traverse(child => {
               if (child instanceof THREE.Mesh) {
                 child.material = new THREE.MeshBasicMaterial({
                   // map: new THREE.TextureLoader().load("/test/naitou.jpg"),
-                  color: 0xfff,
+                  color: 0xffffff,
                   side: THREE.DoubleSide
                 });
               }
             });
             plane.scale.set(0.05, 0.05, 0.05);
-            this.addUpdateFunc(() => {
-              plane.rotation.x += .008;
-              plane.rotation.z += .003;
-            });
-            this.objects.plane = plane;
+            // plane.scale.set(1, 1, 1);
+            // this.addUpdateFunc(() => {
+            //   plane.rotation.x += .008;
+            //   plane.rotation.z += .003;
+            // });
+            this.models.plane = plane;
           }
         ]
       ].map(([path, callback]) => this.load(path, callback)))
@@ -159,7 +173,8 @@ class Game {
           if (result.status !== "fulfilled")
             return Promise.reject(result.reason);
         }
-        this.event.dispatch("objAllLoaded");
+        this.event.dispatch("modelsAllLoaded");
+        this.scene.add.apply(this.scene, Object.values(this.models));
       })
   }
 
@@ -351,10 +366,6 @@ game.renderLoop = function () {
 game.event.addListener("start", () => {
   game.pause.init();
   game.renderLoop();
-}, {once: true});
-
-game.event.addListener("objAllLoaded", () => {
-  console.log(game.objects)
 }, {once: true});
 
 window.addEventListener("load", () => {

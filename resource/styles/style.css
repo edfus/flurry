@@ -94,6 +94,10 @@ main > canvas, #ui-canvas {
   bottom: 0;
 }
 
+#ui {
+  pointer-events: none;
+}
+
 .ui-buttons {
   position: absolute;
   z-index: 2;
@@ -122,6 +126,7 @@ main > canvas, #ui-canvas {
   margin-left: 0.625rem;
   border-radius: 50%;
   transition: background-color .2s ease-in-out;
+  pointer-events: all;
 }
 
 /* TODO: https://stackoverflow.com/questions/54112231/is-it-possible-to-create-a-glow-effect-in-svg */

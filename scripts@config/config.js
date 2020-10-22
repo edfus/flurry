@@ -396,16 +396,39 @@
       document.exitFullscreen();
     }
   }
-  let inQueue = false;
-  window.throttleLog = function throttleLog () {
-    if(inQueue)
-      return;
-    else {
-      console.log.apply(window, arguments);
-      setTimeout(() => {
-        inQueue = false;
-      }, 500)
-      inQueue = true;
+
+  window.ThrottleLog = class {
+    constructor (gap = 2000) {
+      this.gap = gap;
+    }
+    log () {
+      if(this.inQueue)
+        return;
+      else {
+        const thisLog = Array.from(arguments).toString();
+        if(thisLog === this.prLog) {
+          if(!this.silent) {
+            console.log("%cSame as previous log. staying slient.", "color: lightSkyBlue")
+            this.silent = true;
+          }
+        } else {
+          console.log.apply(window, arguments);
+          this.silent = false;
+          this.prLog = thisLog;
+        }
+        setTimeout(() => {
+          this.inQueue = false;
+        }, this.gap)
+        this.inQueue = true;
+      }
+    }
+
+    autoLog () {
+      this.timer = setInterval(() => this.log(), this.gap + 1);
+    }
+
+    stopAutoLog () {
+      clearInterval(this.timer);
     }
   }
 }
