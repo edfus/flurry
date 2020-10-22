@@ -2,12 +2,11 @@ function newWorker () {
   return new Worker(URL.createObjectURL(new Blob([
   `import OBJLoader from '${location.protocol}//${location.host}/lib/OBJLoader.min.js';
   onmessage = ({data: path}) => {
-    // const encoder = new TextEncoder();
-    new OBJLoader().load(\`${location.protocol}//${location.host}\${path}\`, result => {
+    new OBJLoader().load(path, result => {
       postMessage(result.toJSON());
     })
   }, err => postMessage(err);`], {type: 'application/javascript'})), { type: 'module' });
-} 
+}
 /* (^^;;)
  * NOTE: in worker the path must be absolute
  * .toJSON(): function(){r.setFromEuler(t,!1)} could not be cloned
@@ -22,7 +21,11 @@ export default function (path, onend) {
     resolveWork(result);
     worker.terminate();
   }
-  worker.postMessage(path);
+  if(/^((https?:)?\/\/)/.test(path))
+    worker.postMessage(path);
+  else if(!/(?<=\/).*\..*(?=\/)/.test(path)) 
+    worker.postMessage(`${location.protocol}//${location.host}/${path}`);
+  else return Promise.reject(new Error('wrong URL: ' + path));
   return new Promise(resolve => {
     resolveWork = result => resolve(onend(result));
   })
