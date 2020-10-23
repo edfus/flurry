@@ -49,7 +49,7 @@ naiziguai:
 
 cloudres: 
 
-- [ ] 学习svg
+- [ ] svg(Home)
 - [ ] https://tympanus.net/Development/ClickEffects/
 - [ ] 测试isCollided
 - [ ] glTF

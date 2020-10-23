@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 	<head>
 		<meta charset="UTF-8">
 		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin="anonymous">
@@ -12,7 +12,12 @@
 		<meta name="format-detection" content="telphone=no, email=no">
 		<!-- Preload -->
 		<link rel="modulepreload" href="/scripts@core/main.js">
+		<link rel="modulepreload" href="/scripts@loader/loader.js">
+		<link rel="modulepreload" href="/scripts@miscellaneous/ui.js">
+		<link rel="modulepreload" href="/scripts@miscellaneous/score.js">
+		<link rel="modulepreload" href="/scripts@miscellaneous/eventLoop.js">
 		<link rel="modulepreload" href="/lib/OBJLoader.min.js">
+		<link rel="modulepreload" href="/scripts@miscellaneous/audioWorker.js">
 		<link rel="preload" href="https://www.googletagmanager.com/gtag/js?id=UA-179239422-1" as="script">		
 		<!-- scripts -->
 		<script src="/scripts@config/config.js"></script>
@@ -98,27 +103,27 @@
 			<section id="ui">
 				<aside class="ui-buttons left top">
 					<!-- TODO: when not in game: location.reload(), when in game: go back to title animation  -->
-					<button class="ui-button refresh title-menu" onclick="location.reload()" data-credit="materialui.co" title="Refresh">
+					<button class="ui-button refresh title-menu" onclick="location.reload()" data-credit="materialui.co" title="Refresh" type="button">
 						<svg fill="#fff"  width="100%" height="100%" viewBox="0 0 18 18" version="1.1">
 							<path d="M9 13.5c-2.49 0-4.5-2.01-4.5-4.5S6.51 4.5 9 4.5c1.24 0 2.36.52 3.17 1.33L10 8h5V3l-1.76 1.76C12.15 3.68 10.66 3 9 3 5.69 3 3.01 5.69 3.01 9S5.69 15 9 15c2.97 0 5.43-2.16 5.9-5h-1.52c-.46 2-2.24 3.5-4.38 3.5z"></path>
 						</svg>
 					</button>
 				</aside>
 				<aside class="ui-buttons right top">
-					<button class="ui-button pause game-bar" data-credit="youtube" title="Pause (P)">
+					<button class="ui-button pause game-bar" data-credit="youtube" title="Pause (P)" type="button">
 						<svg height="100%" width="100%" viewBox="0 0 36 36" version="1.1">
 							<g transform="translate(-11, -11) scale(1.6, 1.6)">
 								<path d="M 12,26 16,26 16,10 12,10 z M 21,26 25,26 25,10 21,10 z"></path>
 							</g>
 						</svg>
 					</button>
-					<button class="ui-button info title-menu" data-credit="youtube" title="Info">
+					<button class="ui-button info title-menu" data-credit="youtube" title="Info" type="button">
 						<svg height="100%" width="100%" viewBox="0 0 48 48" version="1.1">
 							<path d="M0 0h48v48H0z" fill="none"></path>
 							<path d="M22 34h4V22h-4v12zm2-30C12.95 4 4 12.95 4 24s8.95 20 20 20 20-8.95 20-20S35.05 4 24 4zm0 36c-8.82 0-16-7.18-16-16S15.18 8 24 8s16 7.18 16 16-7.18 16-16 16zm-2-22h4v-4h-4v4z"></path>
 						</svg>
 					</button>
-					<button class="ui-button setting title-menu" data-credit="youtube" title="Settings">
+					<button class="ui-button setting title-menu" data-credit="youtube" title="Settings" type="button">
 						<svg height="100%" width="100%" viewBox="0 0 36 36" version="1.1">
 							<g transform="translate(-14, -13.5) scale(1.75, 1.75)">
 								<path d="m 23.94,18.78 c .03,-0.25 .05,-0.51 .05,-0.78 0,-0.27 -0.02,-0.52 -0.05,-0.78 l 1.68,-1.32 c .15,-0.12 .19,-0.33 .09,-0.51 l -1.6,-2.76 c -0.09,-0.17 -0.31,-0.24 -0.48,-0.17 l -1.99,.8 c -0.41,-0.32 -0.86,-0.58 -1.35,-0.78 l -0.30,-2.12 c -0.02,-0.19 -0.19,-0.33 -0.39,-0.33 l -3.2,0 c -0.2,0 -0.36,.14 -0.39,.33 l -0.30,2.12 c -0.48,.2 -0.93,.47 -1.35,.78 l -1.99,-0.8 c -0.18,-0.07 -0.39,0 -0.48,.17 l -1.6,2.76 c -0.10,.17 -0.05,.39 .09,.51 l 1.68,1.32 c -0.03,.25 -0.05,.52 -0.05,.78 0,.26 .02,.52 .05,.78 l -1.68,1.32 c -0.15,.12 -0.19,.33 -0.09,.51 l 1.6,2.76 c .09,.17 .31,.24 .48,.17 l 1.99,-0.8 c .41,.32 .86,.58 1.35,.78 l .30,2.12 c .02,.19 .19,.33 .39,.33 l 3.2,0 c .2,0 .36,-0.14 .39,-0.33 l .30,-2.12 c .48,-0.2 .93,-0.47 1.35,-0.78 l 1.99,.8 c .18,.07 .39,0 .48,-0.17 l 1.6,-2.76 c .09,-0.17 .05,-0.39 -0.09,-0.51 l -1.68,-1.32 0,0 z m -5.94,2.01 c -1.54,0 -2.8,-1.25 -2.8,-2.8 0,-1.54 1.25,-2.8 2.8,-2.8 1.54,0 2.8,1.25 2.8,2.8 0,1.54 -1.25,2.8 -2.8,2.8 l 0,0 z">
@@ -127,7 +132,7 @@
 						</svg>
 					</button>
 					<!-- TODO: if config.inApp, hide full screen button -->
-					<button class="ui-button fullscreen title-menu" onmouseover="this.classList.add('hover')" onmouseout="this.classList.remove('hover')" onfocus="this.classList.add('hover')" onblur="this.classList.remove('hover')" onclick="this.classList.toggle('active'); toggleFullScreen(document.documentElement)" data-credit="codepen.io/dev_loop" title="Full screen (F)">
+					<button class="ui-button fullscreen title-menu" onmouseover="this.classList.add('hover')" onmouseout="this.classList.remove('hover')" onfocus="this.classList.add('hover')" onblur="this.classList.remove('hover')" onclick="this.classList.toggle('active'); toggleFullScreen(document.documentElement)" data-credit="codepen.io/dev_loop" title="Full screen (F)" type="button">
 						<div class="row">
 							<div class="box _1"></div>
 							<div class="box _2"></div>
@@ -141,8 +146,7 @@
 				<aside class="ui-score left bottom">
 					<span id="score"></span>					
 				</aside>
-				<aside id="mask-layer"></aside>
-				<button id="start-button">
+				<button id="start-button" type="button" title="start game(space)">
 					<svg viewBox="0 0 200 200">
 						<defs>
 							<filter id="blur6" x="-50%" y="-50%" width="200%" height="200%">
