@@ -52,11 +52,7 @@ cloudres:
 - [ ] 学习svg
 - [ ] https://tympanus.net/Development/ClickEffects/
 - [ ] 测试isCollided
-- [ ] 加载obj，用worker解析成json后存入indexedDB来加快加载速度 THREE.JSONLoader  ufferGeometryLoader()
-- [ ] https://threejs.org/docs/#api/en/loaders/BufferGeometryLoader
-- [ ] https://threejs.org/docs/#api/en/loaders/ObjectLoader
-- [ ] https://discoverthreejs.com/book/first-steps/load-models/
-- [ ] http://www.kadrmasconcepts.com/blog/2011/11/06/subdivision-surfaces-with-three-js/
+- [ ] glTF
 
 ---
 
