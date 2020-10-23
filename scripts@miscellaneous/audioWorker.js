@@ -284,7 +284,7 @@ class GlobalAudioPlayer {
       return;
 
     const playF = () => {
-      this.playSong(this.songs.intro).then(() => this.playNext(true));
+      this.playSong(this.songs.intro, true).catch(() => void 0);
       this.playTriggered = true;
     }
     const callback = () => {
@@ -428,10 +428,12 @@ class GlobalAudioPlayer {
     this.songPlaying.name = name;
     console.info("Playing: " + this.songPlaying.name)
     return new Promise((resolve, reject) => {
-        source.onended = () => {
+        source.onended = isScheduled => {
           console.info("Ended: " + this.songPlaying.name)
           this.songPlaying.empty();
-          resolve();
+          if(isScheduled)
+            reject("Stopped previous flow, playing songs on the new schedule")
+          else resolve();
         }
         source.beforeForceStopped = () => {
           this.songPlaying.source.onended = null; // in case async error
@@ -460,6 +462,33 @@ class GlobalAudioPlayer {
       return this._play(nextSong.name, nextSong.audioBuffer, this.nodes.songsGain, false).then(() => this.playNext(true));
     else 
       return this._play(nextSong.name, nextSong.audioBuffer, this.nodes.songsGain, false);
+  }
+
+  /**
+   * 
+   * @param {string | Object} param 要播放歌曲的role或包含其信息的对象
+   * @param {boolean} loop 是否循环
+   */
+  async scheduleSong (param, loop) {
+    const pr_onended = this.songPlaying.source.onended;
+    return new Promise(resolve => {
+      this.songPlaying.source.loop = false;
+      this.songPlaying.source.onended = () => {
+        pr_onended(true);
+        resolve(this.playSong(param, loop))
+      }
+    })
+  }
+
+  async scheduleFunc (func) {
+    const pr_onended = this.songPlaying.source.onended;
+    return new Promise(resolve => {
+      this.songPlaying.source.loop = false;
+      this.songPlaying.source.onended = () => {
+        pr_onended(true);
+        resolve(func())
+      }
+    })
   }
   /**
    * 加载对应音乐到内存

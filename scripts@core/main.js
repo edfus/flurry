@@ -66,12 +66,14 @@ class Game {
     /* dynamic import */
     import("../lib/OrbitControls.js").then(({OrbitControls}) => {
       this.event.addListener("started", () => {
-        this._controls = new OrbitControls( this.camera, this.renderer.domElement );
+        this._controls = new OrbitControls(this.camera, this.renderer.domElement);
         const throttleLog = new ThrottleLog(1600);
         this.addUpdateFunc(() => 
           throttleLog.log(`position: (${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)})`, 
           `\nrotation: (${this.camera.rotation._x.toFixed(1)}, ${this.camera.rotation._y.toFixed(1)}, ${this.camera.rotation._z.toFixed(1)})`)
         )
+        this.event.addListener("paused", () => this._controls.enabled = false, {once: false})
+        this.event.addListener("restart", () => this._controls.enabled = true, {once: false})
       }, {once: true})
     })
   }
@@ -355,16 +357,18 @@ game.pause = new class { // result in changing game.state.paused
   async waitForUserContinue () {
     return new Promise((resolve, reject) => {
       if(Dialog.isBusy)
-        Dialog.addOnceListener('dialogHide', () => 
-          resolve(game.state.paused = false)
-        )
+        Dialog.addOnceListener('dialogHide', () => {
+          game.state.paused = false;
+          resolve(game.event.dispatch("restart"))
+        })
       else if(game.ui.pauseButton.triggered) {
         game.ui.pauseButton.triggered = false; 
-        game.ui.startButton.addTriggerCallback(() => resolve(), {once: true});
+        game.ui.startButton.addTriggerCallback(() => resolve(game.event.dispatch("restart")), {once: true});
       }
     })
   }
   start () {
+    game.event.dispatch("paused")
     game.score.pause()
     game.ui.removeListeners();
     this.#renderLoopPtr = this.renderLoop_paused;
@@ -388,6 +392,7 @@ game.pause = new class { // result in changing game.state.paused
   }
   /* logic when game paused */
   renderLoop_paused () {
+    game.ui.canvas2D.paint();
     requestAnimationFrame(() => this.#renderLoopPtr());
   }
   /* animation when going back to title screen */
@@ -401,6 +406,7 @@ game.pause = new class { // result in changing game.state.paused
 game.start = Object.assign(function () {
   this.event.dispatch("start");
   this.score.start();
+  this.audio.scheduleFunc(() => this.audio.playNext(true))
   this.event.dispatch("started");
   this.state.started = true;
   this.ui.addListeners();
