@@ -408,7 +408,7 @@
         const thisLog = Array.from(arguments).toString();
         if(thisLog === this.prLog) {
           if(!this.silent) {
-            console.log("%cSame as previous log. staying slient.", "color: lightSkyBlue")
+            console.log("%cSame as previous log, staying slient.", "color: lightSkyBlue")
             this.silent = true;
           }
         } else {
@@ -423,12 +423,14 @@
       }
     }
 
-    autoLog () {
-      this.timer = setInterval(() => this.log(), this.gap + 1);
+    autoLog (func) {
+      this.timer = setInterval(() => this.log(func()), this.gap + 1);
+      return this;
     }
 
     stopAutoLog () {
       clearInterval(this.timer);
+      return this;
     }
   }
 }

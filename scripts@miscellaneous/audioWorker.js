@@ -414,6 +414,9 @@ class GlobalAudioPlayer {
     if(this.songPlaying.source) {
       this.stop();
     }
+    if(this.context.state === 'suspended') {
+      await this.resume();
+    }
     const source =  this.context.createBufferSource();
     source.buffer = audioBuffer;
     source.loop = loop; 
@@ -487,13 +490,15 @@ class GlobalAudioPlayer {
 
   pause () {
     this.nodes.songsGain.disconnect();
+    this.context.suspend();
   }
 
-  resume () {
+  async resume () {
     if (this.context.state === 'suspended') {
-      this.context.resume();
+      return this.context.resume().then(() => 
+        this.nodes.songsGain.connect(this.nodes.masterGain)
+      )
     }
-    this.nodes.songsGain.connect(this.nodes.masterGain);
   }
 
   stop (delay = 0) {
@@ -506,17 +511,27 @@ class GlobalAudioPlayer {
     }
     // An AudioBufferSourceNode can only be played once;
   }
-  #volume = 1
+  #volume = 1;
+  #fadingOutTimer = 0;
+  _debug () {
+    new ThrottleLog(500).autoLog(() => [this.volume, this.context.currentTime]);
+  }
   /**
    * pause the audio, not stop.
    * @param {number} fadeTime seconds to fade
    */
   fadeOut (fadeTime = 10) {
     const currTime = this.context.currentTime;
-    // const duration = this.songPlaying.buffer.duration
-    this.nodes.songsGain.gain.linearRampToValueAtTime(1, currTime);
+    fadeTime = this.volume * fadeTime;
+    this.nodes.songsGain.gain.cancelScheduledValues(currTime);
+    this.nodes.songsGain.gain.linearRampToValueAtTime(this.volume, currTime);
     this.nodes.songsGain.gain.linearRampToValueAtTime(0, currTime + fadeTime);
-    setTimeout(() => this.pause(), fadeTime * 1000);
+
+    this.#fadingOutTimer = 
+      setTimeout(() => {
+        this.pause();
+        this.#fadingOutTimer = 0;
+      }, fadeTime * 1000);
   }
 
   /**
@@ -525,9 +540,21 @@ class GlobalAudioPlayer {
    */
   fadeIn (fadeTime = 10) {
     const currTime = this.context.currentTime;
-    this.nodes.songsGain.gain.linearRampToValueAtTime(0, currTime);
-    this.resume();
-    this.nodes.songsGain.gain.linearRampToValueAtTime(1, currTime + fadeTime);
+
+    if(this.#fadingOutTimer) {
+      clearTimeout(this.#fadingOutTimer);
+      this.#fadingOutTimer = 0;
+      fadeTime = (this.#volume - this.volume) * fadeTime;
+      this.nodes.songsGain.gain.cancelScheduledValues(currTime);
+      this.nodes.songsGain.gain.linearRampToValueAtTime(this.volume, currTime + .001);
+      this.nodes.songsGain.gain.linearRampToValueAtTime(this.#volume, currTime + .001 + fadeTime);
+    } else {
+      this.resume().then(() => {
+        fadeTime = this.#volume * fadeTime;
+        this.nodes.songsGain.gain.linearRampToValueAtTime(0, currTime);
+        this.nodes.songsGain.gain.linearRampToValueAtTime(this.#volume, currTime + fadeTime);
+      })
+    }
   }
 
   get volume() {
