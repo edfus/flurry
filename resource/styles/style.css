@@ -366,11 +366,18 @@ main > canvas, #ui-canvas {
   pointer-events: all;
 }
 
+@media screen and (max-height: 824px) {
+  #start-button {
+    bottom: 30px;
+  }
+}
+
 #start-button--ring {
   stroke-width: .12rem;
   animation: start-button--ring 4s infinite ease;
   transform: translate(-8%, -8%) scale(1.16);
   fill: #fff;
+  cursor: pointer;
   /* stroke-opacity: .8; */
 }
 
@@ -379,7 +386,34 @@ main > canvas, #ui-canvas {
   opacity: .1;
 }
 
+.game-bar {
+  display: none;
+}
+
+.fade-out {
+  animation: fade-out .3s ease 1;
+}
+
+.fade-in {
+  animation: fade-in .3s ease 1;
+}
+
 /* Keyframes */
+@keyframes fade-out {
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 @keyframes start-button--fog {
   0% {
     filter: url(#blur2);

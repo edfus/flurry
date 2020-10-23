@@ -1,3 +1,71 @@
+class ButtonHandler {
+  constructor(keyCode, domElement) {
+    this.keyCode = keyCode;
+    this._toListen = domElement;
+  }
+  // 只监听一次
+  listen = () => {
+    this._toListen.addEventListener("click", () => {
+      this.#callback = this.#callback.filter(
+        ({callback, once}) => {
+          callback.call(this);
+          return !once;
+      });
+    }, {passive: true, once: true});
+    document.addEventListener("keydown", this.onkeydown, {passive: true});
+  }
+  #callback = [];
+  onkeydown = event => {
+    if(event.code === this.keyCode) {
+      document.removeEventListener("keydown", this.onkeydown);
+      this.#callback = this.#callback.filter(
+        ({callback, once}) => {
+          callback.call(this);
+          return !once;
+      });
+    }
+  }
+  addCallback = (callback, {once: once = false}) => {
+    this.#callback.push({callback, once})
+  }
+  removeCallback = (callbackToRemove, {once: isOnceEvent = false}) => {
+    for(let i = this.#callback.length - 1; i >= 0; i--) {
+      if(callbackToRemove === this.#callback[i].callback
+        && isOnceEvent === this.#callback[i].once) {
+          this.#callback.splice(i, 1);
+      }
+    }
+  }
+  addTo(obj) {
+    Object.entries(this).forEach(([key, value]) => {
+      obj[key] = value;
+    })
+    return obj;
+  }
+  static fadeOut(domElement) {
+    domElement.classList.add("fade-out");
+    return new Promise(resolve => {
+      domElement.addEventListener("animationend", () => {
+        domElement.style.display = 'none';
+        domElement.classList.remove("fade-out");
+        resolve()
+      }, {passive: true, once: true})
+    })
+  }
+  static fadeIn(domElement) {
+    domElement.style.opacity = 0;
+    domElement.style.display = 'block';
+    domElement.classList.add("fade-in");
+    return new Promise(resolve => {
+      domElement.addEventListener("animationend", () => {
+        domElement.style.opacity = 1;
+        domElement.classList.remove("fade-in");
+        resolve();
+      }, {passive: true, once: true})
+    })
+  }
+}
+
 class UserInteraction {
   absolutePos = {}; // init in constructor func
   
@@ -49,6 +117,43 @@ class UserInteraction {
         }
       }
     })
+  }
+
+  initButtons () {
+    this.pauseButton = {
+      domElement: document.querySelector(".ui-button.pause"),
+      hide () {
+        return ButtonHandler.fadeOut(this.domElement)
+      },
+      show () {
+        this.listen();
+        return ButtonHandler.fadeIn(this.domElement);
+      }
+    };
+    this.startButton = {
+      broad: document.getElementById("start-button"),
+      concise: document.getElementById("start-button--ring"),
+      hide () {
+        return ButtonHandler.fadeOut(this.broad)
+      },
+      show () {
+        this.listen();
+        return ButtonHandler.fadeIn(this.broad);
+      }
+    }
+
+    new ButtonHandler("KeyP", this.pauseButton.domElement).addTo(this.pauseButton);
+    new ButtonHandler("Space", this.startButton.concise).addTo(this.startButton);
+
+    this.startMenuButtons= {
+      elements: Array.from(document.querySelectorAll(".ui-button.start-menu")),
+      hide () {
+        return Promise.allSettled(this.elements.map(e => ButtonHandler.fadeOut(e)))
+      },
+      show () {
+        return Promise.allSettled(this.elements.map(e => ButtonHandler.fadeIn(e)))
+      }
+    }
   }
 
   get relativePos () {

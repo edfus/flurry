@@ -36,7 +36,7 @@
     return document.getElementById('score')
   },
 
-  GameStartCallback = async () => { // asynchronous 异步的，非同时的
+  GameLoadedCallback = async () => { // asynchronous 异步的，非同时的
     /**
      * 渐隐目标对象
      * @param {*} currentOpacity 初始透明度
@@ -85,7 +85,7 @@
       getContainer: GetContainer,
       getUIContainer:  GetUIContainer,
       getScoreContainer: GetScoreContainer,
-      gameStartCallback: GameStartCallback,
+      gameLoadedCallback: GameLoadedCallback,
       speed_sea: RotationSpeed_Sea,
       speed_sky: RotationSpeed_Sky,
       speed_propeller: RotationSpeed_Propeller,

@@ -22,6 +22,7 @@ class Game {
 
   /* main functions */
   init() {
+    this.event.dispatch("init");
     this._createScene(this.ui.WIDTH, this.ui.HEIGHT);
 
     this.lights = this._createLights();
@@ -46,6 +47,8 @@ class Game {
     this.score = new Score(this.config.speed_score);
     this.ui.addUnloadCallback(() => this.score.store());
 
+    this.ui.initButtons();
+
     this.config.testMode ? this._debug() : void 0;
   
     this.event.dispatch("inited");
@@ -62,12 +65,14 @@ class Game {
     }, {once: true});
     /* dynamic import */
     import("../lib/OrbitControls.js").then(({OrbitControls}) => {
-      this._controls = new OrbitControls( this.camera, this.renderer.domElement );
-      const throttleLog = new ThrottleLog(1600);
-      this.addUpdateFunc(() => 
-        throttleLog.log(`position: (${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)})`, 
-        `\nrotation: (${this.camera.rotation._x.toFixed(1)}, ${this.camera.rotation._y.toFixed(1)}, ${this.camera.rotation._z.toFixed(1)})`)
-      )
+      this.event.addListener("started", () => {
+        this._controls = new OrbitControls( this.camera, this.renderer.domElement );
+        const throttleLog = new ThrottleLog(1600);
+        this.addUpdateFunc(() => 
+          throttleLog.log(`position: (${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)})`, 
+          `\nrotation: (${this.camera.rotation._x.toFixed(1)}, ${this.camera.rotation._y.toFixed(1)}, ${this.camera.rotation._z.toFixed(1)})`)
+        )
+      }, {once: true})
     })
   }
 
@@ -180,19 +185,16 @@ class Game {
         this.event.dispatch("modelsAllLoaded");
       })
   }
-
   /* Unvarying functions */
-  start () {
-    this.event.dispatch("start");
-    this.ui.addListeners(); 
+  load () {
+    this.event.dispatch("load");
     this.config.getContainer().append(this.renderer.domElement);
     this.config.getUIContainer().append(this.ui.canvas2D.domElement);
-    this.config.gameStartCallback();
-  
     this.score.bind(this.config.getScoreContainer());
-    this.score.start();
+    this.config.gameLoadedCallback();
     this._log();
-    this.state.started = true;
+    this.event.dispatch("loaded");
+    this.state.loaded = true;
   }
   
   #updateCallbackQueue = []
@@ -306,95 +308,147 @@ class Game {
 
 window.game = new Game();
 ////////////////////////////////
-game.paused = false; // explicit
+game.state.paused = false; // explicit
 
-game.pause = new class { // result in changing game.paused
+game.pause = new class { // result in changing game.state.paused
   init () { 
     // all methods related to changing game state
     document.addEventListener("visibilitychange", () => {
       if(document.visibilityState === 'visible') {
         // game.audio.fadeIn(4);
-        game.paused = false; 
+        game.state.paused = false; 
       } else {
-        game.paused = true;
+        game.state.paused = true;
         // game.audio.fadeOut(20);
       }
     }, {passive: true});
 
     Dialog.addEventListener('dialogShow', () => {
-      game.paused = true;
+      game.state.paused = true;
     })
 
-    this.pauseButton = document.querySelector(".ui-button.pause");
-    this._addButtonListener = () => this.pauseButton.addEventListener("click", () => {
-      game.paused = true;
+    game.ui.pauseButton.addCallback(() => {
+      game.state.paused = true;
       game.audio.fadeOut();
-      this.pauseButton.dataset.triggered = "true";
-    }, {passive: true, once: true});
-    this._addButtonListener();
+      game.ui.pauseButton.triggered = true;
+      game.ui.pauseButton.hide();
+    }, {once: false});
   }
 
   async waitForUserContinue () {
     return new Promise((resolve, reject) => {
       if(Dialog.isBusy)
         Dialog.addOnceListener('dialogHide', () => 
-          resolve(game.paused = false)
+          resolve(game.state.paused = false)
         )
-      else if(this.pauseButton.dataset.triggered) {
-        delete this.pauseButton.dataset.triggered;
-        //TODO
+      else if(game.ui.pauseButton.triggered) {
+        game.ui.pauseButton.triggered = false;
+        game.ui.startButton.show();
+        game.ui.startButton.addCallback(() => {
+          game.audio.fadeIn();
+          game.ui.startButton.hide();
+          game.ui.pauseButton.show();
+          resolve(game.state.paused = false)
+        }, {once: true})
       }
     })
   }
-  /* logic when game paused */
-  renderLoop_whenPaused () {
-    // do sth...
-    requestAnimationFrame(() => this.#renderLoopPtr());
-  }
-
-  #renderLoopPtr = this.renderLoop_whenPaused;
-
   start () {
     game.score.pause()
     game.ui.removeListeners();
-    this.#renderLoopPtr = this.renderLoop_whenPaused;
-    this.renderLoop_whenPaused();
+    this.#renderLoopPtr = this.renderLoop_paused;
+    this.renderLoop_paused();
     this.waitForUserContinue()
       .then(() => {
-        this.backTo(game.renderLoop.bind(game));
         game.score.start()
+        game.ui.addListeners();
+        this.backTo(game.renderLoop_main)
       })
-      .catch(err => {s
-        backToTitle().then(() => game.renderLoop())
-        // game.audio.playSong("intro")
+      .catch(err => {
+        this.backTo(this.renderLoop_backToTitle).then(() => {
+          game.state.started = false;
+          game.renderLoop_idle();
+          game.audio.playSong("intro")
+        })
       })
   }
   backTo (newRenderLoop) {
-    game.ui.addListeners();
     this.#renderLoopPtr = newRenderLoop;
   }
-}
+  /* logic when game paused */
+  renderLoop_paused () {
+    requestAnimationFrame(() => this.#renderLoopPtr());
+  }
+  /* animation when going back to title screen */
+  renderLoop_backToTitle () {
+    requestAnimationFrame(() => this.#renderLoopPtr());
+  }
 
-game.renderLoop = function () {
-  if(!this.paused){
+  #renderLoopPtr = this.renderLoop_paused;
+}
+game.start = Object.assign(function () {
+  this.event.dispatch("start");
+  this.score.start();
+  this.event.dispatch("started");
+  this.state.started = true;
+  this.ui.addListeners();
+}, new class {
+  constructor () {
+    game.event.addListener('loaded', this.init, {once: true});
+  }
+  init = () => {
+    game.ui.startButton.listen()
+    game.ui.startButton.addCallback(() => {
+      game.state.start = true;
+      game.ui.startButton.hide();
+      game.ui.startMenuButtons.hide().then(() => {
+        game.ui.pauseButton.show();
+      }); 
+    }, {once: true})
+  }
+  renderLoop_idle = () => {
+    if(!game.state.start){
+      // game.update();
+      game.renderer.render(game.scene, game.camera);
+      requestAnimationFrame(() => game.start.renderLoop_idle());
+      game.ui.canvas2D.paint();
+    } else {
+      console.info('RenderLoop: game starts');
+      game.start();
+      game.start.renderLoop_startAnim();
+    }
+  }
+  renderLoop_startAnim = () => {
+    if(!game.state.started){
+      // game.update();
+      game.renderer.render(game.scene, game.camera);
+      requestAnimationFrame(() => game.start.renderLoop_startAnim());
+    } else {
+      console.info('RenderLoop: game started');
+      game.renderLoop_main();
+    }
+  }
+})
+
+game.renderLoop_main = function () {
+  if(!game.state.paused){
     //TODO: if(crashed)
-    this.update();
-    this.renderer.render(this.scene, this.camera);
-    this.ui.canvas2D.paint();
-    requestAnimationFrame(() => this.renderLoop());
+    game.update();
+    game.renderer.render(game.scene, game.camera);
+    requestAnimationFrame(() => game.renderLoop_main());
   } else {
     console.info('RenderLoop: game paused');
-    this.pause.start();
+    game.pause.start();
   }
 }
 
-game.event.addListener("start", () => {
+game.event.addListener("loaded", () => {
   game.pause.init();
-  game.renderLoop();
+  game.start.renderLoop_idle();
 }, {once: true});
 
 window.addEventListener("load", () => {
   game.state.inited 
-  ? game.start()
-  : game.event.addListener("inited", () => game.start(), {once: true});
+  ? game.load()
+  : game.event.addListener("inited", () => game.load(), {once: true});
 }, {passive: true, once: true})

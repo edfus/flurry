@@ -406,7 +406,7 @@ class GlobalAudioPlayer {
     if(typeof param === "string")
       param = this.songs[param]
     if(!param)
-      return false;      
+      return Promise.reject('not found');
     return this._play(param.name, param.audioBuffer, this.nodes.songsGain, loop)
   }
 
