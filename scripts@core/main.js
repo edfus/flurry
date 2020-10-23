@@ -34,9 +34,9 @@ class Game {
     this._loadModels(this.path_callback_Array);
     this.event.addListener("modelsAllLoaded", () => this.scene.add.apply(this.scene, Object.values(this.models)), {once: true})
     
-    this.camera.position.set(200, 200, 200);
-    this.camera.lookAt(100, 100, 100);
-    // this.camera.rotation.set(-180, 0, 180)
+    this.camera.position.set(-6.9, -63.2, -340.5);
+    // this.camera.lookAt(100, 100, 100);
+    this.camera.rotation.set(3.0, -0.0, 3.1)
     // this.camera.lookAt(this.objects.plane.position);
 
     this.ui.addResizeCallback(() => {
@@ -326,13 +326,30 @@ game.pause = new class { // result in changing game.state.paused
     Dialog.addEventListener('dialogShow', () => {
       game.state.paused = true;
     })
-
-    game.ui.pauseButton.addCallback(() => {
+    if(Dialog.isBusy)
       game.state.paused = true;
-      game.audio.fadeOut();
+
+    game.event.addListener("started", this.initButtons, {once: true})
+  }
+
+  initButtons () {
+    game.ui.pauseButton.addTriggerCallback(async () => {
+      game.state.paused = true;
       game.ui.pauseButton.triggered = true;
-      game.ui.pauseButton.hide();
+      await game.ui.pauseButton.hide();
+      game.audio.fadeOut(10); 
+      await game.ui.startButton.show();
     }, {once: false});
+
+    game.ui.startButton.addTriggerCallback(async () => {
+      game.state.paused = false;
+      await game.ui.startButton.hide();
+      game.audio.fadeIn(4);
+      await game.ui.pauseButton.show();
+    }, {once: false})
+
+    game.ui.pauseButton.listen();
+    game.ui.startButton.listen();
   }
 
   async waitForUserContinue () {
@@ -342,14 +359,8 @@ game.pause = new class { // result in changing game.state.paused
           resolve(game.state.paused = false)
         )
       else if(game.ui.pauseButton.triggered) {
-        game.ui.pauseButton.triggered = false;
-        game.ui.startButton.show();
-        game.ui.startButton.addCallback(() => {
-          game.audio.fadeIn();
-          game.ui.startButton.hide();
-          game.ui.pauseButton.show();
-          resolve(game.state.paused = false)
-        }, {once: true})
+        game.ui.pauseButton.triggered = false; 
+        game.ui.startButton.addTriggerCallback(() => resolve(), {once: true});
       }
     })
   }
@@ -386,6 +397,7 @@ game.pause = new class { // result in changing game.state.paused
 
   #renderLoopPtr = this.renderLoop_paused;
 }
+
 game.start = Object.assign(function () {
   this.event.dispatch("start");
   this.score.start();
@@ -394,17 +406,16 @@ game.start = Object.assign(function () {
   this.ui.addListeners();
 }, new class {
   constructor () {
-    game.event.addListener('loaded', this.init, {once: true});
-  }
-  init = () => {
-    game.ui.startButton.listen()
-    game.ui.startButton.addCallback(() => {
-      game.state.start = true;
-      game.ui.startButton.hide();
-      game.ui.startMenuButtons.hide().then(() => {
-        game.ui.pauseButton.show();
-      }); 
-    }, {once: true})
+    game.event.addListener('loaded', () => {
+      game.ui.startButton.listen()
+      game.ui.startButton.addTriggerCallback(() => {
+        game.state.start = true;
+        game.ui.startButton.hide();
+        game.ui.titleMenuButtons.hide().then(() => {
+          game.ui.pauseButton.show();
+        }); 
+      }, {once: true})
+    }, {once: true});
   }
   renderLoop_idle = () => {
     if(!game.state.start){
@@ -415,14 +426,14 @@ game.start = Object.assign(function () {
     } else {
       console.info('RenderLoop: game starts');
       game.start();
-      game.start.renderLoop_startAnim();
+      game.start.renderLoop_startAnimation();
     }
   }
-  renderLoop_startAnim = () => {
+  renderLoop_startAnimation = () => {
     if(!game.state.started){
       // game.update();
       game.renderer.render(game.scene, game.camera);
-      requestAnimationFrame(() => game.start.renderLoop_startAnim());
+      requestAnimationFrame(() => game.start.renderLoop_startAnimation());
     } else {
       console.info('RenderLoop: game started');
       game.renderLoop_main();
@@ -441,6 +452,7 @@ game.renderLoop_main = function () {
     game.pause.start();
   }
 }
+/* init -> inited, load -> loaded, start -> started. */
 
 game.event.addListener("loaded", () => {
   game.pause.init();

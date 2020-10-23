@@ -2,47 +2,61 @@ class ButtonHandler {
   constructor(keyCode, domElement) {
     this.keyCode = keyCode;
     this._toListen = domElement;
+    this.onkeydown = this.onkeydownPrototype.bind(this, false);
+    this.onkeydownOnce = this.onkeydownPrototype.bind(this, true);
   }
-  // 只监听一次
+
+  onclick = () => {
+    this._callbackArr = this._callbackArr.filter(
+      ({callback, once}) => {
+        callback.call(this);
+        return !once;
+    });
+  };
+
+  listenOnce = () => {
+    this._toListen.addEventListener("click", this.onclick, {passive: true, once: true});
+    document.addEventListener("keydown", this.onkeydownOnce, {passive: true});
+  }
   listen = () => {
-    this._toListen.addEventListener("click", () => {
-      this.#callback = this.#callback.filter(
-        ({callback, once}) => {
-          callback.call(this);
-          return !once;
-      });
-    }, {passive: true, once: true});
+    this._toListen.addEventListener("click", this.onclick, {passive: true});
     document.addEventListener("keydown", this.onkeydown, {passive: true});
   }
-  #callback = [];
-  onkeydown = event => {
-    if(event.code === this.keyCode) {
-      document.removeEventListener("keydown", this.onkeydown);
-      this.#callback = this.#callback.filter(
-        ({callback, once}) => {
-          callback.call(this);
-          return !once;
-      });
-    }
-  }
-  addCallback = (callback, {once: once = false}) => {
-    this.#callback.push({callback, once})
+  
+  _callbackArr = [];
+  addTriggerCallback = (callback, {once: once = false}) => {
+    this._callbackArr.push({callback, once})
   }
   removeCallback = (callbackToRemove, {once: isOnceEvent = false}) => {
-    for(let i = this.#callback.length - 1; i >= 0; i--) {
-      if(callbackToRemove === this.#callback[i].callback
-        && isOnceEvent === this.#callback[i].once) {
-          this.#callback.splice(i, 1);
+    for(let i = this._callbackArr.length - 1; i >= 0; i--) {
+      if(callbackToRemove === this._callbackArr[i].callback
+        && isOnceEvent === this._callbackArr[i].once) {
+          this._callbackArr.splice(i, 1);
       }
     }
   }
+
   addTo(obj) {
     Object.entries(this).forEach(([key, value]) => {
       obj[key] = value;
     })
     return obj;
   }
+  onkeydownPrototype (once, event) {
+    if(event.code === this.keyCode) {
+      this._callbackArr = this._callbackArr.filter(
+        ({callback, once}) => {
+          callback.call(this);
+          return !once;
+      });
+      if(once)
+        document.removeEventListener("keydown", this.onkeydown);
+    }
+  }
+
   static fadeOut(domElement) {
+    if(domElement.classList.contains("fade-out"))
+      return Promise.reject("High frequency.");
     domElement.classList.add("fade-out");
     return new Promise(resolve => {
       domElement.addEventListener("animationend", () => {
@@ -53,6 +67,8 @@ class ButtonHandler {
     })
   }
   static fadeIn(domElement) {
+    if(domElement.classList.contains("fade-in"))
+      return Promise.reject("High frequency.");
     domElement.style.opacity = 0;
     domElement.style.display = 'block';
     domElement.classList.add("fade-in");
@@ -126,7 +142,6 @@ class UserInteraction {
         return ButtonHandler.fadeOut(this.domElement)
       },
       show () {
-        this.listen();
         return ButtonHandler.fadeIn(this.domElement);
       }
     };
@@ -137,7 +152,6 @@ class UserInteraction {
         return ButtonHandler.fadeOut(this.broad)
       },
       show () {
-        this.listen();
         return ButtonHandler.fadeIn(this.broad);
       }
     }
@@ -145,8 +159,8 @@ class UserInteraction {
     new ButtonHandler("KeyP", this.pauseButton.domElement).addTo(this.pauseButton);
     new ButtonHandler("Space", this.startButton.concise).addTo(this.startButton);
 
-    this.startMenuButtons= {
-      elements: Array.from(document.querySelectorAll(".ui-button.start-menu")),
+    this.titleMenuButtons= {
+      elements: Array.from(document.querySelectorAll(".ui-button.title-menu")),
       hide () {
         return Promise.allSettled(this.elements.map(e => ButtonHandler.fadeOut(e)))
       },
