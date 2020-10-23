@@ -3,20 +3,19 @@ import UserInteraction from '../scripts@miscellaneous/ui.js';
 import Score from '../scripts@miscellaneous/score.js';
 import EventLoop from '../scripts@miscellaneous/eventLoop.js';
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@v0.121.0/build/three.module.min.js';
-import OBJLoader from '../lib/OBJLoader.min.js';
 /* objects */
 import audioPlayer from '../scripts@miscellaneous/audioWorker.js';
-import objLoader from '../scripts@loader/loader.js';
 
 /* class Game */
 class Game {
-  constructor() { 
+  constructor() {
     this.config = window.config;
     this.colors = this.config.colors;
     this.ui = new UserInteraction();
     this.audio = audioPlayer;
     this.event = new EventLoop();
     this.state = {};
+    this._load = {};
     this.init();
   }
 
@@ -31,8 +30,10 @@ class Game {
     this.objects = this._createObjects();
     this.scene.add.apply(this.scene, Object.values(this.objects));
     this.models = {};
-    this._loadModels(this.path_callback_Array);
-    this.event.addListener("modelsAllLoaded", () => this.scene.add.apply(this.scene, Object.values(this.models)), {once: true})
+    this._loadObjs(this.path_callback_Array).then(() => {
+      this.event.dispatch("modelsAllLoaded");
+      this.scene.add.apply(this.scene, Object.values(this.models));
+    });
     
     this.camera.position.set(-6.9, -63.2, -340.5);
     // this.camera.lookAt(100, 100, 100);
@@ -154,37 +155,50 @@ class Game {
   ]
 
   /* load obj files using main thread */
-  async _loadModels (path_callback_Array) {
-    if(!this._load) {
-      const temp = new OBJLoader();
-      this._load = temp.load.bind(temp);
+  async _loadglTFs (path_callback_Array) {
+    if(!this._load.glTF) {
+      const temp = new (await import('../scripts@loader/GLTFLoader.js')).GLTFLoader;
+      this._load.glTF = temp.load.bind(temp);
     }
     return Promise.allSettled(
-      path_callback_Array.map(([path, callback]) => new Promise(resolve => this._load(path, result => resolve(callback(result)))) ))
+      path_callback_Array.map(([path, callback]) => new Promise(resolve => this._load.glTF(path, result => resolve(callback(result))))))
        .then(results => {
         for (const result of results) {
           if (result.status !== "fulfilled")
             return Promise.reject(result.reason);
         }
-        this.event.dispatch("modelsAllLoaded");
+      })
+  }
+
+  /* load obj files using main thread */
+  async _loadObjs (path_callback_Array) {
+    if(!this._load.obj) {
+      const temp = new (await import('../scripts@loader/OBJLoader2.js')).OBJLoader2;
+      this._load.obj = temp.load.bind(temp);
+    }
+    return Promise.allSettled(
+      path_callback_Array.map(([path, callback]) => new Promise(resolve => this._load.obj(path, result => resolve(callback(result))))))
+       .then(results => {
+        for (const result of results) {
+          if (result.status !== "fulfilled")
+            return Promise.reject(result.reason);
+        }
       })
   }
 
   /* load obj files by worker */
-  async _loadModelsByWorker (path_callback_Array) {
-    if(!this._workerLoad) {
-      this._workerLoad = objLoader;
-      const temp = new THREE.ObjectLoader();
-      this._workerLoad.parse = temp.parse.bind(temp);
+  async _loadObjsByWorker (path_callback_Array) {
+    if(!this._load.obj_worker) {
+      const temp = new (await import('../scripts@loader/OBJLoader2Parallel.js')).OBJLoader2Parallel;
+      this._load.obj_worker = temp.load.bind(temp);
     }
     return Promise.allSettled(
-      path_callback_Array.map(([path, callback]) => this._workerLoad(path, () => callback(this._workerLoad.parse(result)))))
+      path_callback_Array.map(([path, callback]) => new Promise(resolve => this._load.obj_worker(path, result => resolve(callback(result))))))
        .then(results => {
         for (const result of results) {
           if (result.status !== "fulfilled")
             return Promise.reject(result.reason);
         }
-        this.event.dispatch("modelsAllLoaded");
       })
   }
   /* Unvarying functions */
@@ -392,7 +406,7 @@ game.pause = new class { // result in changing game.state.paused
   }
   /* logic when game paused */
   renderLoop_paused () {
-    game.ui.canvas2D.paint();
+    // game.ui.canvas2D.paint();
     requestAnimationFrame(() => this.#renderLoopPtr());
   }
   /* animation when going back to title screen */
