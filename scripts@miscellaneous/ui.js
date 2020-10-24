@@ -183,10 +183,24 @@ class UserInteraction {
   }
 
   #relativePos = { x: 0, y: 0 };
+  #frozen = false;
   updateRelativePos (x = this.absolutePos.x, y = this.absolutePos.y) {
+    if(this.#frozen)
+      return this.#relativePos;
     this.#relativePos.x = -1 + (x / this.WIDTH) * 2;
     this.#relativePos.y = 1 - (y / this.HEIGHT) * 2;
     return this.#relativePos;
+  }
+
+  freeze () {
+    const frozenAboslutePos = {...this.absolutePos}; // shallow
+    // Object.freeze(this.absolutePos);
+    this.unfreeze = function () {
+      this.absolutePos = frozenAboslutePos;
+      this.#frozen = false;
+      delete this.unfreeze;
+    }
+    this.#frozen = true;
   }
 
   testTouchDevice () {
@@ -326,12 +340,14 @@ class UserInteraction {
       })
     }
   }
+
   codeMap = {
     ArrowUp: ['KeyW', 'Numpad5'],
     ArrowDown: ['KeyS', 'Numpad2'],
     ArrowLeft: ['KeyA', 'Numpad1'],
     ArrowRight: ['KeyD', 'Numpad3']
   }
+
   key_downCallback = event => {
     if(this.codeHandler.hasOwnProperty(event.code))
       this.codeHandler[event.code]();
@@ -376,13 +392,17 @@ class Canvas2D {
   #context = null;
   #paths_obj = {};
 
-  fadeOutSpeed = .035
+  fadeOutSpeed = .04;
+  initialOpacity = .8;
 
   constructor (width, height) {
     this.#canvas = document.createElement('canvas');
 
     this.#canvas.width = width;
     this.#canvas.height = height;
+
+    this.defaultLineWidth = Math.min(width, height) / 100;
+    this.narrowDownSpeed = this.defaultLineWidth / this.initialOpacity * this.fadeOutSpeed;
 
     this.#context = this.#canvas.getContext('2d');
 
@@ -395,15 +415,15 @@ class Canvas2D {
   }
 
   alpha = function (alpha) { // can be changed, not in prototype
-    return `rgba(255, 255, 255, ${alpha})`
+    return `rgba(192, 192, 192, ${alpha})`
   }
 
   setStyle = function () {
     this.#context.shadowColor = this.alpha(.4);
     this.#context.shadowBlur = 6;
 
-    this.#context.lineWidth = 3;
-    this.#context.lineJoin = this.#context.lineCap = 'round';
+    this.#context.lineWidth = this.defaultLineWidth;
+    // this.#context.lineJoin = this.#context.lineCap = 'round';
   }
 
   get domElement () {
@@ -434,7 +454,8 @@ class Canvas2D {
   newPathSegment (path_obj) {
     let newSegment = {
       path: new Path2D(),
-      opacity: .6
+      opacity: this.initialOpacity,
+      lineWidth: this.defaultLineWidth
     }
     
     path_obj.path.addPath(newSegment.path)
@@ -480,7 +501,9 @@ class Canvas2D {
       for(let i = 0; i < path.last_i; i++) { // last segment will not be processed
         let segment = path.segments[i];
         segment.opacity -= this.fadeOutSpeed;
+        segment.lineWidth -= this.narrowDownSpeed;
         this.#context.strokeStyle = this.alpha(segment.opacity);
+        this.#context.lineWidth = segment.lineWidth;
         this.#context.stroke(segment.path);
 
         if(segment.opacity <= this.fadeOutSpeed){

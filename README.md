@@ -52,7 +52,6 @@ cloudres:
 - [ ] svg(Home)
 - [ ] https://tympanus.net/Development/ClickEffects/
 - [ ] 测试isCollided
-- [ ] 将removeListeners改为stop update.
 
 ---
 

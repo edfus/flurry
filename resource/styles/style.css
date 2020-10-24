@@ -482,11 +482,11 @@ main > canvas, #ui-canvas {
   }
   50% {
     stroke-dasharray: 89, 200;
-    stroke-dashoffset: -2.1875rem;
+    stroke-dashoffset: -35;
   }
   100% {
     stroke-dasharray: 89, 200;
-    stroke-dashoffset: -7.75rem;
+    stroke-dashoffset: -124;
   }
 }
 

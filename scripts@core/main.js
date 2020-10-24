@@ -56,6 +56,19 @@ class Game {
     this.state.inited = true;
   }
 
+  load () {
+    this.event.dispatch("load");
+    this.config.getContainer().append(this.renderer.domElement);
+    this.config.getUIContainer().append(this.ui.canvas2D.domElement);
+    this.ui.addListeners();
+    this.ui.freeze();
+    this.score.bind(this.config.getScoreContainer());
+    this.config.gameLoadedCallback();
+    this._log();
+    this.event.dispatch("loaded");
+    this.state.loaded = true; 
+  }
+
   /* debugger */
   _debug () {
     this.scene.add(new THREE.AxesHelper(500))
@@ -202,16 +215,6 @@ class Game {
       })
   }
   /* Unvarying functions */
-  load () {
-    this.event.dispatch("load");
-    this.config.getContainer().append(this.renderer.domElement);
-    this.config.getUIContainer().append(this.ui.canvas2D.domElement);
-    this.score.bind(this.config.getScoreContainer());
-    this.config.gameLoadedCallback();
-    this._log();
-    this.event.dispatch("loaded");
-    this.state.loaded = true;
-  }
   
   #updateCallbackQueue = []
   addUpdateFunc (func) {
@@ -384,13 +387,13 @@ game.pause = new class { // result in changing game.state.paused
   start () {
     game.event.dispatch("paused")
     game.score.pause()
-    game.ui.removeListeners();
+    game.ui.freeze();
     this.#renderLoopPtr = this.renderLoop_paused;
     this.renderLoop_paused();
     this.waitForUserContinue()
       .then(() => {
         game.score.start()
-        game.ui.addListeners();
+        game.ui.unfreeze();
         this.backTo(game.renderLoop_main)
       })
       .catch(err => {
@@ -406,7 +409,8 @@ game.pause = new class { // result in changing game.state.paused
   }
   /* logic when game paused */
   renderLoop_paused () {
-    // game.ui.canvas2D.paint();
+    game.ui.canvas2D.paint();
+    game.renderer.render(game.scene, game.camera);
     requestAnimationFrame(() => this.#renderLoopPtr());
   }
   /* animation when going back to title screen */
@@ -421,9 +425,9 @@ game.start = Object.assign(function () {
   this.event.dispatch("start");
   this.score.start();
   this.audio.scheduleFunc(() => this.audio.playNext(true))
+  this.ui.unfreeze();
   this.event.dispatch("started");
   this.state.started = true;
-  this.ui.addListeners();
 }, new class {
   constructor () {
     game.event.addListener('loaded', () => {
