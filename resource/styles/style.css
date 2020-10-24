@@ -244,6 +244,12 @@ main > canvas, #ui-canvas {
   fill: #c3e1ff
 }
 
+.ui-button.home {
+  stroke: var(--color);
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+
 
 /* Dialog */
 .dialog {
@@ -387,7 +393,6 @@ main > canvas, #ui-canvas {
   opacity: .1;
 }
 
-/* Simo - Credit: https://tympanus.net/Development/ClickEffects/ */
 .anim-effect--simo {
   position: relative;
 }

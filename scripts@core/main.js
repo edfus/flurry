@@ -326,7 +326,9 @@ class Game {
 }
 
 window.game = new Game();
-////////////////////////////////
+/*///////////////////////////////
+      控制流程-渲染内容↓
+///////////////////////////////*/
 game.state.paused = false; // explicit
 
 game.pause = new class { // result in changing game.state.paused
@@ -476,7 +478,11 @@ game.renderLoop_main = function () {
     game.pause.start();
   }
 }
-/* init -> inited, load -> loaded, start -> started. */
+/* init -> inited, (直接)
+   load -> loaded, (等待DOM加载后)
+   start -> started. (用户开始游戏后)
+   paused, restarted. (用户交互后)
+   */
 
 game.event.addListener("loaded", () => {
   game.pause.init();
