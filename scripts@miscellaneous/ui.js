@@ -2,8 +2,10 @@ class ButtonHandler {
   constructor(keyCode, domElement) {
     this.keyCode = keyCode;
     this._toListen = domElement;
-    this.onkeydown = this.onkeydownPrototype.bind(this, false);
-    this.onkeydownOnce = this.onkeydownPrototype.bind(this, true);
+    if(this.keyCode) {
+      this.onkeydown = this.onkeydownPrototype.bind(this, false);
+      this.onkeydownOnce = this.onkeydownPrototype.bind(this, true);
+    }
   }
 
   onclick = () => {
@@ -16,16 +18,19 @@ class ButtonHandler {
 
   listenOnce = () => {
     this._toListen.addEventListener("click", this.onclick, {passive: true, once: true});
-    document.addEventListener("keydown", this.onkeydownOnce, {passive: true});
+    if(this.keyCode)
+      document.addEventListener("keydown", this.onkeydownOnce, {passive: true});
   }
   listen = () => {
     this._toListen.addEventListener("click", this.onclick, {passive: true});
-    document.addEventListener("keydown", this.onkeydown, {passive: true});
+    if(this.keyCode)
+      document.addEventListener("keydown", this.onkeydown, {passive: true});
   }
   
   _callbackArr = [];
   addTriggerCallback = (callback, {once: once = false}) => {
     this._callbackArr.push({callback, once})
+    return this;
   }
   removeCallback = (callbackToRemove, {once: isOnceEvent = false}) => {
     for(let i = this._callbackArr.length - 1; i >= 0; i--) {
@@ -168,6 +173,30 @@ class UserInteraction {
         return Promise.allSettled(this.elements.map(e => ButtonHandler.fadeIn(e)))
       }
     }
+    this.refreshButton = {
+      domElement: document.querySelector(".ui-button.refresh")
+    }
+    new ButtonHandler(null, this.refreshButton.domElement)
+      .addTo(this.refreshButton)
+      .addTriggerCallback(() => {
+        if(!this.refreshButton.domElement.classList.contains("anim-effect--simo")) {
+          this.refreshButton.domElement.classList.add("anim-effect--simo");
+          const style = document.createElement("STYLE");
+          const height = this.refreshButton.domElement.clientHeight / 2;
+          style.innerText = `
+            .anim-effect--simo::before {
+              transform-origin: ${height}px ${height}px;
+              animation: simo--slider-opacity 3s 1 ease forwards, simo--slider-rotate 0.4s infinite linear;
+            }
+          `;
+          this.refreshButton.domElement.append(style);
+          this.refreshButton.domElement.addEventListener("animationend", () => {
+            location.hash = "#reload"
+            location.reload()
+          },{passive: true, once: true})
+        }
+      }, {once: false})
+      .listen();
   }
 
   get relativePos () {

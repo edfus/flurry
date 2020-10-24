@@ -237,11 +237,11 @@ main > canvas, #ui-canvas {
 .ui-buttons.right .ui-button:focus svg{
   fill: #999999;
 }
-.ui-button.refresh:hover {
-  background-color: #cccccc9f;
+.ui-button.refresh {
+  fill: var(--color)
 }
-.ui-button.refresh:focus {
-  background-color: #999999;
+.ui-button.refresh:hover, .ui-button.refresh:focus {
+  fill: #c3e1ff
 }
 
 
@@ -364,6 +364,7 @@ main > canvas, #ui-canvas {
   border: 0;
   background: none;
   pointer-events: all;
+  -webkit-tap-highlight-color: transparent;
 }
 
 @media screen and (max-height: 824px) {
@@ -384,6 +385,70 @@ main > canvas, #ui-canvas {
 #start-button--fog {
   animation: start-button--fog 4s infinite ease;
   opacity: .1;
+}
+
+/* Simo - Credit: https://tympanus.net/Development/ClickEffects/ */
+.anim-effect--simo {
+  position: relative;
+}
+
+.anim-effect--simo::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  /* .707107: 根号2除二 */
+  top: calc(50% - 65% * .707107 - .15rem * .292893);
+	left: calc(50% - 65% * .707107 - .15rem * .292893);
+	width: .3rem;
+	height: .3rem;
+	border-radius: 50%;
+	background: #eeeeeeaf;
+  opacity: 0;
+  /* In js↓ */
+	/* transform-origin: 100% 100%; */
+	/* animation: simo--slider-opacity 5s infinite ease forwards, simo--slider-rotate 0.4s infinite linear; */
+}
+
+.anim-effect--simo::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+	top: -15%;
+	left: -15%;
+	width: 130%;
+	height: 130%;
+	border-radius: 50%;
+	opacity: 0;
+	pointer-events: none;
+  border: .3rem solid #666666af;
+  box-sizing: border-box;
+	animation: simo--ring 3s 1 ease forwards;
+}
+
+@keyframes simo--ring {
+	0%, 100% {
+		transform: scale3d(0, 0, 1);
+		opacity: 0;
+	}
+	5%, 95% {
+		opacity: 1;
+		transform: scale3d(1, 1, 1);
+	}
+}
+
+@keyframes simo--slider-opacity {
+	0%, 5%, 95%, 100% {
+		opacity: 0;
+	}
+	10%, 90% {
+		opacity: 1;
+	}
+}
+
+@keyframes simo--slider-rotate {
+	100% {
+		transform: rotate(360deg);
+	}
 }
 
 .game-bar {
