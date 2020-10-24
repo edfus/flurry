@@ -6,26 +6,21 @@ class ButtonHandler {
       this.onkeydown = this.onkeydownPrototype.bind(this, false);
       this.onkeydownOnce = this.onkeydownPrototype.bind(this, true);
     }
+    this.onclick = this.onclickPrototype.bind(this, false);
+    this.onclickOnce = this.onclickPrototype.bind(this, true);
   }
 
-  onclick = () => {
-    this._callbackArr = this._callbackArr.filter(
-      ({callback, once}) => {
-        callback.call(this);
-        return !once;
-    });
-  };
-
   listenOnce = () => {
-    this._toListen.addEventListener("click", this.onclick, {passive: true, once: true});
+    this._toListen.addEventListener("click", this.onclickOnce, {passive: true, once: true});
     if(this.keyCode)
       document.addEventListener("keydown", this.onkeydownOnce, {passive: true});
   }
-  listen = () => {
-    this._toListen.addEventListener("click", this.onclick, {passive: true});
-    if(this.keyCode)
-      document.addEventListener("keydown", this.onkeydown, {passive: true});
-  }
+  // listen = () => {
+  //   this._toListen.addEventListener("click", this.onclick, {passive: true});
+  //   if(this.keyCode)
+  //     document.addEventListener("keydown", this.onkeydown, {passive: true});
+  // }
+  //NOTE: 暂时禁用
   
   _callbackArr = [];
   addTriggerCallback = (callback, {once: once = false}) => {
@@ -47,6 +42,18 @@ class ButtonHandler {
     })
     return obj;
   }
+
+  onclickPrototype (once) {
+    this._callbackArr = this._callbackArr.filter(
+      ({callback, once}) => {
+        callback.call(this);
+        return !once;
+    });
+    if(once) {
+      document.removeEventListener("keydown", this.onkeydownOnce);
+    }
+  }
+
   onkeydownPrototype (once, event) {
     if(event.code === this.keyCode) {
       this._callbackArr = this._callbackArr.filter(
@@ -54,33 +61,50 @@ class ButtonHandler {
           callback.call(this);
           return !once;
       });
-      if(once)
-        document.removeEventListener("keydown", this.onkeydown);
+      if(once) {
+        document.removeEventListener("keydown", this.onkeydownOnce);
+        document.removeEventListener("click", this.onclickOnce, {once: true});
+      }
     }
   }
-
-  static fadeOut(domElement) {
+  /**
+   * @param {HTMLElement} domElement 
+   * @param {Boolean | undefined} reflow should DOM reflow or not
+   * @return {Promise}
+   */
+  static fadeOut(domElement, reflow = true) {
     if(domElement.classList.contains("fade-out"))
       return Promise.reject("High frequency.");
     domElement.classList.add("fade-out");
     return new Promise(resolve => {
       domElement.addEventListener("animationend", () => {
-        domElement.style.display = 'none';
+        if(reflow)
+          domElement.style.display = 'none';
+        domElement.style.opacity = 0;
         domElement.classList.remove("fade-out");
         resolve()
       }, {passive: true, once: true})
     })
   }
-  static fadeIn(domElement) {
+  /**
+   * @param {HTMLElement} domElement 
+   * @param {number | undefined} seconds seconds to fade out
+   * @return {Promise}
+   */
+  static fadeIn(domElement, seconds) {
     if(domElement.classList.contains("fade-in"))
       return Promise.reject("High frequency.");
     domElement.style.opacity = 0;
     domElement.style.display = 'block';
-    domElement.classList.add("fade-in");
+    if(seconds)
+      domElement.style.animation = `fade-in ${seconds}s ease 1`
+    else domElement.classList.add("fade-in");
     return new Promise(resolve => {
       domElement.addEventListener("animationend", () => {
         domElement.style.opacity = 1;
-        domElement.classList.remove("fade-in");
+        if(seconds)
+          domElement.style.removeProperty('animation');
+        else domElement.classList.remove("fade-in");
         resolve();
       }, {passive: true, once: true})
     })
@@ -141,26 +165,45 @@ class UserInteraction {
   }
 
   initButtons () {
-    this.pauseButton = {
-      domElement: document.querySelector(".ui-button.pause"),
+    this.homeButton = {
+      domElement: document.querySelector(".ui-button.home"),
       hide () {
+        this.hidden = true;
         return ButtonHandler.fadeOut(this.domElement)
       },
       show () {
+        this.hidden = false;
         return ButtonHandler.fadeIn(this.domElement);
+      },
+      hidden: true
+    };
+    this.pauseButton = {
+      domElement: document.querySelector(".ui-button.pause"),
+      repel: this.homeButton,
+      hide () {
+        this.repel.show()
+        return ButtonHandler.fadeOut(this.domElement, false)
+      },
+      show () {
+        if(this.repel.hidden === false) {
+          this.repel.hide();
+        }
+        return ButtonHandler.fadeIn(this.domElement); 
       }
     };
+
     this.startButton = {
       broad: document.getElementById("start-button"),
       concise: document.getElementById("start-button--ring"),
-      hide () {
+      async hide () {
         return ButtonHandler.fadeOut(this.broad)
       },
-      show () {
-        return ButtonHandler.fadeIn(this.broad);
+      async show () {
+        return ButtonHandler.fadeIn(this.broad, .6);
       }
     }
 
+    new ButtonHandler("KeyH", this.homeButton.domElement).addTo(this.homeButton);
     new ButtonHandler("KeyP", this.pauseButton.domElement).addTo(this.pauseButton);
     new ButtonHandler("Space", this.startButton.concise).addTo(this.startButton);
 
@@ -188,7 +231,7 @@ class UserInteraction {
           },{passive: true, once: true})
         }
       }, {once: false})
-      .listen();
+      .listenOnce();
   }
 
   get relativePos () {

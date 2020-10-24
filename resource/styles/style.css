@@ -248,8 +248,10 @@ main > canvas, #ui-canvas {
   stroke: var(--color);
   stroke-width: 4;
   stroke-linejoin: round;
+  position: absolute;
+  margin-left: calc(0.625rem + 1.5px);
+  margin-bottom: 3.5px;
 }
-
 
 /* Dialog */
 .dialog {

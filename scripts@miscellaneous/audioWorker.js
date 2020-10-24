@@ -195,6 +195,11 @@ const themes = [
     name: "Intro",
     url: `${host}resource/audio/Loner%20Soundtrack/0_Intro.mp3`,
     role: 'intro'
+  },
+  {
+    name: "C418 - Moog City",
+    url: `${host}resource/audio/C418%20-%20Moog%20City.mp3`,
+    role: 'outro'
   }
 ]; // 无index属性
 themes.forEach(e => e.reserve = true);
@@ -561,6 +566,15 @@ class GlobalAudioPlayer {
         this.pause();
         this.#fadingOutTimer = 0;
       }, fadeTime * 1000);
+  }
+
+  cancelFadeOut () {
+    if(this.#fadingOutTimer) {
+      clearTimeout(this.#fadingOutTimer);
+      this.#fadingOutTimer = 0;
+      this.nodes.songsGain.gain.cancelScheduledValues(this.context.currentTime);
+      this.volume = this.#volume
+    }
   }
 
   /**

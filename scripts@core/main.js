@@ -62,6 +62,7 @@ class Game {
     this.config.getUIContainer().append(this.ui.canvas2D.domElement);
     this.ui.addListeners();
     this.ui.freeze();
+    this.event.addListener("started", () => this.ui.unfreeze())
     this.score.bind(this.config.getScoreContainer());
     this.config.gameLoadedCallback();
     this._log();
@@ -354,23 +355,34 @@ game.pause = new class { // result in changing game.state.paused
   }
 
   initButtons () {
+    game.ui.startButton.addTriggerCallback(async () => {
+      game.state.paused = false;
+      game.ui.startButton.hide();
+      await game.ui.pauseButton.show();
+      game.audio.fadeIn(4);
+      game.ui.pauseButton.listenOnce();
+    }, {once: false})
+
     game.ui.pauseButton.addTriggerCallback(async () => {
       game.state.paused = true;
       game.ui.pauseButton.triggered = true;
       await game.ui.pauseButton.hide();
       game.audio.fadeOut(10); 
       await game.ui.startButton.show();
+      game.ui.startButton.listenOnce();
     }, {once: false});
 
-    game.ui.startButton.addTriggerCallback(async () => {
+    game.ui.pauseButton.listenOnce();
+
+    game.ui.homeButton.addTriggerCallback(async () => {
       game.state.paused = false;
-      await game.ui.startButton.hide();
-      game.audio.fadeIn(4);
-      await game.ui.pauseButton.show();
+      game.ui.homeButton.hide();
+      game.ui.startButton.hide();
+      game.audio.cancelFadeOut();
+      game.audio.playSong("outro");
     }, {once: false})
 
-    game.ui.pauseButton.listen();
-    game.ui.startButton.listen();
+    game.ui.homeButton.listenOnce();
   }
 
   async waitForUserContinue () {
@@ -383,6 +395,7 @@ game.pause = new class { // result in changing game.state.paused
       else if(game.ui.pauseButton.triggered) {
         game.ui.pauseButton.triggered = false; 
         game.ui.startButton.addTriggerCallback(() => resolve(game.event.dispatch("restart")), {once: true});
+        game.ui.homeButton.addTriggerCallback(() => reject(game.event.dispatch("end")), {once: true});
       }
     })
   }
@@ -402,7 +415,7 @@ game.pause = new class { // result in changing game.state.paused
         this.backTo(this.renderLoop_backToTitle).then(() => {
           game.state.started = false;
           game.renderLoop_idle();
-          game.audio.playSong("intro")
+          // game.audio.playSong("intro")
         })
       })
   }
@@ -426,14 +439,13 @@ game.pause = new class { // result in changing game.state.paused
 game.start = Object.assign(function () {
   this.event.dispatch("start");
   this.score.start();
-  this.audio.scheduleFunc(() => this.audio.playNext(true))
-  this.ui.unfreeze();
+  this.audio.playNext(true)
   this.event.dispatch("started");
   this.state.started = true;
 }, new class {
   constructor () {
     game.event.addListener('loaded', () => {
-      game.ui.startButton.listen()
+      game.ui.startButton.listenOnce()
       game.ui.startButton.addTriggerCallback(() => {
         game.state.start = true;
         game.ui.startButton.hide();
