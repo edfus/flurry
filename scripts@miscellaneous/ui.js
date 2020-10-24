@@ -46,7 +46,7 @@ class ButtonHandler {
   onclickPrototype (once) {
     this._callbackArr = this._callbackArr.filter(
       ({callback, once}) => {
-        callback.call(this);
+        callback();
         return !once;
     });
     if(once) {
@@ -58,7 +58,7 @@ class ButtonHandler {
     if(event.code === this.keyCode) {
       this._callbackArr = this._callbackArr.filter(
         ({callback, once}) => {
-          callback.call(this);
+          callback();
           return !once;
       });
       if(once) {
@@ -180,9 +180,9 @@ class UserInteraction {
     this.pauseButton = {
       domElement: document.querySelector(".ui-button.pause"),
       repel: this.homeButton,
-      hide () {
+      hide (reflow = false) {
         this.repel.show()
-        return ButtonHandler.fadeOut(this.domElement, false)
+        return ButtonHandler.fadeOut(this.domElement, reflow)
       },
       show () {
         if(this.repel.hidden === false) {

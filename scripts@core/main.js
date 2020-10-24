@@ -1,8 +1,9 @@
 /* constructors */
-import UserInteraction from '../scripts@miscellaneous/ui.js';
-import Score from '../scripts@miscellaneous/score.js';
-import EventLoop from '../scripts@miscellaneous/eventLoop.js';
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@v0.121.0/build/three.module.min.js';
+import UserInteraction from '../scripts@miscellaneous/UI.js';
+import Score from '../scripts@miscellaneous/Score.js';
+import EventLoop from '../scripts@miscellaneous/EventLoop.js';
+import RenderLoop from '../scripts@miscellaneous/RenderLoop.js';
 /* objects */
 import audioPlayer from '../scripts@miscellaneous/audioWorker.js';
 
@@ -13,8 +14,8 @@ class Game {
     this.colors = this.config.colors;
     this.ui = new UserInteraction();
     this.audio = audioPlayer;
-    this.event = new EventLoop();
     this.state = {};
+    this.event = new EventLoop(this.state);
     this._load = {};
     this.init();
   }
@@ -40,6 +41,8 @@ class Game {
     this.camera.rotation.set(3.0, -0.0, 3.1)
     // this.camera.lookAt(this.objects.plane.position);
 
+    this.constructRenderLoops();
+
     this.ui.addResizeCallback(() => {
       this.renderer.setSize(this.ui.WIDTH, this.ui.HEIGHT);
       this.camera.aspect = this.ui.WIDTH / this.ui.HEIGHT; 
@@ -62,12 +65,108 @@ class Game {
     this.config.getUIContainer().append(this.ui.canvas2D.domElement);
     this.ui.addListeners();
     this.ui.freeze();
-    this.event.addListener("started", () => this.ui.unfreeze())
+    this.event.addListener("started", () => this.ui.unfreeze(), {once: true})
     this.score.bind(this.config.getScoreContainer());
     this.config.gameLoadedCallback();
     this._log();
     this.event.dispatch("loaded");
     this.state.loaded = true; 
+  }
+
+  start () {
+    this.event.dispatch("start");
+    this.score.start();
+    this.audio.playNext(true);
+    setTimeout(() => {
+      this.event.dispatch("started");
+      this.state.started = true;
+    }, 100) //TODO: start animation
+  }
+
+  constructRenderLoops () {
+    RenderLoop._game = this;
+    this.renderLoop = RenderLoop;
+    RenderLoop.add(
+      new RenderLoop("idle")
+                    .execute(() => {
+                        this.renderer.render(this.scene, this.camera);
+                        this.ui.canvas2D.paint();
+                      })
+                    .untilGameStateBecomes("start")
+                      .then(() => {
+                          console.info('RenderLoop: game starts');
+                          RenderLoop.goto("startAnimation")
+                        }),
+      new RenderLoop("startAnimation")
+                    .executeOnce(() => {
+                        this.ui.startButton.hide();
+                        this.ui.titleMenuButtons.hide().then(() => {
+                          this.ui.pauseButton.show();
+                        });
+                      })
+                    .execute(() => {
+                        this.renderer.render(this.scene, this.camera);
+                      })
+                    .untilGameStateBecomes("started")
+                      .then(() => {
+                          console.info('RenderLoop: game started');
+                          RenderLoop.goto("main")
+                        }),
+      new RenderLoop("main")
+                    .execute(() => {
+                        //TODO: if(crashed)
+                        this.update();
+                        this.renderer.render(this.scene, this.camera);
+                      })
+                    .breakWhen(() => this.paused)
+                      .then(() => {
+                          console.info('RenderLoop: game paused');
+                          RenderLoop.goto("paused")
+                        }),
+      new RenderLoop("paused") //TODO
+                    .executeOnce(() => {
+                        this.score.pause();
+                        this.ui.freeze();
+                      })
+                    .execute(() => {
+                        this.ui.canvas2D.paint();
+                        this.renderer.render(this.scene, this.camera);
+                      })
+                    .untilPromise(() => this.pause.listenUserResume())
+                      .then(() => {
+                        this.score.start();
+                        this.ui.unfreeze();
+                        RenderLoop.goto("main")
+                      })
+                      .else(() => {
+                        this.ui.homeButton.hide(true);
+                        this.ui.startButton.hide();
+                        this.audio.cancelFadeOut();
+                        this.audio.playSong("outro")
+                        RenderLoop.goto("backToTitle")
+                      }),
+      new RenderLoop("backToTitle")
+                    .execute(() => {
+                        this.renderer.render(this.scene, this.camera);
+                      })
+                    .executeOnce(() => {
+                        setTimeout(() => this.event.dispatch("ended"), 300); //TODO: backToTitle animation
+                      })
+                    .untilGameStateBecomes("ended")
+                      .then(() => {
+                          this.ui.titleMenuButtons.show().then(() => {
+                            this.ui.startButton.show();
+                          });
+                          this.audio.scheduleSong("intro", true)
+                          RenderLoop.goto("idle")
+                        })
+    )
+    .goto(this.renderLoop.idle);
+    /* init -> inited, (直接)
+     * load -> loaded, (等待DOM加载后)
+     * start -> started. (用户开始游戏后)
+     * paused, restarted. (用户交互后)
+     */
   }
 
   /* debugger */
@@ -330,42 +429,57 @@ window.game = new Game();
 /*///////////////////////////////
       控制流程-渲染内容↓
 ///////////////////////////////*/
-game.state.paused = false; // explicit
+game.paused = false; // explicit
 
-game.pause = new class { // result in changing game.state.paused
+game.pause = new class { // result in changing game.paused
   init () { 
     // all methods related to changing game state
     document.addEventListener("visibilitychange", () => {
       if(document.visibilityState === 'visible') {
-        // game.audio.fadeIn(4);
-        game.state.paused = false; 
+        game.audio.fadeIn(4);
+        game.paused = false;
+
+        this.resolve && this.resolve(game.event.dispatch("restart"))
       } else {
-        game.state.paused = true;
-        // game.audio.fadeOut(20);
+        game.paused = true;
+        game.event.dispatch("paused")
+        game.audio.fadeOut(20);
       }
     }, {passive: true});
 
     Dialog.addEventListener('dialogShow', () => {
-      game.state.paused = true;
+      game.paused = true;
+      game.event.dispatch("paused")
     })
-    if(Dialog.isBusy)
-      game.state.paused = true;
+    if(Dialog.isBusy) {
+      game.paused = true;
+      game.event.dispatch("paused")
+    }
+    Dialog.addEventListener('dialogHide', () => {
+      game.paused = false;
 
-    game.event.addListener("started", this.initButtons, {once: true})
+      this.resolve && this.resolve(game.event.dispatch("restart"))
+    })
+
+    game.event.addListener("started", () => this.initButtons(), {once: true})
   }
 
   initButtons () {
     game.ui.startButton.addTriggerCallback(async () => {
-      game.state.paused = false;
+      game.paused = false;
       game.ui.startButton.hide();
+
       await game.ui.pauseButton.show();
       game.audio.fadeIn(4);
       game.ui.pauseButton.listenOnce();
+
+      this.resolve(game.event.dispatch("restart"))
     }, {once: false})
 
     game.ui.pauseButton.addTriggerCallback(async () => {
-      game.state.paused = true;
-      game.ui.pauseButton.triggered = true;
+      game.paused = true;
+      game.event.dispatch("paused")
+
       await game.ui.pauseButton.hide();
       game.audio.fadeOut(10); 
       await game.ui.startButton.show();
@@ -375,130 +489,28 @@ game.pause = new class { // result in changing game.state.paused
     game.ui.pauseButton.listenOnce();
 
     game.ui.homeButton.addTriggerCallback(async () => {
-      game.state.paused = false;
-      game.ui.homeButton.hide();
-      game.ui.startButton.hide();
-      game.audio.cancelFadeOut();
-      game.audio.playSong("outro").then(() => this.playSong(this.songs.intro, true));
+      game.paused = false;
+
+      this.reject(game.event.dispatch("end"))
     }, {once: false})
 
     game.ui.homeButton.listenOnce();
   }
 
-  async waitForUserContinue () {
+  async listenUserResume () {
     return new Promise((resolve, reject) => {
-      if(Dialog.isBusy)
-        Dialog.addOnceListener('dialogHide', () => {
-          game.state.paused = false;
-          resolve(game.event.dispatch("restart"))
-        })
-      else if(game.ui.pauseButton.triggered) {
-        game.ui.pauseButton.triggered = false; 
-        game.ui.startButton.addTriggerCallback(() => resolve(game.event.dispatch("restart")), {once: true});
-        game.ui.homeButton.addTriggerCallback(() => reject(game.event.dispatch("end")), {once: true});
-      }
+      this.resolve = resolve;
+      this.reject = reject;
     })
   }
-  start () {
-    game.event.dispatch("paused")
-    game.score.pause()
-    game.ui.freeze();
-    this.#renderLoopPtr = this.renderLoop_paused;
-    this.renderLoop_paused();
-    this.waitForUserContinue()
-      .then(() => {
-        game.score.start()
-        game.ui.unfreeze();
-        this.backTo(game.renderLoop_main)
-      })
-      .catch(err => {
-        this.backTo(this.renderLoop_backToTitle).then(() => {
-          game.state.started = false;
-          game.renderLoop_idle();
-          // game.audio.playSong("intro")
-        })
-      })
-  }
-  backTo (newRenderLoop) {
-    this.#renderLoopPtr = newRenderLoop;
-  }
-  /* logic when game paused */
-  renderLoop_paused () {
-    game.ui.canvas2D.paint();
-    game.renderer.render(game.scene, game.camera);
-    requestAnimationFrame(() => this.#renderLoopPtr());
-  }
-  /* animation when going back to title screen */
-  renderLoop_backToTitle () {
-    requestAnimationFrame(() => this.#renderLoopPtr());
-  }
-
-  #renderLoopPtr = this.renderLoop_paused;
 }
-
-game.start = Object.assign(function () {
-  this.event.dispatch("start");
-  this.score.start();
-  this.audio.playNext(true)
-  this.event.dispatch("started");
-  this.state.started = true;
-}, new class {
-  constructor () {
-    game.event.addListener('loaded', () => {
-      game.ui.startButton.listenOnce()
-      game.ui.startButton.addTriggerCallback(() => {
-        game.state.start = true;
-        game.ui.startButton.hide();
-        game.ui.titleMenuButtons.hide().then(() => {
-          game.ui.pauseButton.show();
-        }); 
-      }, {once: true})
-    }, {once: true});
-  }
-  renderLoop_idle = () => {
-    if(!game.state.start){
-      // game.update();
-      game.renderer.render(game.scene, game.camera);
-      requestAnimationFrame(() => game.start.renderLoop_idle());
-      game.ui.canvas2D.paint();
-    } else {
-      console.info('RenderLoop: game starts');
-      game.start();
-      game.start.renderLoop_startAnimation();
-    }
-  }
-  renderLoop_startAnimation = () => {
-    if(!game.state.started){
-      // game.update();
-      game.renderer.render(game.scene, game.camera);
-      requestAnimationFrame(() => game.start.renderLoop_startAnimation());
-    } else {
-      console.info('RenderLoop: game started');
-      game.renderLoop_main();
-    }
-  }
-})
-
-game.renderLoop_main = function () {
-  if(!game.state.paused){
-    //TODO: if(crashed)
-    game.update();
-    game.renderer.render(game.scene, game.camera);
-    requestAnimationFrame(() => game.renderLoop_main());
-  } else {
-    console.info('RenderLoop: game paused');
-    game.pause.start();
-  }
-}
-/* init -> inited, (直接)
-   load -> loaded, (等待DOM加载后)
-   start -> started. (用户开始游戏后)
-   paused, restarted. (用户交互后)
-   */
 
 game.event.addListener("loaded", () => {
   game.pause.init();
-  game.start.renderLoop_idle();
+  game.renderLoop.start();
+
+  game.ui.startButton.addTriggerCallback(() => game.start(), {once: true});
+  game.ui.startButton.listenOnce();
 }, {once: true});
 
 window.addEventListener("load", () => {

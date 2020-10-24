@@ -1,10 +1,15 @@
 export default class {
+  #stateTochange = null
+  constructor (state) {
+    this.#stateTochange = state
+  }
   #callbackQueue = {};
   dispatch (eventName) {
+    this.#stateTochange.now = eventName;
     if(this.#callbackQueue[eventName])
       this.#callbackQueue[eventName] = this.#callbackQueue[eventName].filter(
         ({callback, once}) => {
-          callback.call(this);
+          callback();
           return !once; // true (not once) to reserve
       });
   }
