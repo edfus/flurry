@@ -1,5 +1,5 @@
 const noCache = true;
-const version = "8.6.6--dev";
+const version = "8.2.6--dev";
 const cacheName = "cache-" + version;
 const cacheResources = [
   `/`, 
