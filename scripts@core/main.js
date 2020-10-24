@@ -379,7 +379,7 @@ game.pause = new class { // result in changing game.state.paused
       game.ui.homeButton.hide();
       game.ui.startButton.hide();
       game.audio.cancelFadeOut();
-      game.audio.playSong("outro");
+      game.audio.playSong("outro").then(() => this.playSong(this.songs.intro, true));
     }, {once: false})
 
     game.ui.homeButton.listenOnce();

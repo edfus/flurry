@@ -197,8 +197,8 @@ const themes = [
     role: 'intro'
   },
   {
-    name: "C418 - Moog City",
-    url: `${host}resource/audio/C418%20-%20Moog%20City.mp3`,
+    name: "C418 - Moog City 2",
+    url: `${host}resource/audio/C418%20-%20Moog%20City%202.mp3`,
     role: 'outro'
   }
 ]; // 无index属性
