@@ -179,17 +179,9 @@ class UserInteraction {
     new ButtonHandler(null, this.refreshButton.domElement)
       .addTo(this.refreshButton)
       .addTriggerCallback(() => {
-        if(!this.refreshButton.domElement.classList.contains("anim-effect--simo")) {
-          this.refreshButton.domElement.classList.add("anim-effect--simo");
-          const style = document.createElement("STYLE");
-          const height = this.refreshButton.domElement.clientHeight / 2;
-          style.innerText = `
-            .anim-effect--simo::before {
-              transform-origin: ${height}px ${height}px;
-              animation: simo--slider-opacity 3s 1 ease forwards, simo--slider-rotate 0.4s infinite linear;
-            }
-          `;
-          this.refreshButton.domElement.append(style);
+        const svg = this.refreshButton.domElement.querySelector(".simo")
+        if(!svg.classList.contains("show")) {
+          svg.classList.add("show");
           this.refreshButton.domElement.addEventListener("animationend", () => {
             location.hash = "#reload"
             location.reload()

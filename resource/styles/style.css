@@ -393,41 +393,48 @@ main > canvas, #ui-canvas {
   opacity: .1;
 }
 
-.anim-effect--simo {
+.ui-button.refresh {
   position: relative;
 }
 
-.anim-effect--simo::before {
-  content: '';
+.simo, .simo--ring, .simo--slider {
   position: absolute;
-  z-index: 2;
-  /* .707107: 根号2除二 */
-  top: calc(50% - 65% * .707107 - .15rem * .292893);
-	left: calc(50% - 65% * .707107 - .15rem * .292893);
-	width: .3rem;
-	height: .3rem;
-	border-radius: 50%;
-	background: #eeeeeeaf;
-  opacity: 0;
-  /* In js↓ */
-	/* transform-origin: 100% 100%; */
-	/* animation: simo--slider-opacity 5s infinite ease forwards, simo--slider-rotate 0.4s infinite linear; */
 }
 
-.anim-effect--simo::after {
-  content: '';
-  position: absolute;
+.simo {
+  top: -20%;
+	left: -20%;
+	width: 140%;
+  height: 140%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.simo--ring {
   z-index: 1;
-	top: -15%;
-	left: -15%;
-	width: 130%;
-	height: 130%;
-	border-radius: 50%;
-	opacity: 0;
-	pointer-events: none;
-  border: .3rem solid #666666af;
-  box-sizing: border-box;
-	animation: simo--ring 3s 1 ease forwards;
+  stroke: #666666af;
+  stroke-width: .5rem;
+}
+
+.simo--slider {
+  z-index: 2;
+  top: 0;
+  left: 0;
+  stroke: #eeeeeeaf;
+  stroke-width: .5rem;
+  transform-origin: center center;
+  stroke-dasharray: 15, 300;
+  stroke-dashoffset: 0;
+  stroke-linecap: round;
+  opacity: 0;
+}
+
+.simo.show {
+  animation: simo--ring 3s 1 ease forwards;
+}
+
+.simo.show > .simo--slider {
+  animation: simo--slider-opacity 3s 1 ease forwards, simo--slider-rotate .8s infinite linear; 
 }
 
 @keyframes simo--ring {
