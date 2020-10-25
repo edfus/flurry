@@ -1,9 +1,9 @@
 /* constructors */
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@v0.121.0/build/three.module.min.js';
 import UserInteraction from '../scripts@miscellaneous/UI.js';
-import Event from '../scripts@miscellaneous/EventLoop.js';
+import Event from '../scripts@miscellaneous/EventDispatcher.js';
 import RenderLoop from '../scripts@miscellaneous/RenderLoop.js';
-import AudioPlayer from '../scripts@miscellaneous/audioWorker.js';
+import AudioPlayer from '../scripts@miscellaneous/AudioWorker.js';
 import Score from '../scripts@miscellaneous/Score.js';
 
 /* class Game */
