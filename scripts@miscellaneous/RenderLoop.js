@@ -1,7 +1,7 @@
 /**
  * 原则：game.state控制renderLoop，renderLoop中禁止修改game.state
  */
-export default class {
+class RenderLoop {
   #reverseNextThen = false;
   #promisifyNextThen = false;
   constructor(name) {
@@ -130,3 +130,5 @@ export default class {
     return this;
   }
 }
+
+export default RenderLoop

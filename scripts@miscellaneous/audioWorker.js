@@ -609,4 +609,4 @@ class GlobalAudioPlayer {
     this.#volume = value;
   }
 }
-export default new GlobalAudioPlayer();
+export default GlobalAudioPlayer;

@@ -1,11 +1,10 @@
 /* constructors */
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@v0.121.0/build/three.module.min.js';
 import UserInteraction from '../scripts@miscellaneous/UI.js';
-import Score from '../scripts@miscellaneous/Score.js';
-import EventLoop from '../scripts@miscellaneous/EventLoop.js';
+import Event from '../scripts@miscellaneous/EventLoop.js';
 import RenderLoop from '../scripts@miscellaneous/RenderLoop.js';
-/* objects */
-import audioPlayer from '../scripts@miscellaneous/audioWorker.js';
+import AudioPlayer from '../scripts@miscellaneous/audioWorker.js';
+import Score from '../scripts@miscellaneous/Score.js';
 
 /* class Game */
 class Game {
@@ -13,9 +12,10 @@ class Game {
     this.config = window.config;
     this.colors = this.config.colors;
     this.ui = new UserInteraction();
-    this.audio = audioPlayer;
+    this.audio = new AudioPlayer();
     this.state = {};
-    this.event = new EventLoop(this.state);
+    this.event = new Event();
+    this.event.addListener("newEvent", eventName => this.state.now = eventName);
     this._load = {};
     this.init();
   }

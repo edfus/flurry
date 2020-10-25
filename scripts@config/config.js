@@ -200,9 +200,7 @@
         this.#callbackQueue[name] = this.#callbackQueue[name].filter(
           ({callback, once}) => {
             callback.call(this);
-            if(once)
-              return false;
-            else return true
+            return !once;
         });
     }
 
