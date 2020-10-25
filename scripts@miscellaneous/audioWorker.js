@@ -474,7 +474,17 @@ class GlobalAudioPlayer {
    * @param {string | Object} param 要播放歌曲的role或包含其信息的对象
    * @param {boolean} loop 是否循环
    */
-  async scheduleSong (param, loop) {
+  async scheduleSong (param, loop, delay = 0) {
+    if(!this.songPlaying.source) {
+      return this.playSong(param, loop);
+    }
+    if(this._fadingOut.fading) {
+      await this._fadingOut.promise;
+      await this.stop(delay);
+      this.volume = this.#volume;
+      return this.playSong(param, loop);
+    }
+
     const pr_onended = this.songPlaying.source.onended;
     return new Promise(resolve => {
       this.songPlaying.source.loop = false;
@@ -486,6 +496,16 @@ class GlobalAudioPlayer {
   }
 
   async scheduleFunc (func) {
+    if(!this.songPlaying.source) {
+      return func();
+    }
+    if(this._fadingOut.fading) {
+      await this._fadingOut.promise;
+      this.stop();
+      this.volume = this.#volume;
+      return func();
+    }
+
     const pr_onended = this.songPlaying.source.onended;
     return new Promise(resolve => {
       this.songPlaying.source.loop = false;
@@ -535,18 +555,26 @@ class GlobalAudioPlayer {
     }
   }
 
-  stop (delay = 0) {
+  async stop (delay = 0) {
     if(this.songPlaying.source) {
       const handleFunc = this.songPlaying.source.beforeForceStopped
       if(handleFunc && typeof handleFunc === "function")
         handleFunc();
       this.songPlaying.source.stop(delay);
       this.songPlaying.empty();
+      return new Promise(resolve => {
+        setTimeout(() => resolve(), delay * 1000);
+      })
     }
     // An AudioBufferSourceNode can only be played once;
   }
   #volume = 1;
-  #fadingOutTimer = 0;
+  _fadingOut = {
+    fading: false,
+    promise: null,
+    timer: 0,
+    clear: () => void 0
+  }
   _debug () {
     new ThrottleLog(500).autoLog(() => [this.volume, this.context.currentTime]);
   }
@@ -561,17 +589,28 @@ class GlobalAudioPlayer {
     this.nodes.songsGain.gain.linearRampToValueAtTime(this.volume, currTime);
     this.nodes.songsGain.gain.linearRampToValueAtTime(0, currTime + fadeTime);
 
-    this.#fadingOutTimer = 
-      setTimeout(() => {
-        this.pause();
-        this.#fadingOutTimer = 0;
-      }, fadeTime * 1000);
+    this._fadingOut.fading = true;
+    return this._fadingOut.promise = new Promise((resolve, reject) => {
+      this._fadingOut.timer = 
+        setTimeout(() => {
+          this.pause();
+          this._fadingOut.timer = 0;
+          this._fadingOut.clear = () => void 0;
+          this._fadingOut.fading = false;
+          resolve();
+        }, fadeTime * 1000);
+      this._fadingOut.clear = () => {
+        if(this._fadingOut.fading) {
+          clearTimeout(this._fadingOut.timer);
+          reject();
+        }
+      }
+    });
   }
 
   cancelFadeOut () {
-    if(this.#fadingOutTimer) {
-      clearTimeout(this.#fadingOutTimer);
-      this.#fadingOutTimer = 0;
+    if(this._fadingOut.fading) {
+      this._fadingOut.clear()
       this.nodes.songsGain.gain.cancelScheduledValues(this.context.currentTime);
       this.volume = this.#volume
     }
@@ -584,9 +623,8 @@ class GlobalAudioPlayer {
   fadeIn (fadeTime = 10) {
     const currTime = this.context.currentTime;
 
-    if(this.#fadingOutTimer) {
-      clearTimeout(this.#fadingOutTimer);
-      this.#fadingOutTimer = 0;
+    if(this._fadingOut.fading) {
+      this._fadingOut.clear();
       fadeTime = (this.#volume - this.volume) * fadeTime;
       this.nodes.songsGain.gain.cancelScheduledValues(currTime);
       this.nodes.songsGain.gain.linearRampToValueAtTime(this.volume, currTime + .001);
