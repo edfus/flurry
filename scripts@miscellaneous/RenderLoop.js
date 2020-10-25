@@ -102,6 +102,7 @@ class RenderLoop {
   }
   static inControl = null;
   static _game = null;
+  static _then = [];
   static start () {
     if(this.inControl._if.every(f => f())){
       this.inControl._then.forEach(f => f());
@@ -127,6 +128,15 @@ class RenderLoop {
                                   .catch(() =>  newRenderLoop._promiseElse.forEach(f => f()))
       // newRenderLoop._promiseFunc = null;
     }
+    return this;
+  }
+  static wheneverGame (stateName) {
+    this._game.event.addListener(stateName, () => this._then.forEach(f => f()));
+    return this;
+  }
+
+  static then (func) {
+    this._then.push(func)
     return this;
   }
 }

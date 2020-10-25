@@ -77,10 +77,18 @@ class Game {
     this.event.dispatch("start");
     this.score.start();
     this.audio.playNext(true);
-    setTimeout(() => {
-      this.event.dispatch("started");
-      this.state.started = true;
-    }, 100) //TODO: start animation
+  }
+
+  pause () {
+    this.event.dispatch("pause");
+  }
+
+  resume () {
+    this.event.dispatch("resume");
+  }
+
+  end () {
+    this.event.dispatch("end");
   }
 
   constructRenderLoops () {
@@ -107,6 +115,9 @@ class Game {
                     .execute(() => {
                         this.renderer.render(this.scene, this.camera);
                       })
+                    .executeOnce(() => {
+                        setTimeout(() => this.event.dispatch("started"), 100) 
+                      }) //TODO: start animation
                     .untilGameStateBecomes("started")
                       .then(() => {
                           console.info('RenderLoop: game started');
@@ -117,13 +128,8 @@ class Game {
                         //TODO: if(crashed)
                         this.update();
                         this.renderer.render(this.scene, this.camera);
-                      })
-                    .breakWhen(() => this.paused)
-                      .then(() => {
-                          console.info('RenderLoop: game paused');
-                          RenderLoop.goto("paused")
-                        }),
-      new RenderLoop("paused") //TODO
+                      }),
+      new RenderLoop("paused")
                     .executeOnce(() => {
                         this.score.pause();
                         this.ui.freeze();
@@ -132,7 +138,7 @@ class Game {
                         this.ui.canvas2D.paint();
                         this.renderer.render(this.scene, this.camera);
                       })
-                    .untilPromise(() => this.pause.listenUserResume())
+                    .untilPromise(() => this.whenPaused.listenUserResume())
                       .then(() => {
                         this.score.start();
                         this.ui.unfreeze();
@@ -161,7 +167,13 @@ class Game {
                           RenderLoop.goto("idle")
                         })
     )
-    .goto(this.renderLoop.idle);
+    .goto(this.renderLoop.idle)
+    .wheneverGame("pause")
+      .then(() => {
+        console.info('RenderLoop: game paused');
+        RenderLoop.goto("paused")
+      });
+
     /* init -> inited, (直接)
      * load -> loaded, (等待DOM加载后)
      * start -> started. (用户开始游戏后)
@@ -186,8 +198,8 @@ class Game {
           throttleLog.log(`position: (${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)})`, 
           `\nrotation: (${this.camera.rotation._x.toFixed(1)}, ${this.camera.rotation._y.toFixed(1)}, ${this.camera.rotation._z.toFixed(1)})`)
         )
-        this.event.addListener("paused", () => this._controls.enabled = false, {once: false})
-        this.event.addListener("restart", () => this._controls.enabled = true, {once: false})
+        this.event.addListener("pause", () => this._controls.enabled = false, {once: false})
+        this.event.addListener("resume", () => this._controls.enabled = true, {once: false})
       }, {once: true})
     })
   }
@@ -426,75 +438,53 @@ class Game {
 }
 
 window.game = new Game();
-/*///////////////////////////////
-      控制流程-渲染内容↓
-///////////////////////////////*/
-game.paused = false; // explicit
 
-game.pause = new class { // result in changing game.paused
-  init () { 
-    // all methods related to changing game state
+////////////////////////////////
+
+game.whenPaused = new class {
+  resolve = reject = () => void 0;
+  init () { // all methods related to changing game state
     document.addEventListener("visibilitychange", () => {
       if(document.visibilityState === 'visible') {
         game.audio.fadeIn(4);
-        game.paused = false;
-
-        this.resolve && this.resolve(game.event.dispatch("restart"))
+        this.resolve(game.resume())
       } else {
-        game.paused = true;
-        game.event.dispatch("paused")
         game.audio.fadeOut(20);
+        game.pause();
       }
     }, {passive: true});
 
-    Dialog.addEventListener('dialogShow', () => {
-      game.paused = true;
-      game.event.dispatch("paused")
-    })
     if(Dialog.isBusy) {
-      game.paused = true;
-      game.event.dispatch("paused")
+      game.pause()
     }
-    Dialog.addEventListener('dialogHide', () => {
-      game.paused = false;
-
-      this.resolve && this.resolve(game.event.dispatch("restart"))
-    })
+    Dialog.addEventListener('dialogShow', () => game.pause())
+    Dialog.addEventListener('dialogHide', () => this.resolve(game.resume()))
 
     game.event.addListener("started", () => this.initButtons(), {once: true})
   }
 
   initButtons () {
     game.ui.startButton.addTriggerCallback(async () => {
-      game.paused = false;
+      this.resolve(game.resume())
+      
       game.ui.startButton.hide();
-
       await game.ui.pauseButton.show();
       game.audio.fadeIn(4);
       game.ui.pauseButton.listenOnce();
-
-      this.resolve(game.event.dispatch("restart"))
     }, {once: false})
 
     game.ui.pauseButton.addTriggerCallback(async () => {
-      game.paused = true;
-      game.event.dispatch("paused")
+        game.pause();
 
-      await game.ui.pauseButton.hide();
-      game.audio.fadeOut(10); 
-      await game.ui.startButton.show();
-      game.ui.startButton.listenOnce();
-    }, {once: false});
+        await game.ui.pauseButton.hide();
+        game.audio.fadeOut(10); 
+        await game.ui.startButton.show();
+        game.ui.startButton.listenOnce();
+      }, {once: false})
+    .listenOnce();
 
-    game.ui.pauseButton.listenOnce();
-
-    game.ui.homeButton.addTriggerCallback(async () => {
-      game.paused = false;
-
-      this.reject(game.event.dispatch("end"))
-    }, {once: false})
-
-    game.ui.homeButton.listenOnce();
+    game.ui.homeButton.addTriggerCallback(async () => this.reject(game.end()), {once: true})
+                      .listenOnce();
   }
 
   async listenUserResume () {
@@ -506,11 +496,11 @@ game.pause = new class { // result in changing game.paused
 }
 
 game.event.addListener("loaded", () => {
-  game.pause.init();
+  game.whenPaused.init();
   game.renderLoop.start();
 
-  game.ui.startButton.addTriggerCallback(() => game.start(), {once: true});
-  game.ui.startButton.listenOnce();
+  game.ui.startButton.addTriggerCallback(() => game.start(), {once: true})
+                     .listenOnce();
 }, {once: true});
 
 window.addEventListener("load", () => {
