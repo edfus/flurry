@@ -8,6 +8,13 @@ import Score from '../scripts@miscellaneous/Score.js';
 
 /* class Game */
 class Game {
+  /** 原则：
+   * game的start、resume、pause、end等函数中不涉及ui的显隐控制，音乐播放等
+   * game通过eventDispatcher控制renderLoop。
+   * 能只dispatch event的状态函数，就不要设置this.state.inited = true。
+   * renderLoop中不修改game.state
+   * renderLoop中不涉及THREE.js的模型创建、光影更改、碰撞判定等，只调用game的相关函数。
+   */
   constructor() {
     this.config = window.config;
     this.colors = this.config.colors;
@@ -30,6 +37,7 @@ class Game {
 
     this.objects = this._createObjects();
     this.scene.add.apply(this.scene, Object.values(this.objects));
+
     this.models = {};
     this._loadObjs(this.path_callback_Array).then(() => {
       this.event.dispatch("modelsAllLoaded");
@@ -39,7 +47,6 @@ class Game {
     this.camera.position.set(-6.9, -63.2, -340.5);
     // this.camera.lookAt(100, 100, 100);
     this.camera.rotation.set(3.0, -0.0, 3.1)
-    // this.camera.lookAt(this.objects.plane.position);
 
     this.constructRenderLoops();
 
@@ -52,6 +59,7 @@ class Game {
     this.ui.addUnloadCallback(() => this.score.store());
 
     this.ui.initButtons();
+    this.ui.addListeners();
 
     this.config.testMode ? this._debug() : void 0;
   
@@ -63,9 +71,6 @@ class Game {
     this.event.dispatch("load");
     this.config.getContainer().append(this.renderer.domElement);
     this.config.getUIContainer().append(this.ui.canvas2D.domElement);
-    this.ui.addListeners();
-    this.ui.freeze();
-    this.event.addListener("started", () => this.ui.unfreeze(), {once: true})
     this.score.bind(this.config.getScoreContainer());
     this.config.gameLoadedCallback();
     this._log();
@@ -75,20 +80,37 @@ class Game {
 
   start () {
     this.event.dispatch("start");
-    this.score.start();
-    this.audio.playNext(true);
+    setTimeout(() => {
+      this.event.dispatch("started");
+      this.state.started = true;
+      this.time = {
+        lastStamp: Date.now(), // milliseconds
+        total: 0,
+        paused: 0
+      }
+    }, 100) //TODO: start animation
   }
 
   pause () {
     this.event.dispatch("pause");
+    if(this.state.started) {
+      this.time.total += Date.now() - this.time.lastStamp;
+      this.time.lastStamp = Date.now();
+    }
   }
 
   resume () {
     this.event.dispatch("resume");
+    if(this.state.started) {
+      this.time.paused += Date.now() - this.time.lastStamp;
+      this.time.lastStamp = Date.now();
+    }
   }
 
   end () {
     this.event.dispatch("end");
+    this.state.started = false;
+    setTimeout(() => this.event.dispatch("ended"), 300); //TODO: backToTitle animation
   }
 
   constructRenderLoops () {
@@ -96,6 +118,7 @@ class Game {
     this.renderLoop = RenderLoop;
     RenderLoop.add(
       new RenderLoop("idle")
+                    .executeOnce(() => this.ui.freeze())
                     .execute(() => {
                         this.renderer.render(this.scene, this.camera);
                         this.ui.canvas2D.paint();
@@ -111,16 +134,15 @@ class Game {
                         this.ui.titleMenuButtons.hide().then(() => {
                           this.ui.pauseButton.show();
                         });
+                        this.audio.playNext(true);
                       })
                     .execute(() => {
                         this.renderer.render(this.scene, this.camera);
                       })
-                    .executeOnce(() => {
-                        setTimeout(() => this.event.dispatch("started"), 100) 
-                      }) //TODO: start animation
                     .untilGameStateBecomes("started")
                       .then(() => {
-                          console.info('RenderLoop: game started');
+                          this.score.start();
+                          this.ui.unfreeze()
                           RenderLoop.goto("main")
                         }),
       new RenderLoop("main")
@@ -147,23 +169,22 @@ class Game {
                       .else(() => {
                         this.ui.homeButton.hide(true);
                         this.ui.startButton.hide();
-                        this.audio.cancelFadeOut();
-                        this.audio.playSong("outro")
+                        if(this.time.total > 180000) {
+                          this.audio.cancelFadeOut();
+                          this.audio.playSong("outro")
+                        }
                         RenderLoop.goto("backToTitle")
                       }),
       new RenderLoop("backToTitle")
                     .execute(() => {
                         this.renderer.render(this.scene, this.camera);
                       })
-                    .executeOnce(() => {
-                        setTimeout(() => this.event.dispatch("ended"), 300); //TODO: backToTitle animation
-                      })
                     .untilGameStateBecomes("ended")
                       .then(() => {
                           this.ui.titleMenuButtons.show().then(() => {
                             this.ui.startButton.show();
                           });
-                          this.audio.scheduleSong("intro", true)
+                          this.audio.scheduleSong("intro", true, 6)
                           RenderLoop.goto("idle")
                         })
     )
@@ -442,7 +463,8 @@ window.game = new Game();
 ////////////////////////////////
 
 game.whenPaused = new class {
-  resolve = reject = () => void 0;
+  resolve = () => void 0;
+  reject = () => void 0;
   init () { // all methods related to changing game state
     document.addEventListener("visibilitychange", () => {
       if(document.visibilityState === 'visible') {
