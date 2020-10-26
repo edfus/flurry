@@ -484,7 +484,7 @@ game.whenPaused = new class {
     document.addEventListener("visibilitychange", () => {
       if(document.visibilityState === 'visible') {
         game.audio.fadeIn(4);
-        this.resolve(game.resume())
+        this.resolve(game.resume()) //FIX
       } else {
         game.audio.fadeOut(20);
         game.pause();

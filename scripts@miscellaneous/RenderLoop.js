@@ -126,7 +126,7 @@ class RenderLoop {
     if(newRenderLoop._promiseFunc) {
       newRenderLoop._promiseFunc().then(() =>  newRenderLoop._promiseThen.forEach(f => f()))
                                   .catch(() =>  newRenderLoop._promiseElse.forEach(f => f()))
-      newRenderLoop._promiseFunc = null;
+      // newRenderLoop._promiseFunc = null;
     }
     return this;
   }

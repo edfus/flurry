@@ -98,7 +98,10 @@ class ButtonHandler {
 }
 const eventWeakMap = new WeakMap();
 class UserInteraction {
-  absolutePos = {}; // init in constructor func
+  absolutePos = {
+    x: 0,
+    y: 0
+  };
   
   isTouchDevice = false;
 
@@ -111,12 +114,12 @@ class UserInteraction {
     this.isTouchDevice = this.testTouchDevice();
 
     this.event = new Event();
-    eventWeakMap.set(this.event, event => this.event.dispatch(event.type, event))
+    eventWeakMap.set(this.event, event => this.event.dispatch(event.type, event));
 
     this.#windowHeight = window.innerHeight;
     this.#windowWidth = window.innerWidth;
 
-    this.event.addListener("resize", () => () => {
+    this.event.addListener("resize", () => {
       this.#windowHeight = window.innerHeight;
       this.#windowWidth = window.innerWidth;
     })  
@@ -125,37 +128,47 @@ class UserInteraction {
       this.canvas2D = new Canvas2D(this.WIDTH, this.HEIGHT);
       this.event.addListener("resize", () => this.canvas2D.setSize(this.WIDTH, this.HEIGHT))
     }
+    this.bindCallbacks();
     this.listenResize();
     this.listenUnload();
+  }
 
-    let x = this.WIDTH / 2, y = this.HEIGHT / 2;
-    // this.addResizeCallback((prHEIGHT, prWIDTH) => {}) 
-    Object.defineProperties(this.absolutePos, {
-      x: {
-        get() {
-          return x;
-        },
-        set: value => {
-          if(value < 0)
-            x = 0;
-          else if(value >= this.WIDTH)
-            x = this.WIDTH;
-          else x = value;
-        }
-      },
-      y: {
-        get() {
-          return y;
-        },
-        set: value => {
-          if(value < 0)
-            y = 0;
-          else if(value >= this.HEIGHT)
-            y = this.HEIGHT;
-          else y = value;
-        }
+  _debugEvents () {
+    const excludedEvents = ["mousemove"]
+    const excludedFuncs = []
+
+    const tempPtr = this.event;
+    // tempPtr.addListener("newEvent", log)
+
+    let _log1 = new ThrottleLog(300),
+        _log2 = new ThrottleLog(300),
+        _log3 = new ThrottleLog(300);
+        _log1 = _log1.log.bind(_log1);
+        _log2 = _log2.log.bind(_log2);
+        _log3 = _log3.log.bind(_log3);
+    const log = console.log.bind(console);
+     
+    const funcTrap = {
+      apply (target, thisArg, argsList) {
+        if(!excludedEvents.includes(argsList[0]))
+          log(argsList)
+        return Reflect.apply(target, tempPtr, argsList)
       }
-    })
+    }
+
+    this.event = new Proxy(tempPtr, {
+      get (target, prop) {
+        const targetProp = Reflect.get(target, prop);
+        if(typeof targetProp === "function")
+          if(excludedFuncs.includes(targetProp.name))
+            return targetProp.bind(target)
+          else return new Proxy(targetProp, funcTrap)
+          // return log(targetProp.name) || new Proxy(targetProp, funcTrap)
+        else return targetProp;
+      }
+    });
+
+    eventWeakMap.set(this.event, event => this.event.dispatch(event.type, event))
   }
 
   initButtons () {
@@ -383,6 +396,17 @@ class UserInteraction {
                 this[code] = func;
             });
     },
+    position: new Proxy(this.absolutePos, {
+      set: (target, prop, value) => {
+        value < 0 
+        ? value = 0
+        : prop === "x"
+          ? value > this.WIDTH && (value = this.WIDTH) // x
+          : value > this.HEIGHT && (value = this.HEIGHT) // y
+
+        return Reflect.set(target, prop, value);
+      }
+    }),
     invoke: (ui => {
       return function (func) {
         func.call(this, ui);
@@ -395,24 +419,16 @@ class UserInteraction {
       })
     },
     ArrowUp () { 
-      this.invoke(ui => {
-        ui.absolutePos.y -= this.distance
-      })
+      this.position.y -= this.distance
     },
     ArrowDown () { 
-      this.invoke(ui => {
-        ui.absolutePos.y += this.distance
-      })
+      this.position.y += this.distance
     },
     ArrowLeft () { 
-      this.invoke(ui => {
-        ui.absolutePos.x -= this.distance
-      })
+      this.position.x -= this.distance
     },
     ArrowRight () { 
-      this.invoke(ui => {
-        ui.absolutePos.x += this.distance
-      })
+      this.position.x += this.distance
     }
   }
   /* callbacks END */
