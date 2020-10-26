@@ -1,5 +1,6 @@
 /* constructors */
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@v0.121.0/build/three.module.min.js';
+//TODO: replace * for tree shaking concern
 import UserInteraction from '../scripts@miscellaneous/UI.js';
 import Event from '../scripts@miscellaneous/EventDispatcher.js';
 import RenderLoop from '../scripts@miscellaneous/RenderLoop.js';
@@ -22,7 +23,7 @@ class Game {
     this.audio = new AudioPlayer();
     this.state = {};
     this.event = new Event();
-    this.event.addListener("newEvent", eventName => this.state.now = eventName);
+    this.event.addListener("newEvent", eventName => this.state.now = eventName); // RenderLoop relies on this
     this._load = {};
     this.init();
   }
@@ -50,13 +51,13 @@ class Game {
 
     this.constructRenderLoops();
 
-    this.ui.addResizeCallback(() => {
+    this.ui.event.addListener("resize", () => {
       this.renderer.setSize(this.ui.WIDTH, this.ui.HEIGHT);
       this.camera.aspect = this.ui.WIDTH / this.ui.HEIGHT; 
       this.camera.updateProjectionMatrix(); 
     })
     this.score = new Score(this.config.speed_score);
-    this.ui.addUnloadCallback(() => this.score.store());
+    this.ui.event.addListener("beforeunload", () => this.score.store());
 
     this.ui.initButtons();
     this.ui.addListeners();
@@ -125,8 +126,8 @@ class Game {
                       })
                     .untilGameStateBecomes("start")
                       .then(() => {
-                          console.info('RenderLoop: game starts');
                           RenderLoop.goto("startAnimation")
+                          console.info('RenderLoop: game starts');
                         }),
       new RenderLoop("startAnimation")
                     .executeOnce(() => {
@@ -161,10 +162,11 @@ class Game {
                         this.renderer.render(this.scene, this.camera);
                       })
                     .untilPromise(() => this.whenPaused.listenUserResume())
-                      .then(() => {
+                      .then(() => { //FIX 
                         this.score.start();
                         this.ui.unfreeze();
-                        RenderLoop.goto("main")
+                        RenderLoop.goto("main");
+                        console.info('RenderLoop: game resumed');
                       })
                       .else(() => {
                         this.ui.homeButton.hide(true);
@@ -186,13 +188,16 @@ class Game {
                           });
                           this.audio.scheduleSong("intro", true, 6)
                           RenderLoop.goto("idle")
+                          console.info('RenderLoop: game ended');
                         })
     )
-    .goto(this.renderLoop.idle)
+    .goto("idle")
     .wheneverGame("pause")
       .then(() => {
-        console.info('RenderLoop: game paused');
-        RenderLoop.goto("paused")
+        if(this.state.started) { //FIX: when in startAnim 
+          console.info('RenderLoop: game paused');
+          RenderLoop.goto("paused")
+        }
       });
 
     /* init -> inited, (直接)
@@ -361,7 +366,7 @@ class Game {
   addCameraHelper (camera) {
     const helper = new THREE.CameraHelper(camera);
     this.scene.add(helper);
-    this.ui.addResizeCallback(() => helper.update());
+    this.ui.event.addListener("resize", () => helper.update())
   }
 
   addBoxHelper (obj3D) {
@@ -463,8 +468,18 @@ window.game = new Game();
 ////////////////////////////////
 
 game.whenPaused = new class {
-  resolve = () => void 0;
-  reject = () => void 0;
+  resolve () {
+    if(this._resolve)
+      this._resolve();
+    this._reject = null;
+    this._resolve = null;
+  }
+  reject () {
+    if(this._reject)
+      this._reject();
+    this._reject = null;
+    this._resolve = null;
+  }
   init () { // all methods related to changing game state
     document.addEventListener("visibilitychange", () => {
       if(document.visibilityState === 'visible') {
@@ -499,7 +514,7 @@ game.whenPaused = new class {
         game.pause();
 
         await game.ui.pauseButton.hide();
-        game.audio.fadeOut(10); 
+        game.audio.fadeOut(10)
         await game.ui.startButton.show();
         game.ui.startButton.listenOnce();
       }, {once: false})
@@ -511,8 +526,8 @@ game.whenPaused = new class {
 
   async listenUserResume () {
     return new Promise((resolve, reject) => {
-      this.resolve = resolve;
-      this.reject = reject;
+      this._resolve = resolve;
+      this._reject = reject;
     })
   }
 }

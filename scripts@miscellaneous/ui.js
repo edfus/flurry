@@ -1,3 +1,4 @@
+import { Event , CallbackHandler } from './EventDispatcher.js'
 class ButtonHandler {
   constructor(keyCode, domElement) {
     this.keyCode = keyCode;
@@ -8,32 +9,25 @@ class ButtonHandler {
     }
     this.onclick = this.onclickPrototype.bind(this, false);
     this.onclickOnce = this.onclickPrototype.bind(this, true);
+
+    this._listener = new CallbackHandler();
   }
 
   listenOnce = () => {
     this._toListen.addEventListener("click", this.onclickOnce, {passive: true, once: true});
     if(this.keyCode)
       document.addEventListener("keydown", this.onkeydownOnce, {passive: true});
-  }
-  // listen = () => {
-  //   this._toListen.addEventListener("click", this.onclick, {passive: true});
-  //   if(this.keyCode)
-  //     document.addEventListener("keydown", this.onkeydown, {passive: true});
-  // }
-  //NOTE: 暂时禁用
-  
-  _callbackArr = [];
-  addTriggerCallback = (callback, {once: once = false}) => {
-    this._callbackArr.push({callback, once})
     return this;
   }
-  removeCallback = (callbackToRemove, {once: isOnceEvent = false}) => {
-    for(let i = this._callbackArr.length - 1; i >= 0; i--) {
-      if(callbackToRemove === this._callbackArr[i].callback
-        && isOnceEvent === this._callbackArr[i].once) {
-          this._callbackArr.splice(i, 1);
-      }
-    }
+
+  addTriggerCallback = (callback, options) => {
+    this._listener.addCallback(callback, options)
+    return this;
+  }
+
+  removeCallback = (callback, options) => {
+    this._listener.removeCallback(callback, options);
+    return this;
   }
 
   addTo(obj) {
@@ -44,11 +38,7 @@ class ButtonHandler {
   }
 
   onclickPrototype (once) {
-    this._callbackArr = this._callbackArr.filter(
-      ({callback, once}) => {
-        callback();
-        return !once;
-    });
+    this._listener.trigger();
     if(once) {
       document.removeEventListener("keydown", this.onkeydownOnce);
     }
@@ -56,11 +46,7 @@ class ButtonHandler {
 
   onkeydownPrototype (once, event) {
     if(event.code === this.keyCode) {
-      this._callbackArr = this._callbackArr.filter(
-        ({callback, once}) => {
-          callback();
-          return !once;
-      });
+      this._listener.trigger();
       if(once) {
         document.removeEventListener("keydown", this.onkeydownOnce);
         document.removeEventListener("click", this.onclickOnce, {once: true});
@@ -110,7 +96,7 @@ class ButtonHandler {
     })
   }
 }
-
+const eventWeakMap = new WeakMap();
 class UserInteraction {
   absolutePos = {}; // init in constructor func
   
@@ -124,12 +110,20 @@ class UserInteraction {
   constructor() {
     this.isTouchDevice = this.testTouchDevice();
 
+    this.event = new Event();
+    eventWeakMap.set(this.event, event => this.event.dispatch(event.type, event))
+
     this.#windowHeight = window.innerHeight;
     this.#windowWidth = window.innerWidth;
 
+    this.event.addListener("resize", () => () => {
+      this.#windowHeight = window.innerHeight;
+      this.#windowWidth = window.innerWidth;
+    })  
+
     if(this.isTouchDevice || config.testMode) {
       this.canvas2D = new Canvas2D(this.WIDTH, this.HEIGHT);
-      this.addResizeCallback(() => this.canvas2D.setSize(this.WIDTH, this.HEIGHT))
+      this.event.addListener("resize", () => this.canvas2D.setSize(this.WIDTH, this.HEIGHT))
     }
     this.listenResize();
     this.listenUnload();
@@ -281,10 +275,10 @@ class UserInteraction {
       this._addListeners("mouse", ['move', 'leave'])
       if(!this.codeHandler.hasOwnProperty("mapAdded")){
         this.codeHandler.addMapping(this.codeMap);
-        this.codeHandler.updateDistance();
-        this.addResizeCallback(() => this.codeHandler.updateDistance())
+        this.codeHandler.updateDistanceConstant();
+        this.event.addListener("resize", () => this.codeHandler.updateDistanceConstant())
       }
-      this._addListeners("key", ['down', 'up'])
+      this._addListeners("key", ['down'])
     }
   }
 
@@ -293,7 +287,7 @@ class UserInteraction {
       this._removeListeners("touch", ['start', 'move', 'end'])
     else {
       this._removeListeners("mouse", ['move', 'leave'])
-      this._removeListeners("key", ['down', 'up'])
+      this._removeListeners("key", ['down'])
     }
   }
 
@@ -305,62 +299,79 @@ class UserInteraction {
   */
 
   _addListeners (identifier, namesArray) {
+    const callback = eventWeakMap.get(this.event);
     namesArray.forEach(name => 
-      document.addEventListener(identifier.concat(name), this[`${identifier}_${name}Callback`], {passive: true})
+      document.addEventListener(identifier.concat(name), callback, {passive: true})
     )
   }
 
   _removeListeners (identifier, namesArray) {
+    const callback = eventWeakMap.get(this.event);
     namesArray.forEach(name => 
-      document.removeEventListener(identifier.concat(name), this[`${identifier}_${name}Callback`])
+      document.removeEventListener(identifier.concat(name), callback)
     )
   }
-
+  
   /* callbacks */
-  touch_startCallback = event => {
-    for (const touch of event.touches) {
-      this.canvas2D.createLine(touch.pageX, touch.pageY, touch.identifier)
-    }
+  bindCallbacks () {
+    this.event.addListener("touchstart", event => {
+      for (const touch of event.touches) {
+        this.canvas2D.createLine(touch.pageX, touch.pageY, touch.identifier)
+      }
+    })
+
+    this.event.addListener("touchmove", event => {
+      let x = 0, y = 0;
+      for (const {pageX, pageY} of event.touches) {
+        x += pageX;
+        y += pageY;
+      }
+      this.absolutePos.x = x / event.touches.length;
+      this.absolutePos.y = y / event.touches.length;
+  
+      for (const touch of event.changedTouches) {
+        this.canvas2D.pushPoint(touch.pageX, touch.pageY, touch.identifier)
+      } // Is touchmove event fire once in per frame? macrotasks queue necessary?
+    })
+
+    this.event.addListener("touchend", event => {
+      for (const touch of event.changedTouches) {
+        this.canvas2D.endLine(touch.identifier)
+      }
+    })
+    // touchcancel is fired whenever it takes ~200 ms to return from a touchmove event handler.
+
+    let mouseMove_triggered = false;
+    this.event.addListener("mousemove", event => {
+      this.absolutePos.x = event.clientX;
+      this.absolutePos.y = event.clientY;
+  
+      if(mouseMove_triggered)
+        this.canvas2D.pushPoint(event.clientX, event.clientY, 0); // 0 - identifier of this touch
+      else {
+        this.canvas2D.createLine(event.clientX, event.clientY, 0);
+        mouseMove_triggered = true;
+      }
+    })
+
+    this.event.addListener("mouseleave", () => {
+      mouseMove_triggered = false;
+      this.canvas2D.endLine(0);
+    })
+
+    this.event.addListener("keydown", event => {
+      if(this.codeHandler.hasOwnProperty(event.code))
+        this.codeHandler[event.code]();
+    })
   }
 
-  touch_moveCallback  = event => {
-    let x = 0, y = 0;
-    for (const {pageX, pageY} of event.touches) {
-      x += pageX;
-      y += pageY;
-    }
-    this.absolutePos.x = x / event.touches.length;
-    this.absolutePos.y = y / event.touches.length;
-
-    for (const touch of event.changedTouches) {
-      this.canvas2D.pushPoint(touch.pageX, touch.pageY, touch.identifier)
-    } // Is touchmove event fire once in per frame? macrotasks queue necessary?
+  codeMap = {
+    ArrowUp: ['KeyW', 'Numpad5'],
+    ArrowDown: ['KeyS', 'Numpad2'],
+    ArrowLeft: ['KeyA', 'Numpad1'],
+    ArrowRight: ['KeyD', 'Numpad3']
   }
 
-  touch_endCallback = event => {
-    for (const touch of event.changedTouches) {
-      this.canvas2D.endLine(touch.identifier)
-    }
-  }
-  // touchcancel is fired whenever it takes ~200 ms to return from a touchmove event handler.
-
-  #mouseMove_triggered = false;
-  mouse_moveCallback = event => {
-    this.absolutePos.x = event.clientX;
-    this.absolutePos.y = event.clientY;
-
-    if(this.#mouseMove_triggered)
-      this.canvas2D.pushPoint(event.clientX, event.clientY, 0); // 0 - identifier of this touch
-    else {
-      this.canvas2D.createLine(event.clientX, event.clientY, 0);
-      this.#mouseMove_triggered = true;
-    }
-  }
-
-  mouse_leaveCallback = () => {
-    this.#mouseMove_triggered = false;
-    this.canvas2D.endLine(0);
-  }
   codeHandler = {
     addMapping (codeMap) {
       Object.entries(codeMap)
@@ -378,7 +389,7 @@ class UserInteraction {
       }
     })(this),
     distance: 100,
-    updateDistance () {
+    updateDistanceConstant () {
       this.invoke(ui => {
         this.distance = Math.min(ui.HEIGHT, ui.WIDTH) / 12
       })
@@ -404,49 +415,19 @@ class UserInteraction {
       })
     }
   }
-
-  codeMap = {
-    ArrowUp: ['KeyW', 'Numpad5'],
-    ArrowDown: ['KeyS', 'Numpad2'],
-    ArrowLeft: ['KeyA', 'Numpad1'],
-    ArrowRight: ['KeyD', 'Numpad3']
-  }
-
-  key_downCallback = event => {
-    if(this.codeHandler.hasOwnProperty(event.code))
-      this.codeHandler[event.code]();
-  }
-
-  key_upCallback = event => {
-     ;
-  }
   /* callbacks END */
 
-  #resizeCallbackQueue = [
-    () => { // default
-      this.#windowHeight = window.innerHeight;
-      this.#windowWidth = window.innerWidth;
-    }
-  ];
-
-  addResizeCallback (func) {
-    this.#resizeCallbackQueue.push(func);
-  }
-
   listenResize () {
-    window.addEventListener('resize', () => this.#resizeCallbackQueue.forEach(e => e()), {passive: true});
+    const callback = eventWeakMap.get(this.event)
+    window.addEventListener('resize', callback, {passive: true});
   }
   //this.#resizeCallback(); // [Violation] 'load' handler took 156ms
   // return this.#resizeCallback_debounce();  // [Violation] 'setTimeout' handler took 51ms
   // in 2020 debounce on resize event still worthy?
 
-  #unloadCallbackQueue = [];
-  addUnloadCallback (func) {
-    this.#unloadCallbackQueue.push(func);
-  }
-
   listenUnload () {
-    window.addEventListener('beforeunload', () => this.#unloadCallbackQueue.forEach(e => e()), {passive: true, once: true})
+    const callback = eventWeakMap.get(this.event)
+    window.addEventListener('beforeunload', callback, {passive: true, once: true})
   }
 }
 

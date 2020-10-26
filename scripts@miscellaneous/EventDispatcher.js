@@ -91,4 +91,20 @@ class Event {
   }
 }
 
+class CallbackHandler extends Event {
+  constructor() {
+    super();
+  }
+  addCallback (callback, options) {
+    super.addListener("placeholderEvent", callback, options);
+  }
+  removeCallback (callback, options) {
+    super.addListener("placeholderEvent", callback, options);
+  }
+  trigger () {
+    super.dispatch("placeholderEvent")
+  }
+}
+
 export default Event;
+export { Event , CallbackHandler };
