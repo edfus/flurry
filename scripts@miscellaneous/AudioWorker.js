@@ -282,6 +282,8 @@ class GlobalAudioPlayer {
         this.source = null;
       }
     })
+
+    this._fade = new this.constructor._Fade();
   }
 
   autoPlay () {
@@ -469,53 +471,7 @@ class GlobalAudioPlayer {
       return this._play(nextSong.name, nextSong.audioBuffer, this.nodes.songsGain, false);
   }
 
-  /**
-   * 
-   * @param {string | Object} param 要播放歌曲的role或包含其信息的对象
-   * @param {boolean} loop 是否循环
-   */
-  async scheduleSong (param, loop, delay = 0) {
-    if(!this.songPlaying.source) {
-      return this.playSong(param, loop);
-    }
-    if(this._fadingOut.fading) {
-      await this._fadingOut.promise;
-      await this.stop(delay);
-      this.volume = this.#volume;
-      return this.playSong(param, loop);
-    }
-
-    const pr_onended = this.songPlaying.source.onended;
-    return new Promise(resolve => {
-      this.songPlaying.source.loop = false;
-      this.songPlaying.source.onended = () => {
-        pr_onended(true);
-        resolve(this.playSong(param, loop))
-      }
-    })
-  }
-
-  async scheduleFunc (func) {
-    if(!this.songPlaying.source) {
-      return func();
-    }
-    if(this._fadingOut.fading) {
-      await this._fadingOut.promise;
-      this.stop();
-      this.volume = this.#volume;
-      return func();
-    }
-
-    const pr_onended = this.songPlaying.source.onended;
-    return new Promise(resolve => {
-      this.songPlaying.source.loop = false;
-      this.songPlaying.source.onended = () => {
-        pr_onended(true);
-        resolve(func())
-      }
-    })
-  }
-  /**
+    /**
    * 加载对应音乐到内存
    * @param {number | string | Object | Array<Object>} param 播放的index（会求余），或包含信息的对象（对象数组），或要播放的role名
    */
@@ -540,6 +496,57 @@ class GlobalAudioPlayer {
         break;
       default: console.warn("GlobalAudioPlayer: in function request: wrong parameter. ", param);
     }
+  }
+
+  /**
+   * 
+   * @param {string | Object} param 要播放歌曲的role或包含其信息的对象
+   * @param {boolean} loop 是否循环
+   */
+  async scheduleSong (param, loop, delay = 0) {
+    if(!this.songPlaying.source) {
+      return this.playSong(param, loop);
+    }
+    if(this._fade.isFading) {
+      await new Promise(resolve => {
+        this._fade.finally(resolve);
+      })
+      await this.stop(delay);
+      this.volume = this._user_preferred_volume;
+      return this.playSong(param, loop);
+    }
+
+    const pr_onended = this.songPlaying.source.onended;
+    return new Promise(resolve => {
+      this.songPlaying.source.loop = false;
+      this.songPlaying.source.onended = () => {
+        pr_onended(true);
+        resolve(this.playSong(param, loop))
+      }
+    })
+  }
+
+  async scheduleFunc (func) {
+    if(!this.songPlaying.source) {
+      return func();
+    }
+    if(this._fade.isFading) {
+      await new Promise(resolve => {
+        this._fade.finally(resolve);
+      })
+      await this.stop(delay);
+      this.volume = this._user_preferred_volume;
+      return func();
+    }
+
+    const pr_onended = this.songPlaying.source.onended;
+    return new Promise(resolve => {
+      this.songPlaying.source.loop = false;
+      this.songPlaying.source.onended = () => {
+        pr_onended(true);
+        resolve(func())
+      }
+    })
   }
 
   pause () {
@@ -568,51 +575,96 @@ class GlobalAudioPlayer {
     }
     // An AudioBufferSourceNode can only be played once;
   }
-  #volume = 1;
-  _fadingOut = {
-    fading: false,
-    promise: null,
-    timer: 0,
-    clear: () => void 0
+  _user_preferred_volume = 1;
+  static _Fade = class {
+    isFading = false;
+    timer = 0;
+    newPromise (setTimeoutFunc, delay) {
+      this.isFading = true;
+      return new Promise((resolve, reject) => {
+        this._resolve = resolve;
+        this._reject = reject;
+        this.timer = 
+          setTimeout(() => {
+            if(typeof setTimeoutFunc === "function")
+              setTimeoutFunc();
+            this.resolve();
+          }, delay);
+      }).then(() => typeof this._then === "function" && this._then())
+        .catch(reason => typeof this._catch === "function" ? this._catch(reason) : (() => {throw reason})())
+        .finally(() => {
+          typeof this._finally === "function" && this._finally();
+          this._finally = this._then = this._catch = null;
+        })
+    }
+    resolve (info) {
+      if(this.isFading) {
+        this.timer = 0;
+        this.isFading = false;
+        this._resolve(info);
+        this._resolve = null;
+        this._reject = null;
+      }
+    }
+    reject (reason) {
+      if(this.isFading) {
+        clearTimeout(this.timer);
+        this.isFading = false;
+        this.timer = 0;
+        this._reject(reason);
+        this._resolve = null;
+        this._reject = null;
+      }
+    }
+    then (func) {
+      if(!this._then)
+        this._then = async () => func();
+      else this._then.then(func);
+      return this;
+    }
+    catch (func) {
+      this._catch = func;
+      return this;
+    }
+    finally (func) {
+      this._finally = func;
+      return this;
+    }
+    _dumpFunc = reason => void 0;
+    dump (reason) {
+      this.catch(this._dumpFunc)
+          .reject(reason)
+    }
   }
+
   _debug () {
+    this._fade._dumpFunc = reason => console.log("AudioPlayer: " + reason)
     new ThrottleLog(500).autoLog(() => [this.volume, this.context.currentTime]);
   }
   /**
    * pause the audio, not stop.
    * @param {number} fadeTime seconds to fade
    */
-  fadeOut (fadeTime = 10) {
+  async fadeOut (fadeTime = 10) {
     const currTime = this.context.currentTime;
     fadeTime = this.volume * fadeTime;
-    this.nodes.songsGain.gain.cancelScheduledValues(currTime);
+
+    if(this._fade.isFading) {
+      this._fade.dump('Dumped. fadeOut now');
+      this.nodes.songsGain.gain.cancelScheduledValues(currTime);
+    }
+
     this.nodes.songsGain.gain.linearRampToValueAtTime(this.volume, currTime);
     this.nodes.songsGain.gain.linearRampToValueAtTime(0, currTime + fadeTime);
 
-    this._fadingOut.fading = true;
-    return this._fadingOut.promise = new Promise((resolve, reject) => {
-      this._fadingOut.timer = 
-        setTimeout(() => {
-          this.pause();
-          this._fadingOut.timer = 0;
-          this._fadingOut.clear = () => void 0;
-          this._fadingOut.fading = false;
-          resolve();
-        }, fadeTime * 1000);
-      this._fadingOut.clear = () => {
-        if(this._fadingOut.fading) {
-          clearTimeout(this._fadingOut.timer);
-          reject();
-        }
-      }
-    });
+    return this._fade.newPromise(() => this.pause(), fadeTime * 1000);
   }
 
   cancelFadeOut () {
-    if(this._fadingOut.fading) {
-      this._fadingOut.clear()
+    if(this._fade.isFading) {
+      this._fade.dump('Dumped. fadeOut now');
       this.nodes.songsGain.gain.cancelScheduledValues(this.context.currentTime);
-      this.volume = this.#volume
+      this.volume = this._user_preferred_volume
     }
   }
 
@@ -620,20 +672,23 @@ class GlobalAudioPlayer {
    * resume the last paused audio
    * @param {number} fadeTime seconds to fade
    */
-  fadeIn (fadeTime = 10) {
+  async fadeIn (fadeTime = 10) {
     const currTime = this.context.currentTime;
-
-    if(this._fadingOut.fading) {
-      this._fadingOut.clear();
-      fadeTime = (this.#volume - this.volume) * fadeTime;
+    if(!this.songPlaying.source)
+      return Promise.reject(new Error("!this.songPlaying.source"));
+    if(this._fade.isFading) {
+      this._fade.dump('Dumped. fadeIn now');
+      fadeTime = (this._user_preferred_volume - this.volume) * fadeTime;
       this.nodes.songsGain.gain.cancelScheduledValues(currTime);
       this.nodes.songsGain.gain.linearRampToValueAtTime(this.volume, currTime + .001);
-      this.nodes.songsGain.gain.linearRampToValueAtTime(this.#volume, currTime + .001 + fadeTime);
+      this.nodes.songsGain.gain.linearRampToValueAtTime(this._user_preferred_volume, currTime + .001 + fadeTime);
+      return this._fade.newPromise(void 0, fadeTime * 1000);
     } else {
       this.resume().then(() => {
-        fadeTime = this.#volume * fadeTime;
+        fadeTime = this._user_preferred_volume * fadeTime;
         this.nodes.songsGain.gain.linearRampToValueAtTime(0, currTime);
-        this.nodes.songsGain.gain.linearRampToValueAtTime(this.#volume, currTime + fadeTime);
+        this.nodes.songsGain.gain.linearRampToValueAtTime(this._user_preferred_volume, currTime + fadeTime);
+        return this._fade.newPromise(void 0, fadeTime * 1000);
       })
     }
   }
@@ -644,7 +699,7 @@ class GlobalAudioPlayer {
 
   set volume( value ) {
     this.nodes.songsGain.gain.setTargetAtTime( value, this.context.currentTime, 0.01 );
-    this.#volume = value;
+    this._user_preferred_volume = value;
   }
 }
 export default GlobalAudioPlayer;
