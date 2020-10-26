@@ -100,19 +100,19 @@ class RenderLoop {
     })
     return this;
   }
-  static inControl = null;
+  static _inControl = null;
   static _game = null;
   static _then = [];
   static start () {
-    if(this.inControl._if.every(f => f())){
-      this.inControl._then.forEach(f => f());
-      this.inControl._thenOnce.forEach(f => f());
-      this.inControl._thenOnce = [];
+    if(this._inControl._if.every(f => f())){
+      this._inControl._then.forEach(f => f());
+      this._inControl._thenOnce.forEach(f => f());
+      this._inControl._thenOnce = [];
     } 
     else {
-      this.inControl._else.forEach(f => f());
-      this.inControl._elseOnce.forEach(f => f());
-      this.inControl._elseOnce = [];
+      this._inControl._else.forEach(f => f());
+      this._inControl._elseOnce.forEach(f => f());
+      this._inControl._elseOnce = [];
     }
     requestAnimationFrame(() => this.start());
   }
@@ -121,12 +121,12 @@ class RenderLoop {
       newRenderLoop = this[newRenderLoop]
     if(!newRenderLoop)
       throw new Error("not found.")
-    this.inControl = newRenderLoop;
+    this._inControl = newRenderLoop;
 
     if(newRenderLoop._promiseFunc) {
       newRenderLoop._promiseFunc().then(() =>  newRenderLoop._promiseThen.forEach(f => f()))
                                   .catch(() =>  newRenderLoop._promiseElse.forEach(f => f()))
-      // newRenderLoop._promiseFunc = null;
+      newRenderLoop._promiseFunc = null;
     }
     return this;
   }
