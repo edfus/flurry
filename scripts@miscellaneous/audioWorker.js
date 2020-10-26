@@ -7,7 +7,7 @@ function work() {
     retryGap = 3000; // ms
     forceLoad = false;
     constructor({ songs, preloadIndex }) {
-      //NOTE: this game has no sound effect
+      //NO\TE: this game has no sound effect
       this.songs = songs;
       this.preloadIndex = preloadIndex;
       this.loadAll();
@@ -320,7 +320,7 @@ class GlobalAudioPlayer {
               localStorage.allowAutoPlay = 'true';
             } else {
               localStorage.allowAutoPlay = 'false';
-              //TODO: volume button
+              //TODO: allowAutoPlay button
             }
           })
       else ; // localStorage.allowAutoPlay = false;
@@ -378,7 +378,7 @@ class GlobalAudioPlayer {
             this.sequenceArr[data.index] = {
               name: data.name,
               index: data.index
-            } //NOTE: indexedDB以name作为非重复的index索引，而此时data已添加入indexedDB，无需保留url。
+            } // indexedDB以name作为非重复的index索引，而此时data已添加入indexedDB，无需保留url。
           }
           return ;
         case 'requestFulfilled': 
@@ -700,6 +700,7 @@ class GlobalAudioPlayer {
   set volume( value ) {
     this.nodes.songsGain.gain.setTargetAtTime( value, this.context.currentTime, 0.01 );
     this._user_preferred_volume = value;
+    //TODO: volume button
   }
 }
 export default GlobalAudioPlayer;

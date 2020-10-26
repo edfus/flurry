@@ -162,7 +162,7 @@ class Game {
                         this.renderer.render(this.scene, this.camera);
                       })
                     .untilPromise(() => this.whenPaused.listenUserResume())
-                      .then(() => { //FIX 
+                      .then(() => { //FIX 只且只能resume一次
                         this.score.start();
                         this.ui.unfreeze();
                         RenderLoop.goto("main");
