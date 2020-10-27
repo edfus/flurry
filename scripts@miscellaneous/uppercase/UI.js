@@ -25,6 +25,11 @@ class ButtonHandler {
     return this;
   }
 
+  reset = () => {
+    this._listener.reset();
+    this._listener.removeListener();
+  }
+
   removeCallback = (callback, options) => {
     this._listener.removeCallback(callback, options);
     return this;
@@ -36,21 +41,21 @@ class ButtonHandler {
     })
     return obj;
   }
+  
+  removeListener = () => {
+    document.removeEventListener("keydown", this.onkeydownOnce);
+    document.removeEventListener("click", this.onclickOnce, {once: true});
+  }
 
   onclickPrototype (once) {
     this._listener.trigger();
-    if(once) {
-      document.removeEventListener("keydown", this.onkeydownOnce);
-    }
+    once ? this.removeListener() : void 0;
   }
 
   onkeydownPrototype (once, event) {
     if(event.code === this.keyCode) {
       this._listener.trigger();
-      if(once) {
-        document.removeEventListener("keydown", this.onkeydownOnce);
-        document.removeEventListener("click", this.onclickOnce, {once: true});
-      }
+      once ? this.removeListener() : void 0;
     }
   }
   /**
@@ -214,7 +219,7 @@ class UserInteraction {
     new ButtonHandler("KeyP", this.pauseButton.domElement).addTo(this.pauseButton);
     new ButtonHandler("Space", this.startButton.concise).addTo(this.startButton);
 
-    this.titleMenuButtons= {
+    this.titleMenuButtons = {
       elements: Array.from(document.querySelectorAll(".ui-button.title-menu")),
       hide () {
         return Promise.allSettled(this.elements.map(e => ButtonHandler.fadeOut(e)))
@@ -239,6 +244,12 @@ class UserInteraction {
         }
       }, {once: false})
       .listenOnce();
+  }
+
+  resetButtonListeners () {
+    this.homeButton.reset();
+    this.pauseButton.reset();
+    this.startButton.reset();
   }
 
   get relativePos () {

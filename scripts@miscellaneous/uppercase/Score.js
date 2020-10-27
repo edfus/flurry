@@ -15,7 +15,11 @@ class Score {
   
   bind (domElement) {
     this.#dom = domElement;
-    this.update(true);
+    if(this.#value < 10000) {
+      this.#dom.innerText = String(this.updateValue().toFixed(2)).concat(" m");
+    } else {
+      this.#dom.innerText = String((this.#value / 1000).toFixed(1)).concat(" Km");
+    }
   }
 
   start () {
@@ -38,16 +42,14 @@ class Score {
     }, ms)
   }
 
-  update (once = false) {
+  update () {
     if(this._previousMS === Infinity)
       return '';
     if(this.#value < 10000) {
       this.#dom.innerText = String(this.updateValue().toFixed(2)).concat(" m");
-      if(!once)
         requestAnimationFrame(() => this.update())
     } else {
       this.#dom.innerText = String((this.#value / 1000).toFixed(1)).concat(" Km");
-      if(!once)
         this.intervalUpdate(1e5 / this.speed) // ms per 0.1km
     }
   }
