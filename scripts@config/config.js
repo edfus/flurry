@@ -78,27 +78,19 @@
 
   // export default {
   window.config = {
-      testMode: TestMode,
-      inApp: InApp,
-      version: Version,
-      cameraSetting: PerspectiveCameraSetting,
-      getContainer: GetContainer,
-      getUIContainer:  GetUIContainer,
-      getScoreContainer: GetScoreContainer,
-      gameLoadedCallback: GameLoadedCallback,
-      speed_sea: RotationSpeed_Sea,
-      speed_sky: RotationSpeed_Sky,
-      speed_propeller: RotationSpeed_Propeller,
-      speed_score: scoreIncreasingSpeed,
-      numOfCloudsInSky: NumOfCloudsInSky,
-      colors: {
-        red: 0xf25346,
-        white: 0xd8d0d1,
-        brown: 0x59332e,
-        pink: 0xF5986E,
-        brownDark: 0x23190f,
-        blue: 0x68c3c0,
-      }
+    testMode: TestMode,
+    inApp: InApp,
+    version: Version,
+    cameraSetting: PerspectiveCameraSetting,
+    getContainer: GetContainer,
+    getUIContainer:  GetUIContainer,
+    getScoreContainer: GetScoreContainer,
+    gameLoadedCallback: GameLoadedCallback,
+    speed_sea: RotationSpeed_Sea,
+    speed_sky: RotationSpeed_Sky,
+    speed_propeller: RotationSpeed_Propeller,
+    speed_score: scoreIncreasingSpeed,
+    numOfCloudsInSky: NumOfCloudsInSky
   }
 }
 

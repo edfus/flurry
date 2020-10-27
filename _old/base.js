@@ -5,7 +5,7 @@
 import { Airplane, Sky, Sea } from './customObject.js';
 import UserInteraction from '../scripts@miscellaneous/ui.js';
 import Score from '../scripts@miscellaneous/score.js';
-import audioPlayer from '../scripts@miscellaneous/audioWorker.js';
+import audioPlayer from '../scripts@audio/AudioWorker.js';
 /////////////////////////////////
 {
   let mode = ['production', '#42c02e'];
