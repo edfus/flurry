@@ -1,7 +1,8 @@
 class Options {
   constructor () {
     return Object.assign(this, {
-      once: false
+      once: false,
+      toBeClearedWhenReset: true
     })
   }
   static isEqual (optionA, optionB) {
@@ -89,6 +90,31 @@ class Event {
       }
     }
   }
+  /**
+   * clear listeners those who have the same options as specified
+   * @param {string} eventName 
+   * @param {{name: string, value: any}} options 
+   */
+  clearListeners (eventName, optionToRemove = {name: 'once', value: true}) {
+    const callbackMaps = weakMap.get(this).maps;
+    if(!callbackMaps.hasOwnProperty(eventName))
+      return ;
+    const {name, value} = optionToRemove;
+    callbackMaps[eventName].forEach((options, callback) => {
+      if(Array.isArray(options)) {
+        options = options.filter(newOption2Test => {
+          return newOption2Test[name] !== value;
+        })
+        switch(options.length) {
+          case 0: return callbackMaps[eventName].delete(callback);
+          case 1: return callbackMaps[eventName].set(callback, options[0]);
+          default: callbackMaps[eventName].set(callback, options)
+        }
+      } else {
+        options[name] === value ? callbackMaps[eventName].delete(callback) : void 0;
+      }
+    })
+  }
 }
 
 class CallbackHandler extends Event {
@@ -99,10 +125,13 @@ class CallbackHandler extends Event {
     super.addListener("placeholderEvent", callback, options);
   }
   removeCallback (callback, options) {
-    super.addListener("placeholderEvent", callback, options);
+    super.removeListener("placeholderEvent", callback, options);
   }
   trigger () {
     super.dispatch("placeholderEvent")
+  }
+  reset () {
+    super.clearListeners("placeholderEvent", {name: 'toBeClearedWhenReset', value: true})
   }
 }
 

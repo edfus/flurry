@@ -4,8 +4,10 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@v0.121.0/build/three.
 import UserInteraction from '../scripts@miscellaneous/UI.js';
 import Event from '../scripts@miscellaneous/EventDispatcher.js';
 import RenderLoop from '../scripts@miscellaneous/RenderLoop.js';
-import AudioPlayer from '../scripts@miscellaneous/AudioWorker.js';
+import AudioPlayer from '../scripts@audio/AudioWorker.js';
 import Score from '../scripts@miscellaneous/Score.js';
+/* objects */
+import colors from '../scripts@config/colors.js';
 
 /* class Game */
 class Game {
@@ -13,12 +15,13 @@ class Game {
    * game的start、resume、pause、end等函数中不涉及ui的显隐控制，音乐播放等
    * game通过eventDispatcher控制renderLoop。
    * 能只dispatch event的状态函数，就不要设置this.state.inited = true。
-   * renderLoop中不修改game.state
+   * renderLoop中不修改除canBePaused以外的任何game.state
+   * renderLoop中不调用除resume以外的任何game的状态函数（start、pause等）
    * renderLoop中不涉及THREE.js的模型创建、光影更改、碰撞判定等，只调用game的相关函数。
    */
   constructor() {
     this.config = window.config;
-    this.colors = this.config.colors;
+    this.colors = colors;
     this.ui = new UserInteraction();
     this.audio = new AudioPlayer();
     this.state = {};
@@ -34,7 +37,7 @@ class Game {
     this._createScene(this.ui.WIDTH, this.ui.HEIGHT);
 
     this.tunnel = this._createTunnel();
-    this.scene.add.apply(this.scene, Object.values(this.tunnel));
+    this.scene.add(this.tunnel)
 
     this.lights = this._createLights();
     this.scene.add.apply(this.scene, Object.values(this.lights));
@@ -49,7 +52,6 @@ class Game {
     });
     
     this.camera.position.set(-8.2, -15.2, -318.2);
-    // this.camera.lookAt(100, 100, 100);
     this.camera.rotation.set(3.1, -0.0, 3.146)
 
     this.constructRenderLoops();
@@ -79,7 +81,7 @@ class Game {
     this.config.gameLoadedCallback();
     this._log();
     this.event.dispatch("loaded");
-    this.state.loaded = true; 
+    this.state.loaded = true;
   }
 
   start () {
@@ -96,19 +98,26 @@ class Game {
   }
 
   pause () {
-    this.event.dispatch("pause");
-    if(this.state.started) {
-      this.time.total += Date.now() - this.time.lastStamp;
-      this.time.lastStamp = Date.now();
+    if(this.state.canBePaused) { // modified in RenderLoop
+      this.event.dispatch("pause");
+      if(this.state.started) {
+        this.time.total += Date.now() - this.time.lastStamp;
+        this.time.lastStamp = Date.now();
+      }
+      this.state.canBePaused = false;
     }
   }
 
-  resume () {
+  resume () { // invoked in RenderLoop
     this.event.dispatch("resume");
     if(this.state.started) {
       this.time.paused += Date.now() - this.time.lastStamp;
       this.time.lastStamp = Date.now();
     }
+  }
+
+  planeCrash () {
+    this.event.dispatch("crashed");
   }
 
   end () {
@@ -122,7 +131,13 @@ class Game {
     this.renderLoop = RenderLoop;
     RenderLoop.add(
       new RenderLoop("idle")
-                    .executeOnce(() => this.ui.freeze())
+                    .executeOnce(() => {
+                      this.ui.freeze();
+                      this.state.canBePaused = false;
+                      this.ui.startButton
+                              .addTriggerCallback(() => game.start(), {once: true})
+                              .listenOnce();
+                    })
                     .execute(() => {
                         this.renderer.render(this.scene, this.camera);
                         this.ui.canvas2D.paint();
@@ -145,16 +160,29 @@ class Game {
                       })
                     .untilGameStateBecomes("started")
                       .then(() => {
+                          this.state.canBePaused = true;
+                          this.whenPaused.initButtons();
                           this.score.start();
                           this.ui.unfreeze()
                           RenderLoop.goto("main")
                         }),
       new RenderLoop("main")
                     .execute(() => {
-                        //TODO: if(crashed)
                         this.update();
                         this.renderer.render(this.scene, this.camera);
-                      }),
+                      })
+                    .untilGameStateBecomes("crashed")
+                      .then(() => {
+                          this.state.canBePaused = false;
+                          this.ui.pauseButton.hide();
+                          this.score.pause();
+                          this.ui.freeze();
+                          if(this.time.total > 180000 || this.config.testMode) {
+                            this.audio.cancelFadeOut();
+                            this.audio.playSong("outro")
+                          }
+                          RenderLoop.goto("backToTitle")
+                        }),
       new RenderLoop("paused")
                     .executeOnce(() => {
                         this.score.pause();
@@ -166,15 +194,21 @@ class Game {
                       })
                     .untilPromise(() => this.whenPaused.listenUserResume())
                       .then(() => {
+                        ////////////////
+                        this.resume() // 因为要严格要求只有在pause后才能resume，所以在此resume
+                        // 这是RenderLoop中唯一一处修改游戏状态的函数。
+                        ////////////////
+                        this.state.canBePaused = true;
                         this.score.start();
                         this.ui.unfreeze();
                         RenderLoop.goto("main");
                         console.info('RenderLoop: game resumed');
                       })
                       .else(() => {
+                        this.state.canBePaused = false;
                         this.ui.homeButton.hide(true);
                         this.ui.startButton.hide();
-                        if(this.time.total > 180000) {
+                        if(this.time.total > 180000 || this.config.testMode) {
                           this.audio.cancelFadeOut();
                           this.audio.playSong("outro")
                         }
@@ -186,6 +220,7 @@ class Game {
                       })
                     .untilGameStateBecomes("ended")
                       .then(() => {
+                          this.ui.resetButtonListeners();
                           this.ui.titleMenuButtons.show().then(() => {
                             this.ui.startButton.show();
                           });
@@ -197,10 +232,8 @@ class Game {
     .goto("idle")
     .wheneverGame("pause")
       .then(() => {
-        if(this.state.started) { //FIX: when in startAnim 
-          console.info('RenderLoop: game paused');
-          RenderLoop.goto("paused")
-        }
+        console.info('RenderLoop: game paused');
+        RenderLoop.goto("paused")
       });
 
     /* init -> inited, (直接)
@@ -211,33 +244,10 @@ class Game {
      */
   }
 
-  /* debugger */
-  _debug () {
-    this.scene.add(new THREE.AxesHelper(500))
-    this.addCameraHelper(this.camera)
-    this.addBoxHelper(Object.values(this.objects))
-    this.event.addListener("modelsAllLoaded", () => {
-      this.addBoxHelper(Object.values(this.models))
-    }, {once: true});
-    /* dynamic import */
-    import("../lib/OrbitControls.js").then(({OrbitControls}) => {
-      this.event.addListener("started", () => {
-        this._controls = new OrbitControls(this.camera, this.renderer.domElement);
-        const throttleLog = new ThrottleLog(1600);
-        this.addUpdateFunc(() => 
-          throttleLog.log(`position: (${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)})`, 
-          `\nrotation: (${this.camera.rotation._x.toFixed(1)}, ${this.camera.rotation._y.toFixed(1)}, ${this.camera.rotation._z.toFixed(1)})`)
-        )
-        this.event.addListener("pause", () => this._controls.enabled = false, {once: false})
-        this.event.addListener("resume", () => this._controls.enabled = true, {once: false})
-      }, {once: true})
-    })
-  }
-
   /* scene and camera */
   _createScene (width, height) {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xffffff);
+    this.scene.background = new THREE.Color(0xf7d9aa); //
     this.scene.fog = new THREE.Fog(0xf7d9aa, 100, 950);
     
     const setting = this.config.cameraSetting;
@@ -254,9 +264,11 @@ class Game {
   }
 
   _createTunnel () {
-    var points = [];
-    for (var i = 0; i < 200; i += 1) {
-      points.push(new THREE.Vector3(-8.2, -15.2, -300+25 * (i / 4)));
+    const points = [];
+    const { x, y } = this.camera.position;
+
+    for (let i = 0; i < 200; i++) {
+      points.push(new THREE.Vector3(x, y, -300 + 25 * (i / 4)));
     }
     const curve = new THREE.CatmullRomCurve3(points)
     const tubeGeometry = new THREE.TubeGeometry(curve, 100, 200, 50, false);
@@ -264,10 +276,8 @@ class Game {
       side: THREE.BackSide,
       color: 0x000000
     });
-    const tunnel = new THREE.Mesh(tubeGeometry, tubeMaterial);
-    return ({ 
-      tunnel
-    })
+
+    return new THREE.Mesh(tubeGeometry, tubeMaterial)
   }
 
   /* lights */
@@ -291,22 +301,35 @@ class Game {
   }
 
   /* createObjects */
-  // _createObjects () {
-  //   // other objects
-  //   const geometry = new THREE.BoxGeometry(100, 100, 100);
-  //   const material = new THREE.MeshPhongMaterial({
-  //     color: this.colors.red,
-  //     flatShading: THREE.FlatShading
-  //   });
-  //   const testCube = new THREE.Mesh(geometry, material);
-  //   this.addUpdateFunc(() => {
-  //     testCube.rotation.x += .008
-  //     testCube.rotation.z += .003
-  //   });
-  //   return ({ 
-  //     testCube
-  //   })
-  // }
+  _createObjects () {
+    
+  }
+
+  
+  /* debugger */
+  _debug () {
+    this.scene.add(new THREE.AxesHelper(500))
+    this.addCameraHelper(this.camera)
+    if(this.objects)
+      this.addBoxHelper(Object.values(this.objects))
+    this.event.addListener("modelsAllLoaded", () => {
+      this.addBoxHelper(Object.values(this.models))
+    }, {once: true});
+    /* dynamic import */
+    import("../lib/OrbitControls.js").then(({OrbitControls}) => {
+      this.event.addListener("started", () => {
+        this._controls = new OrbitControls(this.camera, this.renderer.domElement);
+        const throttleLog = new ThrottleLog(1600);
+        this.addUpdateFunc(() => 
+          throttleLog.log(`position: (${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)})`, 
+          `\nrotation: (${this.camera.rotation._x.toFixed(1)}, ${this.camera.rotation._y.toFixed(1)}, ${this.camera.rotation._z.toFixed(1)})`)
+        )
+        this.event.addListener("pause", () => this._controls.enabled = false, {once: false})
+        this.event.addListener("resume", () => this._controls.enabled = true, {once: false})
+      }, {once: true})
+    })
+  }
+
 
   path_callback_Array = [
     ['/resource/obj/biplane0.obj', //FIX: biplane7.obj加载后无法显示
@@ -373,8 +396,8 @@ class Game {
         }
       })
   }
+
   /* Unvarying functions */
-  
   #updateCallbackQueue = []
   addUpdateFunc (func) {
     this.#updateCallbackQueue.push(func);
@@ -410,6 +433,22 @@ class Game {
     return this.airplane.mesh.position.clone().sub(obj_vector3).length - 3; // 3 - tolerance
   }
 
+  #isCollided(obj3d, collidableMeshList) {
+    const vertices = obj3d.geometry.vertices;
+    const position = obj3d.position;
+    for(let i = vertices.length - 1; i >= 0; i--) {
+      const localVertex = vertices[i].clone();
+      const globalVertex = localVertex.applyMatrix4(obj3d.matrix);
+      const directionVector = globalVertex.sub(position);
+  
+      const ray = new THREE.Raycaster(position, directionVector.clone().normalize());
+      const collisionResults = ray.intersectObjects(collidableMeshList);
+      if(collisionResults.length > 0 && collisionResults[0].distance < directionVector.length())
+          return true;
+    }
+    return false;
+  }
+
   #createPointCloud(size, transparent, opacity, vertexColors, sizeAttenuation, color) {
     let geometry = new THREE.Geometry();
     const material = new THREE.PointCloudMaterial({
@@ -437,29 +476,6 @@ class Game {
     return new THREE.PointCloud(geometry, material);
     // group = new THREE.Group();
     // scene.add(group);
-  }
-  #flyControls () {
-    //TODO: 调查此，检查其是否符合我们的需求
-    var flyControls = new THREE.FlyControls(camera);
-    flyControls.movementSpeed = 25;
-    flyControls.domElement = this.config.getContainer();
-    flyControls.rollSpeed = Math.PI / 24;
-    flyControls.autoForward = true;
-  }
-  #isCollided(obj3d, collidableMeshList) {
-    const vertices = obj3d.geometry.vertices;
-    const position = obj3d.position;
-    for(let i = vertices.length - 1; i >= 0; i--) {
-      const localVertex = vertices[i].clone();
-      const globalVertex = localVertex.applyMatrix4(obj3d.matrix);
-      const directionVector = globalVertex.sub(position);
-  
-      const ray = new THREE.Raycaster(position, directionVector.clone().normalize());
-      const collisionResults = ray.intersectObjects(collidableMeshList);
-      if(collisionResults.length > 0 && collisionResults[0].distance < directionVector.length())
-          return true;
-    }
-    return false;
   }
   _log () {
     let mode = ['production', '#42c02e'];
@@ -505,7 +521,7 @@ game.whenPaused = new class {
     document.addEventListener("visibilitychange", () => {
       if(document.visibilityState === 'visible') {
         game.audio.fadeIn(4);
-        this.resolve(game.resume()) //FIX
+        this.resolve()
       } else {
         game.audio.fadeOut(20);
         game.pause();
@@ -516,20 +532,18 @@ game.whenPaused = new class {
       game.pause()
     }
     Dialog.addEventListener('dialogShow', () => game.pause())
-    Dialog.addEventListener('dialogHide', () => this.resolve(game.resume()))
-
-    game.event.addListener("started", () => this.initButtons(), {once: true})
+    Dialog.addEventListener('dialogHide', () => this.resolve())
   }
 
   initButtons () {
     game.ui.startButton.addTriggerCallback(async () => {
-      this.resolve(game.resume())
+      this.resolve()
       
       game.ui.startButton.hide();
       await game.ui.pauseButton.show();
       game.audio.fadeIn(4);
       game.ui.pauseButton.listenOnce();
-    }, {once: false})
+    }, {once: false, toBeClearedWhenReset: true})
 
     game.ui.pauseButton.addTriggerCallback(async () => {
         game.pause();
@@ -538,7 +552,7 @@ game.whenPaused = new class {
         game.audio.fadeOut(10)
         await game.ui.startButton.show();
         game.ui.startButton.listenOnce();
-      }, {once: false})
+      }, {once: false, toBeClearedWhenReset: true})
     .listenOnce();
 
     game.ui.homeButton.addTriggerCallback(async () => this.reject(game.end()), {once: true})
@@ -556,9 +570,6 @@ game.whenPaused = new class {
 game.event.addListener("loaded", () => {
   game.whenPaused.init();
   game.renderLoop.start();
-
-  game.ui.startButton.addTriggerCallback(() => game.start(), {once: true})
-                     .listenOnce();
 }, {once: true});
 
 window.addEventListener("load", () => {
