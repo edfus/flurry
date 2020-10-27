@@ -106,13 +106,17 @@ class RenderLoop {
   static start () {
     if(this._inControl._if.every(f => f())){
       this._inControl._then.forEach(f => f());
-      this._inControl._thenOnce.forEach(f => f());
-      this._inControl._thenOnce = [];
+      if(!this._inControl._THENONCE_executed) {
+        this._inControl._thenOnce.forEach(f => f());
+        this._inControl._THENONCE_executed = true;
+      }
     } 
     else {
       this._inControl._else.forEach(f => f());
-      this._inControl._elseOnce.forEach(f => f());
-      this._inControl._elseOnce = [];
+      if(!this._inControl._ELSEONCE_executed) {
+        this._inControl._elseOnce.forEach(f => f());
+        this._inControl._ELSEONCE_executed = true;
+      }
     }
     requestAnimationFrame(() => this.start());
   }
@@ -121,6 +125,10 @@ class RenderLoop {
       newRenderLoop = this[newRenderLoop]
     if(!newRenderLoop)
       throw new Error("not found.")
+    if(this._inControl) {
+      this._inControl._THENONCE_executed = false;
+      this._inControl._ELSEONCE_executed = false;
+    }
     this._inControl = newRenderLoop;
 
     if(newRenderLoop._promiseFunc) {
