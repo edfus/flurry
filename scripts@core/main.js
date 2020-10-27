@@ -37,7 +37,7 @@ class Game {
     this._createScene(this.ui.WIDTH, this.ui.HEIGHT);
 
     this.tunnel = this._createTunnel();
-    this.scene.add(this.tunnel)
+    this.scene.add(this.tunnel);
 
     this.lights = this._createLights();
     this.scene.add.apply(this.scene, Object.values(this.lights));
@@ -51,8 +51,8 @@ class Game {
       this.scene.add.apply(this.scene, Object.values(this.models));
     });
     
-    this.camera.position.set(-8.2, -15.2, -318.2);
-    this.camera.rotation.set(3.1, -0.0, 3.146)
+    this.camera.position.set(-8.2, -8.2, -318.2);
+    this.camera.rotation.set(3.0, 0, 3.146)
 
     this.constructRenderLoops();
 
@@ -272,9 +272,10 @@ class Game {
     }
     const curve = new THREE.CatmullRomCurve3(points)
     const tubeGeometry = new THREE.TubeGeometry(curve, 100, 200, 50, false);
-    const tubeMaterial = new THREE.MeshStandardMaterial({
+    const tubeMaterial = new THREE.MeshDepthMaterial({
       side: THREE.BackSide,
-      color: 0x000000
+      color: 0x000000,
+      lights: true
     });
 
     return new THREE.Mesh(tubeGeometry, tubeMaterial)
