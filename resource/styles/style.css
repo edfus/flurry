@@ -94,6 +94,10 @@ main > canvas, #ui-canvas {
   bottom: 0;
 }
 
+#ui {
+  pointer-events: none;
+}
+
 .ui-buttons {
   position: absolute;
   z-index: 2;
@@ -122,6 +126,7 @@ main > canvas, #ui-canvas {
   margin-left: 0.625rem;
   border-radius: 50%;
   transition: background-color .2s ease-in-out;
+  pointer-events: all;
 }
 
 /* TODO: https://stackoverflow.com/questions/54112231/is-it-possible-to-create-a-glow-effect-in-svg */
@@ -232,13 +237,21 @@ main > canvas, #ui-canvas {
 .ui-buttons.right .ui-button:focus svg{
   fill: #999999;
 }
-.ui-button.refresh:hover {
-  background-color: #cccccc9f;
+.ui-button.refresh {
+  fill: var(--color)
 }
-.ui-button.refresh:focus {
-  background-color: #999999;
+.ui-button.refresh:hover, .ui-button.refresh:focus {
+  fill: #c3e1ff
 }
 
+.ui-button.home {
+  stroke: var(--color);
+  stroke-width: 4;
+  stroke-linejoin: round;
+  position: absolute;
+  margin-left: calc(0.625rem + 1.5px);
+  margin-bottom: 3.5px;
+}
 
 /* Dialog */
 .dialog {
@@ -331,7 +344,7 @@ main > canvas, #ui-canvas {
   margin: 40vh calc(50vw - var(--loader-width) / 2);
 }
 
-#circular {
+#loader--circular {
   animation: rotate 2s linear infinite;
   height: 100%;
   transform-origin: center center;
@@ -341,14 +354,182 @@ main > canvas, #ui-canvas {
   left: 0;
 }
 
-#path {
+#loader--path {
   stroke-dasharray: 1, 200;
   stroke-dashoffset: 0;
   animation: dash 1.5s ease-in-out infinite, color 6s ease-in-out infinite;
   stroke-linecap: round;
 }
 
+#start-button {
+  position: fixed;
+  width: 8rem;
+  height: 8rem;
+  bottom: 8rem;
+  left: calc(50% - 4rem);
+  padding: 0;
+  outline: 0;
+  border: 0;
+  background: none;
+  pointer-events: all;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media screen and (max-height: 824px) {
+  #start-button {
+    bottom: 30px;
+  }
+}
+
+#start-button--ring {
+  stroke-width: .12rem;
+  animation: start-button--ring 4s infinite ease;
+  transform: translate(-8%, -8%) scale(1.16);
+  fill: #fff;
+  cursor: pointer;
+  /* stroke-opacity: .8; */
+}
+
+#start-button--fog {
+  animation: start-button--fog 4s infinite ease;
+  opacity: .1;
+}
+
+.ui-button.refresh {
+  position: relative;
+}
+
+.simo, .simo--ring, .simo--slider {
+  position: absolute;
+}
+
+.simo {
+  top: -20%;
+	left: -20%;
+	width: 140%;
+  height: 140%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.simo--ring {
+  z-index: 1;
+  stroke: #666666af;
+  stroke-width: .5rem;
+}
+
+.simo--slider {
+  z-index: 2;
+  top: 0;
+  left: 0;
+  stroke: #eeeeeeaf;
+  stroke-width: .5rem;
+  transform-origin: center center;
+  stroke-dasharray: 15, 300;
+  stroke-dashoffset: 0;
+  stroke-linecap: round;
+  opacity: 0;
+}
+
+.simo.show {
+  animation: simo--ring 3s 1 ease forwards;
+}
+
+.simo.show > .simo--slider {
+  animation: simo--slider-opacity 3s 1 ease forwards, simo--slider-rotate .8s infinite linear; 
+}
+
+@keyframes simo--ring {
+	0%, 100% {
+		transform: scale3d(0, 0, 1);
+		opacity: 0;
+	}
+	5%, 95% {
+		opacity: 1;
+		transform: scale3d(1, 1, 1);
+	}
+}
+
+@keyframes simo--slider-opacity {
+	0%, 5%, 95%, 100% {
+		opacity: 0;
+	}
+	10%, 90% {
+		opacity: 1;
+	}
+}
+
+@keyframes simo--slider-rotate {
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+.game-bar {
+  display: none;
+}
+
+.fade-out {
+  animation: fade-out .3s ease 1;
+}
+
+.fade-in {
+  animation: fade-in .3s ease 1;
+}
+
 /* Keyframes */
+@keyframes fade-out {
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes start-button--fog {
+  0% {
+    filter: url(#blur2);
+    transform: translate(0, 0) scale(1);
+    opacity: .08;
+  }
+
+  36% {
+    filter: url(#blur6);
+    opacity: .25;
+    transform: translate(-80%, -80%) scale(2.6);
+  }
+
+  100% {
+    filter: url(#blur6);
+    transform: translate(-80%, -80%) scale(2.6);
+    opacity: 0;
+  }
+}
+
+@keyframes start-button--ring {
+  0% {
+    transform: translate(-8%, -8%) scale(1.16);
+    fill-opacity: .16;
+  }
+
+  36% {
+    transform: translate(0, 0) scale(1);
+    fill-opacity: .2;
+  }
+
+  100% {
+    transform: translate(-8%, -8%) scale(1.16);
+    fill-opacity: .16;
+  }
+}
+
 @keyframes dialog-show {
   0% {
     opacity: 0;
@@ -380,11 +561,11 @@ main > canvas, #ui-canvas {
   }
   50% {
     stroke-dasharray: 89, 200;
-    stroke-dashoffset: -2.1875rem;
+    stroke-dashoffset: -35;
   }
   100% {
     stroke-dasharray: 89, 200;
-    stroke-dashoffset: -7.75rem;
+    stroke-dashoffset: -124;
   }
 }
 

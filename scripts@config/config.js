@@ -13,7 +13,7 @@
   BackgroundColor = '#f7d9aa', // used in index.html/meta-themeColor, style-background
 
 
-  Version = '7.6.5' + '--dev', //NOTE: 添加功能后记得更改这个
+  Version = '8.6.6' + '--dev', 
 
   PerspectiveCameraSetting = {
       fieldOfView: 60, 
@@ -36,7 +36,7 @@
     return document.getElementById('score')
   },
 
-  GameStartCallback = async () => { // asynchronous 异步的，非同时的
+  GameLoadedCallback = async () => { // asynchronous 异步的，非同时的
     /**
      * 渐隐目标对象
      * @param {*} currentOpacity 初始透明度
@@ -85,7 +85,7 @@
       getContainer: GetContainer,
       getUIContainer:  GetUIContainer,
       getScoreContainer: GetScoreContainer,
-      gameStartCallback: GameStartCallback,
+      gameLoadedCallback: GameLoadedCallback,
       speed_sea: RotationSpeed_Sea,
       speed_sky: RotationSpeed_Sky,
       speed_propeller: RotationSpeed_Propeller,
@@ -200,9 +200,7 @@
         this.#callbackQueue[name] = this.#callbackQueue[name].filter(
           ({callback, once}) => {
             callback.call(this);
-            if(once)
-              return false;
-            else return true
+            return !once;
         });
     }
 
@@ -394,6 +392,43 @@
       });
     } else {
       document.exitFullscreen();
+    }
+  }
+
+  window.ThrottleLog = class {
+    constructor (gap = 2000) {
+      this.gap = gap;
+    }
+    log () {
+      if(this.inQueue)
+        return;
+      else {
+        const thisLog = Array.from(arguments).toString();
+        if(thisLog === this.prLog) {
+          if(!this.silent) {
+            console.log("%cSame as previous log, staying slient.", "color: lightSkyBlue")
+            this.silent = true;
+          }
+        } else {
+          console.log.apply(window, arguments);
+          this.silent = false;
+          this.prLog = thisLog;
+        }
+        setTimeout(() => {
+          this.inQueue = false;
+        }, this.gap)
+        this.inQueue = true;
+      }
+    }
+
+    autoLog (func) {
+      this.timer = setInterval(() => this.log(func()), this.gap + 1);
+      return this;
+    }
+
+    stopAutoLog () {
+      clearInterval(this.timer);
+      return this;
     }
   }
 }

@@ -1,9 +1,9 @@
 const noCache = true;
-const version = "7.6.5--dev";
+const version = "8.2.6--dev";
 const cacheName = "cache-" + version;
 const cacheResources = [
   `/`, 
-  `https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js`
+  `https://cdn.jsdelivr.net/npm/three@v0.121.0/build/three.module.min.js`
 ];
 const DLC = [
 

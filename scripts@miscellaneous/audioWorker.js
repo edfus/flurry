@@ -7,7 +7,7 @@ function work() {
     retryGap = 3000; // ms
     forceLoad = false;
     constructor({ songs, preloadIndex }) {
-      //NOTE: this game has no sound effect
+      //NO\TE: this game has no sound effect
       this.songs = songs;
       this.preloadIndex = preloadIndex;
       this.loadAll();
@@ -195,6 +195,11 @@ const themes = [
     name: "Intro",
     url: `${host}resource/audio/Loner%20Soundtrack/0_Intro.mp3`,
     role: 'intro'
+  },
+  {
+    name: "C418 - Moog City 2",
+    url: `${host}resource/audio/C418%20-%20Moog%20City%202.mp3`,
+    role: 'outro'
   }
 ]; // 无index属性
 themes.forEach(e => e.reserve = true);
@@ -277,6 +282,8 @@ class GlobalAudioPlayer {
         this.source = null;
       }
     })
+
+    this._fade = new this.constructor._Fade();
   }
 
   autoPlay () {
@@ -284,7 +291,7 @@ class GlobalAudioPlayer {
       return;
 
     const playF = () => {
-      this.playSong(this.songs.intro).then(() => this.playNext(true));
+      this.playSong(this.songs.intro, true).catch(() => void 0);
       this.playTriggered = true;
     }
     const callback = () => {
@@ -313,7 +320,7 @@ class GlobalAudioPlayer {
               localStorage.allowAutoPlay = 'true';
             } else {
               localStorage.allowAutoPlay = 'false';
-              //TODO: volume button
+              //TODO: allowAutoPlay button
             }
           })
       else ; // localStorage.allowAutoPlay = false;
@@ -371,7 +378,7 @@ class GlobalAudioPlayer {
             this.sequenceArr[data.index] = {
               name: data.name,
               index: data.index
-            } //NOTE: indexedDB以name作为非重复的index索引，而此时data已添加入indexedDB，无需保留url。
+            } // indexedDB以name作为非重复的index索引，而此时data已添加入indexedDB，无需保留url。
           }
           return ;
         case 'requestFulfilled': 
@@ -406,13 +413,16 @@ class GlobalAudioPlayer {
     if(typeof param === "string")
       param = this.songs[param]
     if(!param)
-      return false;      
+      return Promise.reject('not found');
     return this._play(param.name, param.audioBuffer, this.nodes.songsGain, loop)
   }
 
   async _play(name, audioBuffer, destination, loop) {
     if(this.songPlaying.source) {
       this.stop();
+    }
+    if(this.context.state === 'suspended') {
+      await this.resume();
     }
     const source =  this.context.createBufferSource();
     source.buffer = audioBuffer;
@@ -425,10 +435,12 @@ class GlobalAudioPlayer {
     this.songPlaying.name = name;
     console.info("Playing: " + this.songPlaying.name)
     return new Promise((resolve, reject) => {
-        source.onended = () => {
+        source.onended = isScheduled => {
           console.info("Ended: " + this.songPlaying.name)
           this.songPlaying.empty();
-          resolve();
+          if(isScheduled)
+            reject("Stopped previous flow, playing songs on the new schedule")
+          else resolve();
         }
         source.beforeForceStopped = () => {
           this.songPlaying.source.onended = null; // in case async error
@@ -458,7 +470,8 @@ class GlobalAudioPlayer {
     else 
       return this._play(nextSong.name, nextSong.audioBuffer, this.nodes.songsGain, false);
   }
-  /**
+
+    /**
    * 加载对应音乐到内存
    * @param {number | string | Object | Array<Object>} param 播放的index（会求余），或包含信息的对象（对象数组），或要播放的role名
    */
@@ -485,49 +498,199 @@ class GlobalAudioPlayer {
     }
   }
 
+  /**
+   * 
+   * @param {string | Object} param 要播放歌曲的role或包含其信息的对象
+   * @param {boolean} loop 是否循环
+   */
+  async scheduleSong (param, loop, delay = 0) {
+    if(!this.songPlaying.source) {
+      return this.playSong(param, loop);
+    }
+    if(this._fade.isFading) {
+      await new Promise(resolve => {
+        this._fade.finally(resolve);
+      })
+      await this.stop(delay);
+      this.volume = this._user_preferred_volume;
+      return this.playSong(param, loop);
+    }
+
+    const pr_onended = this.songPlaying.source.onended;
+    return new Promise(resolve => {
+      this.songPlaying.source.loop = false;
+      this.songPlaying.source.onended = () => {
+        pr_onended(true);
+        resolve(this.playSong(param, loop))
+      }
+    })
+  }
+
+  async scheduleFunc (func) {
+    if(!this.songPlaying.source) {
+      return func();
+    }
+    if(this._fade.isFading) {
+      await new Promise(resolve => {
+        this._fade.finally(resolve);
+      })
+      await this.stop(delay);
+      this.volume = this._user_preferred_volume;
+      return func();
+    }
+
+    const pr_onended = this.songPlaying.source.onended;
+    return new Promise(resolve => {
+      this.songPlaying.source.loop = false;
+      this.songPlaying.source.onended = () => {
+        pr_onended(true);
+        resolve(func())
+      }
+    })
+  }
+
   pause () {
     this.nodes.songsGain.disconnect();
+    this.context.suspend();
   }
 
-  resume () {
+  async resume () {
     if (this.context.state === 'suspended') {
-      this.context.resume();
+      return this.context.resume().then(() => 
+        this.nodes.songsGain.connect(this.nodes.masterGain)
+      )
     }
-    this.nodes.songsGain.connect(this.nodes.masterGain);
   }
 
-  stop (delay = 0) {
+  async stop (delay = 0) {
     if(this.songPlaying.source) {
       const handleFunc = this.songPlaying.source.beforeForceStopped
       if(handleFunc && typeof handleFunc === "function")
         handleFunc();
       this.songPlaying.source.stop(delay);
       this.songPlaying.empty();
+      return new Promise(resolve => {
+        setTimeout(() => resolve(), delay * 1000);
+      })
     }
     // An AudioBufferSourceNode can only be played once;
   }
-  #volume = 1
+  _user_preferred_volume = 1;
+  static _Fade = class {
+    isFading = false;
+    timer = 0;
+    newPromise (setTimeoutFunc, delay) {
+      this.isFading = true;
+      return new Promise((resolve, reject) => {
+        this._resolve = resolve;
+        this._reject = reject;
+        this.timer = 
+          setTimeout(() => {
+            if(typeof setTimeoutFunc === "function")
+              setTimeoutFunc();
+            this.resolve();
+          }, delay);
+      }).then(() => typeof this._then === "function" && this._then())
+        .catch(reason => typeof this._catch === "function" ? this._catch(reason) : (() => {throw reason})())
+        .finally(() => {
+          typeof this._finally === "function" && this._finally();
+          this._finally = this._then = this._catch = null;
+        })
+    }
+    resolve (info) {
+      if(this.isFading) {
+        this.timer = 0;
+        this.isFading = false;
+        this._resolve(info);
+        this._resolve = null;
+        this._reject = null;
+      }
+    }
+    reject (reason) {
+      if(this.isFading) {
+        clearTimeout(this.timer);
+        this.isFading = false;
+        this.timer = 0;
+        this._reject(reason);
+        this._resolve = null;
+        this._reject = null;
+      }
+    }
+    then (func) {
+      if(!this._then)
+        this._then = async () => func();
+      else this._then.then(func);
+      return this;
+    }
+    catch (func) {
+      this._catch = func;
+      return this;
+    }
+    finally (func) {
+      this._finally = func;
+      return this;
+    }
+    _dumpFunc = reason => void 0;
+    dump (reason) {
+      this.catch(this._dumpFunc)
+          .reject(reason)
+    }
+  }
+
+  _debug () {
+    this._fade._dumpFunc = reason => console.log("AudioPlayer: " + reason)
+    new ThrottleLog(500).autoLog(() => [this.volume, this.context.currentTime]);
+  }
   /**
    * pause the audio, not stop.
    * @param {number} fadeTime seconds to fade
    */
-  fadeOut (fadeTime = 10) {
+  async fadeOut (fadeTime = 10) {
     const currTime = this.context.currentTime;
-    // const duration = this.songPlaying.buffer.duration
-    this.nodes.songsGain.gain.linearRampToValueAtTime(this.#volume, currTime);
+    fadeTime = this.volume * fadeTime;
+
+    if(this._fade.isFading) {
+      this._fade.dump('Dumped. fadeOut now');
+      this.nodes.songsGain.gain.cancelScheduledValues(currTime);
+    }
+
+    this.nodes.songsGain.gain.linearRampToValueAtTime(this.volume, currTime);
     this.nodes.songsGain.gain.linearRampToValueAtTime(0, currTime + fadeTime);
-    setTimeout(() => this.pause(), fadeTime * 1000);
+
+    return this._fade.newPromise(() => this.pause(), fadeTime * 1000);
+  }
+
+  cancelFadeOut () {
+    if(this._fade.isFading) {
+      this._fade.dump('Dumped. fadeOut now');
+      this.nodes.songsGain.gain.cancelScheduledValues(this.context.currentTime);
+      this.volume = this._user_preferred_volume
+    }
   }
 
   /**
    * resume the last paused audio
    * @param {number} fadeTime seconds to fade
    */
-  fadeIn (fadeTime = 10) {
+  async fadeIn (fadeTime = 10) {
     const currTime = this.context.currentTime;
-    this.nodes.songsGain.gain.linearRampToValueAtTime(0, currTime);
-    this.resume();
-    this.nodes.songsGain.gain.linearRampToValueAtTime(this.#volume, currTime + fadeTime);
+    if(!this.songPlaying.source)
+      return Promise.reject(new Error("!this.songPlaying.source"));
+    if(this._fade.isFading) {
+      this._fade.dump('Dumped. fadeIn now');
+      fadeTime = (this._user_preferred_volume - this.volume) * fadeTime;
+      this.nodes.songsGain.gain.cancelScheduledValues(currTime);
+      this.nodes.songsGain.gain.linearRampToValueAtTime(this.volume, currTime + .001);
+      this.nodes.songsGain.gain.linearRampToValueAtTime(this._user_preferred_volume, currTime + .001 + fadeTime);
+      return this._fade.newPromise(void 0, fadeTime * 1000);
+    } else {
+      this.resume().then(() => {
+        fadeTime = this._user_preferred_volume * fadeTime;
+        this.nodes.songsGain.gain.linearRampToValueAtTime(0, currTime);
+        this.nodes.songsGain.gain.linearRampToValueAtTime(this._user_preferred_volume, currTime + fadeTime);
+        return this._fade.newPromise(void 0, fadeTime * 1000);
+      })
+    }
   }
 
   get volume() {
@@ -536,7 +699,8 @@ class GlobalAudioPlayer {
 
   set volume( value ) {
     this.nodes.songsGain.gain.setTargetAtTime( value, this.context.currentTime, 0.01 );
-    this.#volume = value;
+    this._user_preferred_volume = value;
+    //TODO: volume button
   }
 }
-export default new GlobalAudioPlayer();
+export default GlobalAudioPlayer;

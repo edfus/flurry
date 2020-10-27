@@ -49,11 +49,16 @@ naiziguai:
 
 cloudres: 
 
-- [ ] 学习svg
 - [ ] https://tympanus.net/Development/ClickEffects/
 - [ ] 测试isCollided
+- [ ] pause backToTitle的误触问题
+- [ ] 音质问题
+- [ ] score的暂停问题
+- [ ] TypeError: Cannot read property 'total' of undefined
 
 ---
+
+The recommended format for importing and exporting assets is glTF (GL Transmission Format). Because glTF is focused on runtime asset delivery, it is compact to transmit and fast to load.
 
 关于碰撞检测：
 1. 用户行为驱动，当触发相关事件（如上下移动触发，旋转不触发，节流（比如碰撞边界需要一个至少的用户操作下界，下界以下节流检查，以上每帧检验））时，才直接用xxx.mesh.position.clone().sub(Vector3).length检测。
