@@ -32,7 +32,6 @@ class Game {
   init() {
     this.event.dispatch("init");
     this._createScene(this.ui.WIDTH, this.ui.HEIGHT);
-
     this.tunnel = this._createTunnel();
     this.scene.add(this.tunnel);
 
@@ -206,7 +205,7 @@ class Game {
      * load -> loaded, (等待DOM加载后)
      * start -> started. (用户开始游戏后)
      * pause, resume. (用户交互)
-     * end -> ended
+     * end -> ended     
      */
   }
 
@@ -214,7 +213,7 @@ class Game {
   _debug () {
     this.scene.add(new THREE.AxesHelper(500))
     this.addCameraHelper(this.camera)
-    this.addBoxHelper(Object.values(this.objects))
+    // this.addBoxHelper(Object.values(this.objects))
     this.event.addListener("modelsAllLoaded", () => {
       this.addBoxHelper(Object.values(this.models))
     }, {once: true});
@@ -236,8 +235,8 @@ class Game {
   /* scene and camera */
   _createScene (width, height) {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xffffff);
-    this.scene.fog = new THREE.Fog(0xf7d9aa, 100, 950);
+     this.scene.background = new THREE.Color(0xa5a4a4);
+    this.scene.fog = new THREE.Fog(0x555555, 100, 950);
     
     const setting = this.config.cameraSetting;
     this.camera = new THREE.PerspectiveCamera(
@@ -259,32 +258,38 @@ class Game {
     }
     const curve = new THREE.CatmullRomCurve3(points)
     const tubeGeometry = new THREE.TubeGeometry(curve, 100, 200, 50, false);
-    const tubeMaterial = new THREE.MeshDepthMaterial({
+    const tubeMaterial = new THREE.MeshStandardMaterial({
       side: THREE.BackSide,
-      color: 0x000000,
-      lights: true
+      color: 0xffffff
     });
     const tunnel = new THREE.Mesh(tubeGeometry, tubeMaterial);
     return tunnel;
   }
-
   /* lights */
   _createLights () {
-    const shadowLight = new THREE.DirectionalLight(0xffffff, .9);
-    shadowLight.position.set(150, 350, 350);
-    shadowLight.castShadow = true;
-    shadowLight.shadow.camera.left = -400;
-    shadowLight.shadow.camera.right = 400;
-    shadowLight.shadow.camera.top = 400;
-    shadowLight.shadow.camera.bottom = -400;
-    shadowLight.shadow.camera.near = 1;
-    shadowLight.shadow.camera.far = 1000;
-    shadowLight.shadow.mapSize.width = 2048;
-    shadowLight.shadow.mapSize.height = 2048;
+    const spotLight = new THREE.SpotLight();
+  spotLight.color = new THREE.Color(0x555555);
+  spotLight.castShadow = true;
+  spotLight.position.set(20, -80, -400);
+  spotLight.intensity = 1; // 光的强度 默认值为1
+  spotLight.distance = 500; // 从发光点发出的距离，光的亮度，会随着距离的远近线性衰减
+  spotLight.angle = 0.4; // 光色散角度，默认是 Math.PI * 2
+  spotLight.penumbra = 0.1; // 光影的减弱程度，默认值为0， 取值范围 0 -- 1之间
+  spotLight.decay = 1; // 光在距离上的量值, 和光的强度类似（衰减指数）
+  spotLight.shadow.mapSize.width = 1024;
+  spotLight.shadow.mapSize.height = 1024; // 设置阴影分辨率
+  spotLight.shadow.camera.near = 0.1; // 投影近点 --> 从距离光源的哪一才产生阴影
+  spotLight.shadow.camera.far = 300; // 投影原点 --> 到光源的哪一点位置不产生阴影
+  spotLight.shadow.camera.fov = 10; // 投影视场
+  var target = new THREE.Object3D();
+  target.position.set(0, 0, 0);
+  spotLight.target = target;
+  //  const light = new THREE.PointLight( 0xdf1491, 1, 10000 );
+  //  light.position.set( 0, 0, 0 );
     return {
-      ambientLight: new THREE.AmbientLight(0xdc8874, .5),
-      hemisphereLight: new THREE.HemisphereLight(0xaaaaaa, 0x000000, .9),
-      shadowLight: shadowLight
+     ambientLight: new THREE.AmbientLight(0x000000, 1),
+     spotLight: spotLight,
+      // light
     };
   }
 
@@ -313,7 +318,7 @@ class Game {
           if (child instanceof THREE.Mesh) {
             child.material = new THREE.MeshBasicMaterial({
               // map: new THREE.TextureLoader().load("/test/naitou.jpg"),
-              color: 0xffffff,
+              color: 0x9e4b4b,
               side: THREE.DoubleSide
             });
           }
