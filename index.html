@@ -12,10 +12,10 @@
 		<meta name="format-detection" content="telphone=no, email=no">
 		<!-- Preload -->
 		<link rel="modulepreload" href="/scripts@core/main.js">
+		<link rel="modulepreload" href="/scripts@audio/AudioWorker.js">
 		<link rel="modulepreload" href="/scripts@miscellaneous/UI.js">
 		<link rel="modulepreload" href="/scripts@miscellaneous/Score.js">
 		<link rel="modulepreload" href="/scripts@miscellaneous/EventDispatcher.js">
-		<link rel="modulepreload" href="/scripts@miscellaneous/AudioWorker.js">
 		<link rel="modulepreload" href="/scripts@miscellaneous/RenderLoop.js">
 		<link rel="preload" href="https://www.googletagmanager.com/gtag/js?id=UA-179239422-1" as="script">		
 		<!-- scripts -->
@@ -143,7 +143,6 @@
 							</g>
 						</svg>
 					</button>
-					<!-- TODO: if config.inApp, hide full screen button -->
 					<button class="ui-button fullscreen title-menu" onmouseover="this.classList.add('hover')" onmouseout="this.classList.remove('hover')" onfocus="this.classList.add('hover')" onblur="this.classList.remove('hover')" onclick="this.classList.toggle('active'); toggleFullScreen(document.documentElement)" data-credit="codepen.io/dev_loop" title="Full screen (F)" type="button">
 						<div class="row">
 							<div class="box _1"></div>
@@ -154,6 +153,13 @@
 							<div class="box _4"></div>
 						</div>
 					</button>
+					<script>
+					if(config.inApp) {
+						const button = document.querySelector(".ui-button.fullscreen");
+						button.hidden = true;
+						button.classList.remove("title-menu")
+					}
+					</script>
 				</aside>
 				<aside class="ui-score left bottom">
 					<span id="score"></span>					
