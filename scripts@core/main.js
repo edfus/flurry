@@ -33,11 +33,14 @@ class Game {
     this.event.dispatch("init");
     this._createScene(this.ui.WIDTH, this.ui.HEIGHT);
 
+    this.tunnel = this._createTunnel();
+    this.scene.add.apply(this.scene, Object.values(this.tunnel));
+
     this.lights = this._createLights();
     this.scene.add.apply(this.scene, Object.values(this.lights));
 
-    this.objects = this._createObjects();
-    this.scene.add.apply(this.scene, Object.values(this.objects));
+    // this.objects = this._createObjects();
+    // this.scene.add.apply(this.scene, Object.values(this.objects));
 
     this.models = {};
     this._loadObjs(this.path_callback_Array).then(() => {
@@ -45,9 +48,9 @@ class Game {
       this.scene.add.apply(this.scene, Object.values(this.models));
     });
     
-    this.camera.position.set(-6.9, -63.2, -340.5);
+    this.camera.position.set(-8.2, -15.2, -318.2);
     // this.camera.lookAt(100, 100, 100);
-    this.camera.rotation.set(3.0, -0.0, 3.1)
+    this.camera.rotation.set(3.1, -0.0, 3.146)
 
     this.constructRenderLoops();
 
@@ -233,7 +236,7 @@ class Game {
   /* scene and camera */
   _createScene (width, height) {
     this.scene = new THREE.Scene();
-    // this.scene.background = new THREE.Color(0x000000);
+    this.scene.background = new THREE.Color(0xffffff);
     this.scene.fog = new THREE.Fog(0xf7d9aa, 100, 950);
     
     const setting = this.config.cameraSetting;
@@ -247,6 +250,23 @@ class Game {
     this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     this.renderer.setSize(width, height);
     this.renderer.shadowMap.enabled = true;
+  }
+
+  _createTunnel () {
+    var points = [];
+    for (var i = 0; i < 200; i += 1) {
+      points.push(new THREE.Vector3(-8.2, -15.2, -300+25 * (i / 4)));
+    }
+    const curve = new THREE.CatmullRomCurve3(points)
+    const tubeGeometry = new THREE.TubeGeometry(curve, 100, 200, 50, false);
+    const tubeMaterial = new THREE.MeshStandardMaterial({
+      side: THREE.BackSide,
+      color: 0x000000
+    });
+    const tunnel = new THREE.Mesh(tubeGeometry, tubeMaterial);
+    return ({ 
+      tunnel
+    })
   }
 
   /* lights */
@@ -270,22 +290,22 @@ class Game {
   }
 
   /* createObjects */
-  _createObjects () {
-    // other objects
-    const geometry = new THREE.BoxGeometry(100, 100, 100);
-    const material = new THREE.MeshPhongMaterial({
-      color: this.colors.red,
-      flatShading: THREE.FlatShading
-    });
-    const testCube = new THREE.Mesh(geometry, material);
-    this.addUpdateFunc(() => {
-      testCube.rotation.x += .008
-      testCube.rotation.z += .003
-    });
-    return ({ 
-      testCube
-    })
-  }
+  // _createObjects () {
+  //   // other objects
+  //   const geometry = new THREE.BoxGeometry(100, 100, 100);
+  //   const material = new THREE.MeshPhongMaterial({
+  //     color: this.colors.red,
+  //     flatShading: THREE.FlatShading
+  //   });
+  //   const testCube = new THREE.Mesh(geometry, material);
+  //   this.addUpdateFunc(() => {
+  //     testCube.rotation.x += .008
+  //     testCube.rotation.z += .003
+  //   });
+  //   return ({ 
+  //     testCube
+  //   })
+  // }
 
   path_callback_Array = [
     ['/resource/obj/biplane0.obj', //FIX: biplane7.obj加载后无法显示
