@@ -268,28 +268,28 @@ class Game {
   /* lights */
   _createLights () {
     const spotLight = new THREE.SpotLight();
-  spotLight.color = new THREE.Color(0x555555);
-  spotLight.castShadow = true;
-  spotLight.position.set(20, -80, -400);
-  spotLight.intensity = 1; // 光的强度 默认值为1
-  spotLight.distance = 500; // 从发光点发出的距离，光的亮度，会随着距离的远近线性衰减
-  spotLight.angle = 0.4; // 光色散角度，默认是 Math.PI * 2
-  spotLight.penumbra = 0.1; // 光影的减弱程度，默认值为0， 取值范围 0 -- 1之间
-  spotLight.decay = 1; // 光在距离上的量值, 和光的强度类似（衰减指数）
-  spotLight.shadow.mapSize.width = 1024;
-  spotLight.shadow.mapSize.height = 1024; // 设置阴影分辨率
-  spotLight.shadow.camera.near = 0.1; // 投影近点 --> 从距离光源的哪一才产生阴影
-  spotLight.shadow.camera.far = 300; // 投影原点 --> 到光源的哪一点位置不产生阴影
-  spotLight.shadow.camera.fov = 10; // 投影视场
-  var target = new THREE.Object3D();
-  target.position.set(0, 0, 0);
-  spotLight.target = target;
-  //  const light = new THREE.PointLight( 0xdf1491, 1, 10000 );
-  //  light.position.set( 0, 0, 0 );
+    spotLight.color = new THREE.Color(0x555555);
+    spotLight.castShadow = true;
+    spotLight.position.set(20, -80, -400);
+    spotLight.intensity = 1; // 光的强度 默认值为1
+    spotLight.distance = 500; // 从发光点发出的距离，光的亮度，会随着距离的远近线性衰减
+    spotLight.angle = 0.4; // 光色散角度，默认是 Math.PI * 2
+    spotLight.penumbra = 0.1; // 光影的减弱程度，默认值为0， 取值范围 0 -- 1之间
+    spotLight.decay = 1; // 光在距离上的量值, 和光的强度类似（衰减指数）
+    spotLight.shadow.mapSize.width = 1024;
+    spotLight.shadow.mapSize.height = 1024; // 设置阴影分辨率
+    spotLight.shadow.camera.near = 0.1; // 投影近点 --> 从距离光源的哪一才产生阴影
+    spotLight.shadow.camera.far = 300; // 投影原点 --> 到光源的哪一点位置不产生阴影
+    spotLight.shadow.camera.fov = 10; // 投影视场
+    var target = new THREE.Object3D();
+    target.position.set(0, 0, 0);
+    spotLight.target = target;
+    //  const light = new THREE.PointLight( 0xdf1491, 1, 10000 );
+    //  light.position.set( 0, 0, 0 );
     return {
-     ambientLight: new THREE.AmbientLight(0x000000, 1),
-     spotLight: spotLight,
-      // light
+        ambientLight: new THREE.AmbientLight(0x000000, 1),
+        spotLight: spotLight,
+     // light
     };
   }
 
