@@ -259,9 +259,10 @@ class Game {
     }
     const curve = new THREE.CatmullRomCurve3(points)
     const tubeGeometry = new THREE.TubeGeometry(curve, 100, 200, 50, false);
-    const tubeMaterial = new THREE.MeshStandardMaterial({
+    const tubeMaterial = new THREE.MeshDepthMaterial({
       side: THREE.BackSide,
-      color: 0x000000
+      color: 0x000000,
+      lights: true
     });
     const tunnel = new THREE.Mesh(tubeGeometry, tubeMaterial);
     return tunnel;
