@@ -122,7 +122,7 @@ class UserInteraction {
     this.event.addListener("resize", () => {
       this.#windowHeight = window.innerHeight;
       this.#windowWidth = window.innerWidth;
-    })  
+    })
 
     if(this.isTouchDevice || config.testMode) {
       this.canvas2D = new Canvas2D(this.WIDTH, this.HEIGHT);

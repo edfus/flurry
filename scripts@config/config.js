@@ -144,7 +144,7 @@
     }
 
     get paragraphs () {
-      return this.#paragraphs.textContent;
+      return Array.from(this.#paragraphs.children).map(e => e.textContent).join("\n");
     }
 
     show () {

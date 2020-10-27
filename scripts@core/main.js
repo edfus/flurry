@@ -165,7 +165,7 @@ class Game {
                         this.renderer.render(this.scene, this.camera);
                       })
                     .untilPromise(() => this.whenPaused.listenUserResume())
-                      .then(() => { //FIX 只且只能resume一次
+                      .then(() => {
                         this.score.start();
                         this.ui.unfreeze();
                         RenderLoop.goto("main");
@@ -206,7 +206,8 @@ class Game {
     /* init -> inited, (直接)
      * load -> loaded, (等待DOM加载后)
      * start -> started. (用户开始游戏后)
-     * paused, restarted. (用户交互后)
+     * pause, resume. (用户交互)
+     * end -> ended
      */
   }
 
