@@ -287,13 +287,13 @@ class Game {
     //  const light = new THREE.PointLight( 0xdf1491, 1, 10000 );
     //  light.position.set( 0, 0, 0 );
     return {
-        ambientLight: new THREE.AmbientLight(0x000000, 1),
+        ambientLight: new THREE.AmbientLight(0xFFFFFF*Math.random(), 1),
         spotLight: spotLight,
      // light
     };
   }
 
-  /* createObjects */
+  // /* createObjects */
   // _createObjects () {
   //   // other objects
   //   const geometry = new THREE.BoxGeometry(100, 100, 100);
@@ -306,6 +306,8 @@ class Game {
   //     testCube.rotation.x += .008
   //     testCube.rotation.z += .003
   //   });
+  //   testCube.scale.set(0.1, 0.1, 0.1);
+  //   testCube.position.set(-180, 40, 80);
   //   return ({ 
   //     testCube
   //   })
@@ -319,6 +321,7 @@ class Game {
             child.material = new THREE.MeshBasicMaterial({
               // map: new THREE.TextureLoader().load("/test/naitou.jpg"),
               color: 0x9e4b4b,
+              // color: 0xffffff,
               side: THREE.DoubleSide
             });
           }
