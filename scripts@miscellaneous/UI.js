@@ -103,17 +103,12 @@ class ButtonHandler {
 }
 const eventWeakMap = new WeakMap();
 class UserInteraction {
-  absolutePos = {
-    x: 0,
-    y: 0
-  };
-  
   isTouchDevice = false;
 
   #windowHeight = 0;
   #windowWidth  = 0;
 
-  canvas2D = Canvas2D.emptyCanvas; // hacky LOL
+  canvas2D = Canvas2D.emptyCanvas;
 
   constructor() {
     this.isTouchDevice = this.testTouchDevice();
@@ -252,10 +247,6 @@ class UserInteraction {
     this.startButton.reset();
   }
 
-  get relativePos () {
-    return this.updateRelativePos();
-  }
-
   get HEIGHT () {
     return this.#windowHeight;
   }
@@ -264,21 +255,13 @@ class UserInteraction {
     return this.#windowWidth;
   }
 
-  #relativePos = { x: 0, y: 0 };
-  #frozen = false;
-  updateRelativePos (x = this.absolutePos.x, y = this.absolutePos.y) {
-    if(this.#frozen)
-      return this.#relativePos;
-    this.#relativePos.x = -1 + (x / this.WIDTH) * 2;
-    this.#relativePos.y = 1 - (y / this.HEIGHT) * 2;
-    return this.#relativePos;
-  }
+  #frozen = false; //TODO
 
-  freeze () {
-    const frozenAboslutePos = {...this.absolutePos}; // shallow
-    // Object.freeze(this.absolutePos);
+  freeze () { //TODO
+    // const frozenAboslutePos = {...this.fingersPos}; // shallow
+    // Object.freeze(this.fingersPos);
     this.unfreeze = function () {
-      this.absolutePos = frozenAboslutePos;
+      // this.fingersPos = frozenAboslutePos;
       this.#frozen = false;
       delete this.unfreeze;
     }
@@ -335,41 +318,125 @@ class UserInteraction {
       document.removeEventListener(identifier.concat(name), callback)
     )
   }
+
+  fingersPos = {
+    0: {
+      x_now: 0, y_now: 0,
+      x_initial: 0, y_initial: 0
+    },
+    1: {
+      x_now: 0, y_now: 0,
+      x_initial: 0, y_initial: 0
+    },
+    clear () {
+      this[0].x_now = this[0].y_now = this[0].x_initial = this[0].y_initial = 0;
+      this[1].x_now = this[1].y_now = this[1].x_initial = this[1].y_initial = 0;
+      this._identifierMap = {};
+    },
+    _identifierMap: {},
+    hasId(id) {
+      return id in this._identifierMap
+    },
+    getId (id) {
+      return this[this._identifierMap[id]];
+    },
+    create (index, {identifier, pageX, pageY}) {
+      this._identifierMap[identifier] = index;
+      this[index].x_initial = this[index].x_now = this.updateX(pageX)
+      this[index].y_initial = this[index].y_now = this.updateX(pageY)
+    },
+    updateX: x => {
+      return x - this.WIDTH / 2;
+    },
+    updateY: y => {
+      return y - this.HEIGHT / 2;
+    },
+    update (ptr, x, y) {
+      ptr.x_now = this.updateX(x)
+      ptr.y_now = this.updateX(y)
+    }
+  }
+
+  data =  {
+    rotate_force: 0, // -1 ~ 1
+    up_force: 0 // -1 ~ 1
+  }
+  normalize (value, minimum = .1) {
+    const temp = value * 1.2;
+    return temp < minimum
+            ? 0
+            : temp > 1
+              ? 1
+              : temp
+  }
+  updateData () {
+    if(this.#frozen)
+      return {
+        rotate_force: 0, // -1 ~ 1
+        up_force: 0 // -1 ~ 1
+      }
+    const relative_x0 = this.fingersPos[0].x_now / this.WIDTH
+    const relative_x1 = this.fingersPos[1].x_now / this.WIDTH
+    const relative_y0 = this.fingersPos[0].y_now / this.HEIGHT
+    const relative_y1 = this.fingersPos[1].y_now / this.HEIGHT
+
+    const relativeD_x = Math.abs(relative_x0 - relative_x1);
+    const relativeD_y = Math.abs(relative_y0 - relative_y1);
+    let length = Math.hypot(relativeD_x, relativeD_y)
+    if(length < .15)
+      length = 0
+
+    const totalD_y0 = this.fingersPos[0].y_now - this.fingersPos[0].y_initial
+    const totalD_y1 = this.fingersPos[1].y_now - this.fingersPos[1].y_initial
+
+    this.data.rotate_force = length * relativeD_y * (Math.abs(totalD_y0 - totalD_y1) + 1)
+    this.data.up_force = -(totalD_y0 + totalD_y1) / this.HEIGHT
+  }
   
   /* callbacks */
   bindCallbacks () {
-    this.event.addListener("touchstart", event => {
-      for (const touch of event.touches) {
-        this.canvas2D.createLine(touch.pageX, touch.pageY, touch.identifier)
+    // new ThrottleLog(300).autoLog(() => `(${this.fingersPos[0].x}, ${this.fingersPos[0].y}) (${this.fingersPos[1].x}, ${this.fingersPos[1].y})`)
+    this.event.addListener("touchstart", ({touches}) => {
+      switch(touches.length) {
+        case 2:
+          this.fingersPos.create(0, touches[0]);
+          this.fingersPos.create(1, touches[1]);
+          break;
+        default: this.fingersPos.clear(); break;
+      }
+      if(this.canvas2D.enabled) {
+        for (const touch of touches) {
+          this.canvas2D.createLine(touch.pageX, touch.pageY, touch.identifier)
+        }
       }
     })
 
-    this.event.addListener("touchmove", event => {
-      let x = 0, y = 0;
-      for (const {pageX, pageY} of event.touches) {
-        x += pageX;
-        y += pageY;
+    this.event.addListener("touchmove", ({changedTouches}) => {
+      for (const touch of changedTouches) {
+        if(this.canvas2D.enabled)
+          this.canvas2D.pushPoint(touch.pageX, touch.pageY, touch.identifier);
+        if(this.fingersPos.hasId(touch.identifier)) {
+          this.fingersPos.update(this.fingersPos.getId(touch.identifier), touch.pageX, touch.pageY)
+          this.updateData()
+        }
       }
-      this.absolutePos.x = x / event.touches.length;
-      this.absolutePos.y = y / event.touches.length;
-  
-      for (const touch of event.changedTouches) {
-        this.canvas2D.pushPoint(touch.pageX, touch.pageY, touch.identifier)
-      } // Is touchmove event fire once in per frame? macrotasks queue necessary?
     })
 
     this.event.addListener("touchend", event => {
-      for (const touch of event.changedTouches) {
-        this.canvas2D.endLine(touch.identifier)
+      if(event.touches.length !== 2) {
+        this.fingersPos.clear();
+        this.updateData()
+      }
+      if(this.canvas2D.enabled) {
+        for (const touch of event.changedTouches) {
+          this.canvas2D.endLine(touch.identifier)
+        }
       }
     })
     // touchcancel is fired whenever it takes ~200 ms to return from a touchmove event handler.
 
     let mouseMove_triggered = false;
     this.event.addListener("mousemove", event => {
-      this.absolutePos.x = event.clientX;
-      this.absolutePos.y = event.clientY;
-  
       if(mouseMove_triggered)
         this.canvas2D.pushPoint(event.clientX, event.clientY, 0); // 0 - identifier of this touch
       else {
@@ -407,7 +474,18 @@ class UserInteraction {
                 this[code] = func;
             });
     },
-    position: new Proxy(this.absolutePos, {
+    position0: new Proxy(this.fingersPos[0], {
+      set: (target, prop, value) => {
+        value < 0 
+        ? value = 0
+        : prop === "x"
+          ? value > this.WIDTH && (value = this.WIDTH) // x
+          : value > this.HEIGHT && (value = this.HEIGHT) // y
+
+        return Reflect.set(target, prop, value);
+      }
+    }),
+    position1: new Proxy(this.fingersPos[1], {
       set: (target, prop, value) => {
         value < 0 
         ? value = 0
@@ -429,17 +507,21 @@ class UserInteraction {
         this.distance = Math.min(ui.HEIGHT, ui.WIDTH) / 12
       })
     },
-    ArrowUp () { 
-      this.position.y -= this.distance
+    ArrowUp () {
+      this.position0.y -= this.distance
+      this.position1.y -= this.distance
     },
     ArrowDown () { 
-      this.position.y += this.distance
+      this.position0.y += this.distance;
+      this.position1.y += this.distance;
     },
-    ArrowLeft () { 
-      this.position.x -= this.distance
+    ArrowLeft () {
+      this.position0.y -= this.distance / 2
+      this.position1.y += this.distance / 2
     },
     ArrowRight () { 
-      this.position.x += this.distance
+      this.position0.y += this.distance / 2
+      this.position1.y -= this.distance / 2
     }
   }
   /* callbacks END */
@@ -627,7 +709,20 @@ class Canvas2D {
       },
       get domElement () {
         return '';
-      }
+      },
+      enabled: false
+    }
+  }
+
+  enable () {
+    this.enabled = true;
+  }
+
+  disable () {
+    this.enabled = false;
+    this.clear();
+    for(const prop in this.#paths_obj) {
+      delete this.#paths_obj[prop];
     }
   }
 }

@@ -41,8 +41,8 @@ class Game {
     this.lights = this._createLights();
     this.scene.add.apply(this.scene, Object.values(this.lights));
 
-    // this.objects = this._createObjects();
-    // this.scene.add.apply(this.scene, Object.values(this.objects));
+    this.objects = this._createObjects();
+    this.scene.add.apply(this.scene, Object.values(this.objects));
 
     this.models = {};
     this._loadObjs(this.path_callback_Array).then(() => {
@@ -136,6 +136,7 @@ class Game {
                       this.ui.startButton
                               .addTriggerCallback(() => game.start(), {once: true})
                               .listenOnce();
+                      this.ui.canvas2D.enable();
                     })
                     .execute(() => {
                         this.renderer.render(this.scene, this.camera);
@@ -143,6 +144,7 @@ class Game {
                       })
                     .untilGameStateBecomes("start")
                       .then(() => {
+                          this.ui.canvas2D.disable();
                           RenderLoop.goto("startAnimation")
                           console.info('RenderLoop: game starts');
                         }),
@@ -186,6 +188,7 @@ class Game {
                     .executeOnce(() => {
                         this.score.pause();
                         this.ui.freeze();
+                        this.ui.canvas2D.enable();
                       })
                     .execute(() => {
                         this.ui.canvas2D.paint();
@@ -200,6 +203,7 @@ class Game {
                         this.state.canBePaused = true;
                         this.score.start();
                         this.ui.unfreeze();
+                        this.ui.canvas2D.disable();
                         RenderLoop.goto("main");
                         console.info('RenderLoop: game resumed');
                       })
@@ -207,6 +211,7 @@ class Game {
                         this.state.canBePaused = false;
                         this.ui.homeButton.hide(true);
                         this.ui.startButton.hide();
+                        this.ui.canvas2D.disable();
                         if(this.time.total > 180000 || this.config.testMode) {
                           this.audio.cancelFadeOut();
                           this.audio.playSong("outro")
@@ -308,7 +313,17 @@ class Game {
 
   /* createObjects */
   _createObjects () {
-    
+    const geometry = new THREE.BoxGeometry( 300, 100, 10 );
+    const material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
+    const testWing = new THREE.Mesh( geometry, material );
+    this.addUpdateFunc(() => {
+      // testWing.rotation.set(testWing.rotation._x += this.ui.data.rotation_force, 0, 0)
+      testWing.position.y += this.ui.data.up_force
+      // console.log(this.ui.data)
+    })
+    return {
+      testWing
+    }
   }
 
   

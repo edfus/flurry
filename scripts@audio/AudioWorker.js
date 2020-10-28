@@ -402,7 +402,7 @@ class GlobalAudioPlayer {
   async playNext (autoPlay = false) {
     let nextSong;
     //FIX after restart
-    if(this.songs.nextsToPlay.length)
+    if(this.songs.nextsToPlay.length && this.songs.nextsToPlay[0])
       nextSong = this.songs.nextsToPlay.shift();
     else {
       if(this.songPlaying.source) {
