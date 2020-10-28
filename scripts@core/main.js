@@ -38,12 +38,15 @@ class Game {
     this.tunnel = this._createTunnel();
     this.scene.add(this.tunnel);
 
+    this.propeller = this._createPropeller();
+    this.scene.add(this.propeller);
+
     this.lights = this._createLights();
     this.scene.add.apply(this.scene, Object.values(this.lights));
 
     this.objects = this._createObjects();
     this.scene.add.apply(this.scene, Object.values(this.objects));
-
+    
     this.models = {};
     this._loadObjs(this.path_callback_Array).then(() => {
       this.event.dispatch("modelsAllLoaded");
@@ -310,6 +313,23 @@ class Game {
      // light
     };
   }
+  /* createPropeller */
+  _createPropeller () {
+    const geomPropeller = new THREE.BoxGeometry(90, 3, 3);
+    const material = new THREE.MeshPhongMaterial({
+        color: 0x6d6d6db6,
+        flatShading: THREE.FlatShading
+    });
+    const propeller = new THREE.Mesh(geomPropeller, material);
+    this.addUpdateFunc(() => {
+        // propeller.rotation.y += 4.5
+        propeller.rotation.z += 153
+    });
+    propeller.scale.set(1, 1, 1);
+    propeller.position.set(-8, 25, 140);
+
+    return propeller
+  }
 
   /* createObjects */
   _createObjects () {
@@ -353,7 +373,7 @@ class Game {
 
 
   path_callback_Array = [
-    ['/resource/obj/biplane0.obj', //FIX: biplane7.obj加载后无法显示
+    ['/resource/obj/biplane0.obj', 
       plane => {
         plane.traverse(child => {
           if (child instanceof THREE.Mesh) {
