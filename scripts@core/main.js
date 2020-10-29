@@ -39,16 +39,16 @@ class Game {
     this.tunnel = this._createTunnel();
     this.scene.add(this.tunnel.mesh);
 
-    // this.scene.fog = new THREE.Fog(0x555555, 100, this.tunnel.farEndOfTunnel);
-
-    this.lights = this._createLights();
+    this.lights = this._createLights("rgb( 173, 250, 223 )");
     this.scene.add.apply(this.scene, Object.values(this.lights));
 
-    // this.objects = this._createObjects();
-    // this.scene.add.apply(this.scene, Object.values(this.objects));
+    this._createFog("rgb( 173, 250, 223 )").then(fog => {
+      this.fog = fog;
+      this.scene.add(fog)
+    })
 
-    // this.CircleGeometry = this._createCircleGeometry();
-    // this.scene.add.apply(this.scene, Object.values(this.CircleGeometry));
+    this.objects = this._createObjects();
+    this.scene.add.apply(this.scene, Object.values(this.objects));
  
     this.models = {};
     this._loadObjs(this.path_callback_Array).then(() => {
@@ -269,6 +269,7 @@ class Game {
   /* scene and camera */
   _createScene (width, height) {
     this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color("black")
     
     const setting = this.config.cameraSetting;
     this.camera = new THREE.PerspectiveCamera(
@@ -279,15 +280,27 @@ class Game {
       );
 
     this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+
+    this.composer = new THREE.WebGLRenderer({ 	
+      powerPreference: "high-performance",
+      antialias: false,
+      stencil: false,
+      depth: false
+      // alpha: 
+    });
     this.renderer.setSize(width, height);
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.setPixelRatio( window.devicePixelRatio );
+    // this.renderer.shadowMap.enabled = true;
+    // this.renderer.autoClear = false;
+    // renderer.setClearColor( 0xffffff );
+
   }
 
   _createTunnel () {
     const points = [];
     const tunnel = {}
     const { x, y } = this.camera.position;
-    const maxI = 1200;
+    const maxI = 600;
     const delta = 25 / 4;
     tunnel.closeEndOfTunnel = -300;
     tunnel.lengthOfTunnel = maxI * delta;
@@ -309,29 +322,106 @@ class Game {
     return tunnel
   }
   /* lights */
-  _createLights () {
+  _createLights (color) { // The renderer has a parameter called "maxLights" that defaults to 4.
+    const delta = 1.8
+
     const spotLight = new THREE.SpotLight();
-    spotLight.color = new THREE.Color("red");
+    spotLight.color = new THREE.Color(color);
 
-    spotLight.position.set(0, 0, this.tunnel.farEndOfTunnel * 1.5);
 
-    spotLight.intensity = 10;
+    spotLight.position.set(0, 0, this.tunnel.farEndOfTunnel * delta);
 
-    spotLight.distance = this.tunnel.lengthOfTunnel * 1.5;
+    spotLight.intensity = 3;
 
-    spotLight.angle = Math.atan(this.tunnel.radius / this.tunnel.lengthOfTunnel);
-    spotLight.penumbra = 0.1; // 光影的减弱程度，默认值为0， 取值范围 0 -- 1之间
-    spotLight.decay = .1; // 光在距离上的量值, 和光的强度类似（衰减指数）
+    spotLight.distance = this.tunnel.lengthOfTunnel * delta;
+
+    spotLight.angle = Math.atan(this.tunnel.radius / this.tunnel.lengthOfTunnel) * delta;
+    spotLight.decay = .1; // decay = 2 leads to physically realistic light falloff
     spotLight.castShadow = false;
 
-    const target = new THREE.Object3D();
-    target.position.set(0, 0, this.tunnel.closeEndOfTunnel);
-    spotLight.target = target;
+    spotLight.target.position.set(0, 0, this.tunnel.closeEndOfTunnel);
+    spotLight.target.updateMatrixWorld();
+
+    // http://stemkoski.github.io/Three.js/Color-Explorer.html
+    const geometry = new THREE.SphereGeometry(this.tunnel.radius, 32, 32);
+    // const material = new THREE.MeshStandardMaterial({
+    //   color: spotLight.color,
+    //   emissive: spotLight.color,
+    //   emissiveIntensity: 100
+    // })  
+    const darkenColor = new THREE.Color(this.RGB_Linear_Shade(-.1, color));
+    const sphereLight = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({
+                                          color: darkenColor,
+                                          emissive: darkenColor
+                                        }));
+    sphereLight.position.set(0, 0, this.tunnel.farEndOfTunnel)
 
     return {
-      spotLight
+      spotLight,
+      sphereLight
     };
   }
+
+  _createFog (color) {
+    this.scene.fog = new THREE.Fog(this.RGB_Linear_Shade(-.2, color), this.tunnel.farEndOfTunnel - 2 * this.tunnel.radius, this.tunnel.farEndOfTunnel);
+    return new Promise((resolve, reject) => {
+      new THREE.TextureLoader().load("./resource/textures/smoke.png", texture => {
+        const fogGeo = new THREE.PlaneBufferGeometry(500,500);
+        const fogMaterial = new THREE.MeshLambertMaterial({
+          map: texture,
+          transparent: true,
+          opacity: .3
+        });
+        const fog = new THREE.Group();
+        const fogPos = this.tunnel.farEndOfTunnel / .7;
+        for(let p = 0; p < 5; p++) {
+          let fogSegment = new THREE.Mesh(fogGeo,fogMaterial);
+          fogSegment.position.set(
+            Math.random() * this.tunnel.radius,
+            Math.random() * this.tunnel.radius,
+            fogPos + Math.random() * this.tunnel.radius
+          );
+          fogSegment.rotation.x = 1.16;
+          fogSegment.rotation.y = -0.12;
+          fogSegment.rotation.z = this.deg(Math.random() * 360);
+          fog.add(fogSegment)
+        }
+        resolve(fog)
+      }, reject);
+    })
+  }
+
+  _composeEffect () {
+    const godray = null;
+    // https://www.programmersought.com/article/12781728171/ Self-illuminating property.emissive
+    // http://bkcore.com/blog/3d/webgl-three-js-volumetric-light-godrays.html godray
+    // https://threejs.org/examples/webgl_postprocessing_godrays.html
+    // https://medium.com/@andrew_b_berg/volumetric-light-scattering-in-three-js-6e1850680a41
+  }
+
+  path_callback_Array = [
+    ['/resource/obj/biplane0.obj', 
+      plane => {
+        plane.traverse(child => {
+          if (child instanceof THREE.Mesh) {
+            child.material = new THREE.MeshPhongMaterial({
+              color: 0x9e4b4b,
+              side: THREE.DoubleSide,
+              flatShading: true
+            });
+          }
+        });
+        plane.scale.multiplyScalar(0.05);
+        const group = new THREE.Group();
+        group.add(plane);
+        group.add(this._createPropeller(0));
+        group.add(this._createPropeller(this.deg(120)));
+        group.add(this._createPropeller(this.deg(240)));
+        this.models.plane = group;
+      }
+    ]
+  ]
+
   /* createPropeller */
   _createPropeller (intialRotation) {
     const geomPropeller = new THREE.BoxGeometry(90, 3, 3);
@@ -341,10 +431,10 @@ class Game {
     });
     const propeller = new THREE.Mesh(geomPropeller, material);
     propeller.rotation.z = intialRotation;
+    propeller.rotation.x = this.deg(-12)
     this.addUpdateFunc(() => {
-      propeller.rotation.z += this.deg(30);
+      propeller.rotation.z += this.deg(12);
     });
-    propeller.scale.set(1, 1, 1);
     propeller.position.set(-8, 25, 140);
 
     return propeller
@@ -352,6 +442,12 @@ class Game {
 
   deg(num) {
     return 0.017453292519943295 * num
+  }
+
+  RGB_Linear_Shade (p,c) {
+    var i=parseInt,r=Math.round,[a,b,c,d]=c.split(","),P=p<0,t=P?0:255*p,P=P?1+p:1-p;
+    return"rgb"+(d?"a(":"(")+r(i(a[3]=="a"?a.slice(5):a.slice(4))*P+t)+","+r(i(b)*P+t)+","+r(i(c)*P+t)+(d?","+d:")");
+    // https://stackoverflow.com/questions/5560248/programmatically-lighten-or-darken-a-hex-color-or-rgb-and-blend-colors
   }
 
   changeColor (colorHexValue) {
@@ -364,9 +460,9 @@ class Game {
     const material = new THREE.MeshBasicMaterial({color: 0x00ff00});
     const testWing = new THREE.Mesh(geometry, material);
           testWing.rotation.x = this.deg(45)
-
+    const rotate_axis = new THREE.Vector3(0, 1, 0)
     this.addUpdateFunc(() => {
-      testWing.rotation.x += this.ui.data.rotate_force
+      testWing.rotateOnAxis(rotate_axis, this.ui.data.rotate_force);
       testWing.position.y += this.ui.data.up_force
     })
     return {
@@ -393,6 +489,8 @@ class Game {
   _debug () {
     window.THREE = THREE;
     this.scene.add(new THREE.AxesHelper(500))
+    // this.scene.background = new THREE.Color(0xa5a4a4);
+
     this.addCameraHelper(this.camera)
     if(this.objects)
       this.addBoxHelper(Object.values(this.objects))
@@ -416,30 +514,6 @@ class Game {
       }, {once: true})
     })
   }
-
-
-  path_callback_Array = [
-    ['/resource/obj/biplane0.obj', 
-      plane => {
-        plane.traverse(child => {
-          if (child instanceof THREE.Mesh) {
-            child.material = new THREE.MeshPhongMaterial({
-              color: 0x9e4b4b,
-              side: THREE.DoubleSide,
-              flatShading: true
-            });
-          }
-        });
-        plane.scale.set(0.05, 0.05, 0.05);
-        const group = new THREE.Group();
-        group.add(plane);
-        group.add(this._createPropeller(0));
-        group.add(this._createPropeller(this.deg(180)));
-        group.add(this._createCircleGeometry ());
-        this.models.plane = group;
-      }
-    ]
-  ]
 
   /* load obj files using main thread */
   async _loadglTFs (path_callback_Array) {

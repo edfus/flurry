@@ -7,4 +7,6 @@ export default {
   blue: 0x68c3c0,
 }
 
+// Note the lack of CamelCase in the name
+// const color5 = new THREE.Color( 'skyblue' );
 // https://github.com/mrdoob/three.js/blob/master/src/math/Color.js

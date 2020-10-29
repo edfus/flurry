@@ -626,9 +626,10 @@ class Canvas2D {
   }
 
   endLine (identifier) {
-    Object.defineProperty(this.#paths_obj[identifier], 'end', {
-      value: true
-    });
+    if(identifier in this.#paths_obj)
+      Object.defineProperty(this.#paths_obj[identifier], 'end', {
+        value: true
+      });
   }
 
   pushPoint (x, y, identifier) {
