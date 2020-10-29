@@ -35,18 +35,18 @@ class Game {
   init() {
     this.event.dispatch("init");
     this._createScene(this.ui.WIDTH, this.ui.HEIGHT);
-    this.tunnel = this._createTunnel();
-    this.scene.add(this.tunnel);
 
-    this.propeller = this._createPropeller();
-    this.scene.add(this.propeller);
+    this.tunnel = this._createTunnel();
+    this.scene.add(this.tunnel.mesh);
+
+    // this.scene.fog = new THREE.Fog(0x555555, 100, this.tunnel.farEndOfTunnel);
 
     this.lights = this._createLights();
     this.scene.add.apply(this.scene, Object.values(this.lights));
 
     this.objects = this._createObjects();
     this.scene.add.apply(this.scene, Object.values(this.objects));
-    
+ 
     this.models = {};
     this._loadObjs(this.path_callback_Array).then(() => {
       this.event.dispatch("modelsAllLoaded");
@@ -192,6 +192,12 @@ class Game {
                         this.score.pause();
                         this.ui.freeze();
                         this.ui.canvas2D.enable();
+                        (async () => {
+                          await this.ui.pauseButton.hide();
+                          this.audio.fadeOut(10);
+                          await this.ui.startButton.show();
+                          this.ui.startButton.listenOnce();
+                        })()
                       })
                     .execute(() => {
                         this.ui.canvas2D.paint();
@@ -207,6 +213,12 @@ class Game {
                         this.score.start();
                         this.ui.unfreeze();
                         this.ui.canvas2D.disable();
+                        (async () => {
+                          this.ui.startButton.hide();
+                          await this.ui.pauseButton.show();
+                          this.audio.fadeIn(4);
+                          this.ui.pauseButton.listenOnce();
+                        })()
                         RenderLoop.goto("main");
                         console.info('RenderLoop: game resumed');
                       })
@@ -254,8 +266,6 @@ class Game {
   /* scene and camera */
   _createScene (width, height) {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xa5a4a4);
-    this.scene.fog = new THREE.Fog(0x555555, 100, 950);
     
     const setting = this.config.cameraSetting;
     this.camera = new THREE.PerspectiveCamera(
@@ -272,58 +282,64 @@ class Game {
 
   _createTunnel () {
     const points = [];
+    const tunnel = {}
     const { x, y } = this.camera.position;
+    const maxI = 1200;
+    const delta = 25 / 4;
+    tunnel.closeEndOfTunnel = -300;
+    tunnel.lengthOfTunnel = maxI * delta;
+    tunnel.farEndOfTunnel = tunnel.lengthOfTunnel + tunnel.closeEndOfTunnel;
+    tunnel.radius = 200;
 
-    for (let i = 0; i < 200; i++) {
-      points.push(new THREE.Vector3(x, y, -300 + 25 * (i / 4)));
+    for (let i = 0; i < maxI; i++) {
+      points.push(new THREE.Vector3(x, y, tunnel.closeEndOfTunnel + delta * i));
     }
     const curve = new THREE.CatmullRomCurve3(points)
-    const tubeGeometry = new THREE.TubeGeometry(curve, 100, 200, 50, false);
+    const tubeGeometry = new THREE.TubeGeometry(curve, 100, tunnel.radius, 50, false);
     const tubeMaterial = new THREE.MeshStandardMaterial({
       side: THREE.BackSide,
       color: 0xffffff
     });
 
-    return new THREE.Mesh(tubeGeometry, tubeMaterial)
+    tunnel.mesh = new THREE.Mesh(tubeGeometry, tubeMaterial)
+
+    return tunnel
   }
   /* lights */
   _createLights () {
     const spotLight = new THREE.SpotLight();
-    spotLight.color = new THREE.Color(0x555555);
-    spotLight.castShadow = true;
-    spotLight.position.set(20, -80, -400);
-    spotLight.intensity = 1; // 光的强度 默认值为1
-    spotLight.distance = 500; // 从发光点发出的距离，光的亮度，会随着距离的远近线性衰减
-    spotLight.angle = 0.4; // 光色散角度，默认是 Math.PI * 2
+    spotLight.color = new THREE.Color("red");
+
+    spotLight.position.set(0, 0, this.tunnel.farEndOfTunnel * 1.5);
+
+    spotLight.intensity = 10;
+
+    spotLight.distance = this.tunnel.lengthOfTunnel * 1.5;
+
+    spotLight.angle = Math.atan(this.tunnel.radius / this.tunnel.lengthOfTunnel);
     spotLight.penumbra = 0.1; // 光影的减弱程度，默认值为0， 取值范围 0 -- 1之间
-    spotLight.decay = 1; // 光在距离上的量值, 和光的强度类似（衰减指数）
-    spotLight.shadow.mapSize.width = 1024;
-    spotLight.shadow.mapSize.height = 1024; // 设置阴影分辨率
-    spotLight.shadow.camera.near = 0.1; // 投影近点 --> 从距离光源的哪一才产生阴影
-    spotLight.shadow.camera.far = 300; // 投影原点 --> 到光源的哪一点位置不产生阴影
-    spotLight.shadow.camera.fov = 10; // 投影视场
-    var target = new THREE.Object3D();
-    target.position.set(0, 0, 0);
+    spotLight.decay = .1; // 光在距离上的量值, 和光的强度类似（衰减指数）
+    spotLight.castShadow = false;
+
+    const target = new THREE.Object3D();
+    target.position.set(0, 0, this.tunnel.closeEndOfTunnel);
     spotLight.target = target;
-    //  const light = new THREE.PointLight( 0xdf1491, 1, 10000 );
-    //  light.position.set( 0, 0, 0 );
+
     return {
-        ambientLight: new THREE.AmbientLight(0xFFFFFF*Math.random(), 1),
-        spotLight: spotLight,
-     // light
+      spotLight
     };
   }
   /* createPropeller */
-  _createPropeller () {
+  _createPropeller (intialRotation) {
     const geomPropeller = new THREE.BoxGeometry(90, 3, 3);
     const material = new THREE.MeshPhongMaterial({
         color: 0x6d6d6db6,
         flatShading: THREE.FlatShading
     });
     const propeller = new THREE.Mesh(geomPropeller, material);
+    propeller.rotation.z = intialRotation;
     this.addUpdateFunc(() => {
-        // propeller.rotation.y += 4.5
-        propeller.rotation.z += 153
+      propeller.rotation.z += this.deg(30)
     });
     propeller.scale.set(1, 1, 1);
     propeller.position.set(-8, 25, 140);
@@ -331,15 +347,24 @@ class Game {
     return propeller
   }
 
+  deg(num) {
+    return 565.4866776461628 * num
+  }
+
+  changeColor (colorHexValue) {
+    this.lights.spotLight.color = new THREE.Color(colorHexValue);
+  }
+
   /* createObjects */
   _createObjects () {
     const geometry = new THREE.BoxGeometry( 300, 100, 10 );
-    const material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
-    const testWing = new THREE.Mesh( geometry, material );
+    const material = new THREE.MeshBasicMaterial({color: 0x00ff00});
+    const testWing = new THREE.Mesh(geometry, material);
+          testWing.rotation.x = Math.PI * .45
+
     this.addUpdateFunc(() => {
-      // testWing.rotation.set(testWing.rotation._x += this.ui.data.rotation_force, 0, 0)
+      testWing.rotation.x += this.ui.data.rotate_force
       testWing.position.y += this.ui.data.up_force
-      // console.log(this.ui.data)
     })
     return {
       testWing
@@ -349,10 +374,14 @@ class Game {
   
   /* debugger */
   _debug () {
+    window.THREE = THREE;
     this.scene.add(new THREE.AxesHelper(500))
     this.addCameraHelper(this.camera)
     if(this.objects)
       this.addBoxHelper(Object.values(this.objects))
+    if(this.lights.spotLight)
+      this.addSpotLightHelper(this.lights.spotLight);
+
     this.event.addListener("modelsAllLoaded", () => {
       this.addBoxHelper(Object.values(this.models))
     }, {once: true});
@@ -377,16 +406,19 @@ class Game {
       plane => {
         plane.traverse(child => {
           if (child instanceof THREE.Mesh) {
-            child.material = new THREE.MeshBasicMaterial({
-              // map: new THREE.TextureLoader().load("/test/naitou.jpg"),
+            child.material = new THREE.MeshPhongMaterial({
               color: 0x9e4b4b,
-              // color: 0xffffff,
-              side: THREE.DoubleSide
+              side: THREE.DoubleSide,
+              flatShading: true
             });
           }
         });
         plane.scale.set(0.05, 0.05, 0.05);
-        this.models.plane = plane;
+        const group = new THREE.Group();
+        group.add(plane);
+        group.add(this._createPropeller(0));
+        group.add(this._createPropeller(Math.PI));
+        this.models.plane = group;
       }
     ]
   ]
@@ -449,6 +481,12 @@ class Game {
   }
 
   /* Helpers(used in _debug) */
+  addSpotLightHelper (spotLight) {
+    const spotLightHelper = new THREE.SpotLightHelper(spotLight);;
+    this.scene.add(spotLightHelper);
+    spotLight.helper = spotLightHelper;
+  }
+
   addCameraHelper (camera) {
     const helper = new THREE.CameraHelper(camera);
     this.scene.add(helper);
@@ -516,8 +554,6 @@ class Game {
         // Math.random() return a random value between 0 and 1
     }
     return new THREE.PointCloud(geometry, material);
-    // group = new THREE.Group();
-    // scene.add(group);
   }
   _log () {
     let mode = ['production', '#42c02e'];
@@ -562,42 +598,27 @@ game.whenPaused = new class {
   init () { // all methods related to changing game state
     document.addEventListener("visibilitychange", () => {
       if(document.visibilityState === 'visible') {
-        game.audio.fadeIn(4);
-        this.resolve()
+        // game.audio.fadeIn(4);
+        // this.resolve()
       } else {
         game.audio.fadeOut(20);
         game.pause();
       }
     }, {passive: true});
 
-    if(Dialog.isBusy) {
+    if(Dialog.isBusy)
       game.pause()
-    }
-    Dialog.addEventListener('dialogShow', () => game.pause())
     Dialog.addEventListener('dialogHide', () => this.resolve())
+    Dialog.addEventListener('dialogShow', () => game.pause())
   }
 
   initButtons () {
-    game.ui.startButton.addTriggerCallback(async () => {
-      this.resolve()
-      
-      game.ui.startButton.hide();
-      await game.ui.pauseButton.show();
-      game.audio.fadeIn(4);
-      game.ui.pauseButton.listenOnce();
-    }, {once: false, toBeClearedWhenReset: true})
+    game.ui.startButton.addTriggerCallback(() => this.resolve(), {once: false, toBeClearedWhenReset: true})
 
-    game.ui.pauseButton.addTriggerCallback(async () => {
-        game.pause();
+    game.ui.pauseButton.addTriggerCallback(() => game.pause(), {once: false, toBeClearedWhenReset: true})
+                       .listenOnce();
 
-        await game.ui.pauseButton.hide();
-        game.audio.fadeOut(10)
-        await game.ui.startButton.show();
-        game.ui.startButton.listenOnce();
-      }, {once: false, toBeClearedWhenReset: true})
-    .listenOnce();
-
-    game.ui.homeButton.addTriggerCallback(async () => this.reject(game.end()), {once: true})
+    game.ui.homeButton.addTriggerCallback(() => this.reject(game.end()), {once: true})
                       .listenOnce();
   }
 

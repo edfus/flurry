@@ -376,20 +376,21 @@ class GlobalAudioPlayer {
 
     this.songPlaying.source = source
     this.songPlaying.name = name;
-    console.info("Playing: " + this.songPlaying.name)
-    return new Promise((resolve, reject) => {
-        source.onended = isScheduled => {
-          console.info("Ended: " + this.songPlaying.name)
-          this.songPlaying.empty();
-          if(isScheduled)
-            reject("Stopped previous flow, playing songs on the new schedule")
-          else resolve();
-        }
-        source.beforeForceStopped = () => {
-          this.songPlaying.source.onended = null; // in case async error
-          reject('Force stopped: ' + this.songPlaying.name);
-        }
-      })
+    console.info("AudioPlayer: Playing: " + this.songPlaying.name)
+    const temp = new Promise((resolve, reject) => {
+      source.onended = isScheduled => {
+        console.info("AudioPlayer: Ended: " + this.songPlaying.name)
+        this.songPlaying.empty();
+        if(isScheduled)
+          reject("AudioPlayer: Stopped previous flow, playing songs on the new schedule")
+        else resolve();
+      }
+      source.beforeForceStopped = () => {
+        this.songPlaying.source.onended = null; // in case async error
+        reject('AudioPlayer: Force stopped: ' + this.songPlaying.name);
+      }
+    })
+    return source._promisePtr = temp
   }
   /**
    * 播放按顺序的下一首歌
@@ -410,7 +411,12 @@ class GlobalAudioPlayer {
         return new Promise(resolve => {
           setTimeout(() => resolve(this.playNext(autoPlay)), this.songPlaying.source.buffer.duration * 999.9)
         })
-      } else return Promise.reject("songs not available")
+      } else {
+        return new Promise(resolve => {
+          console.info("AudioPlayer: song not available")
+          setTimeout(() => resolve(this.playNext(autoPlay)), 1000)
+        })
+      }
     }
     this.songs.currentIndex = nextSong.index;
     this.request(nextSong.index + this.preloadLength)
@@ -514,6 +520,7 @@ class GlobalAudioPlayer {
   async stop (delay = 0) {
     if(this.songPlaying.source) {
       const handleFunc = this.songPlaying.source.beforeForceStopped
+      this.songPlaying.source._promisePtr.catch(reason => console.info(reason))
       if(handleFunc && typeof handleFunc === "function")
         handleFunc();
       this.songPlaying.source.stop(delay);

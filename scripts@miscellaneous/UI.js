@@ -258,10 +258,9 @@ class UserInteraction {
   #frozen = false; //TODO
 
   freeze () { //TODO
-    // const frozenAboslutePos = {...this.fingersPos}; // shallow
+    this.fingersPos.clear()
     // Object.freeze(this.fingersPos);
     this.unfreeze = function () {
-      // this.fingersPos = frozenAboslutePos;
       this.#frozen = false;
       delete this.unfreeze;
     }
@@ -371,10 +370,7 @@ class UserInteraction {
   }
   updateData () {
     if(this.#frozen)
-      return {
-        rotate_force: 0, // -1 ~ 1
-        up_force: 0 // -1 ~ 1
-      }
+      return this.data;
     const relative_x0 = this.fingersPos[0].x_now / this.WIDTH
     const relative_x1 = this.fingersPos[1].x_now / this.WIDTH
     const relative_y0 = this.fingersPos[0].y_now / this.HEIGHT
@@ -390,7 +386,9 @@ class UserInteraction {
     const totalD_y1 = this.fingersPos[1].y_now - this.fingersPos[1].y_initial
 
     this.data.rotate_force = length * relativeD_y * (Math.abs(totalD_y0 - totalD_y1) + 1)
-    this.data.up_force = -(totalD_y0 + totalD_y1) / this.HEIGHT
+    this.data.up_force = -(totalD_y0 + totalD_y1) / this.HEIGHT;
+
+    return this.data;
   }
   
   /* callbacks */
@@ -437,17 +435,21 @@ class UserInteraction {
 
     let mouseMove_triggered = false;
     this.event.addListener("mousemove", event => {
-      if(mouseMove_triggered)
-        this.canvas2D.pushPoint(event.clientX, event.clientY, 0); // 0 - identifier of this touch
-      else {
-        this.canvas2D.createLine(event.clientX, event.clientY, 0);
-        mouseMove_triggered = true;
+      if(this.canvas2D.enabled) {
+        if(mouseMove_triggered)
+          this.canvas2D.pushPoint(event.clientX, event.clientY, 0); // 0 - identifier of this touch
+        else {
+          this.canvas2D.createLine(event.clientX, event.clientY, 0);
+          mouseMove_triggered = true;
+        }
       }
     })
 
     this.event.addListener("mouseleave", () => {
-      mouseMove_triggered = false;
-      this.canvas2D.endLine(0);
+      if(this.canvas2D.enabled) {
+        mouseMove_triggered = false;
+        this.canvas2D.endLine(0);
+      }
     })
 
     this.event.addListener("keydown", event => {
@@ -630,7 +632,10 @@ class Canvas2D {
   }
 
   pushPoint (x, y, identifier) {
+    if(!this.#paths_obj.hasOwnProperty(identifier))
+      return ;
     let path = this.#paths_obj[identifier];
+
     let i = path.last_i;
 
     path.segments[i].path.lineTo(x, y);
@@ -695,22 +700,13 @@ class Canvas2D {
 
   static get emptyCanvas () {
     return {
-      createLine () {
-        ;
-      },
-      endLine () {
-        ;
-      },
-      pushPoint () {
-        ;
-      },
-      paint () {
-        ;
-      },
+      paint () {;},
       get domElement () {
         return '';
       },
-      enabled: false
+      enabled: false,
+      enable () {;},
+      disable () {;}
     }
   }
 

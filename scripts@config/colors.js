@@ -6,3 +6,5 @@ export default {
   brownDark: 0x23190f,
   blue: 0x68c3c0,
 }
+
+// https://github.com/mrdoob/three.js/blob/master/src/math/Color.js
