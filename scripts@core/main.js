@@ -27,7 +27,9 @@ class Game {
     this.state = {};
     this.event = new Event();
     this.event.addListener("newEvent", eventName => this.state.now = eventName); // RenderLoop relies on this
-    this._load = {};
+    this._load = {
+      texture: new THREE.TextureLoader()
+    };
     this.init();
   }
 
@@ -42,10 +44,8 @@ class Game {
     this.lights = this._createLights("rgb( 173, 250, 223 )");
     this.scene.add.apply(this.scene, Object.values(this.lights));
 
-    this._createFog("rgb( 173, 250, 223 )").then(fog => {
-      this.fog = fog;
-      this.scene.add(fog)
-    })
+    this.fog = this._createFog("rgb( 173, 250, 223 )");
+    this.scene.add(this.fog)
 
     this.objects = this._createObjects();
     this.scene.add.apply(this.scene, Object.values(this.objects));
@@ -328,7 +328,6 @@ class Game {
     const spotLight = new THREE.SpotLight();
     spotLight.color = new THREE.Color(color);
 
-
     spotLight.position.set(0, 0, this.tunnel.farEndOfTunnel * delta);
 
     spotLight.intensity = 3;
@@ -336,7 +335,7 @@ class Game {
     spotLight.distance = this.tunnel.lengthOfTunnel * delta;
 
     spotLight.angle = Math.atan(this.tunnel.radius / this.tunnel.lengthOfTunnel) * delta;
-    spotLight.decay = .1; // decay = 2 leads to physically realistic light falloff
+    spotLight.decay = .3; // decay = 2 leads to physically realistic light falloff
     spotLight.castShadow = false;
 
     spotLight.target.position.set(0, 0, this.tunnel.closeEndOfTunnel);
@@ -364,31 +363,34 @@ class Game {
 
   _createFog (color) {
     this.scene.fog = new THREE.Fog(this.RGB_Linear_Shade(-.2, color), this.tunnel.farEndOfTunnel - 2 * this.tunnel.radius, this.tunnel.farEndOfTunnel);
-    return new Promise((resolve, reject) => {
-      new THREE.TextureLoader().load("./resource/textures/smoke.png", texture => {
-        const fogGeo = new THREE.PlaneBufferGeometry(500,500);
-        const fogMaterial = new THREE.MeshLambertMaterial({
-          map: texture,
-          transparent: true,
-          opacity: .3
-        });
-        const fog = new THREE.Group();
-        const fogPos = this.tunnel.farEndOfTunnel / .7;
-        for(let p = 0; p < 5; p++) {
-          let fogSegment = new THREE.Mesh(fogGeo,fogMaterial);
-          fogSegment.position.set(
-            Math.random() * this.tunnel.radius,
-            Math.random() * this.tunnel.radius,
-            fogPos + Math.random() * this.tunnel.radius
-          );
-          fogSegment.rotation.x = 1.16;
-          fogSegment.rotation.y = -0.12;
-          fogSegment.rotation.z = this.deg(Math.random() * 360);
-          fog.add(fogSegment)
-        }
-        resolve(fog)
-      }, reject);
+    // https://threejs.org/docs/#api/en/loaders/TextureLoader
+    const texture =this._load.texture.load("./resource/textures/smoke.png");
+    const fogGeo = new THREE.PlaneBufferGeometry(500,500);
+    const fogMaterial = new THREE.MeshLambertMaterial({
+      map: texture,
+      transparent: true,
+      opacity: .3
+    });
+    const fog = new THREE.Group();
+    const fogPos = this.tunnel.farEndOfTunnel / .7;
+    for(let p = 0; p < 5; p++) {
+      let fogSegment = new THREE.Mesh(fogGeo,fogMaterial);
+      fogSegment.position.set(
+        Math.random() * this.tunnel.radius,
+        Math.random() * this.tunnel.radius,
+        fogPos + Math.random() * this.tunnel.radius
+      );
+      fogSegment.rotation.x = 1.16;
+      fogSegment.rotation.y = -0.12;
+      fogSegment.rotation.z = this.deg(Math.random() * 360);
+      fog.add(fogSegment)
+    }
+    this.event.addListener("update", () => {
+      fog.traverse(segement => {
+        segement.rotation.z -= 0.002;
+      });
     })
+    return fog
   }
 
   _composeEffect () {
@@ -397,6 +399,14 @@ class Game {
     // http://bkcore.com/blog/3d/webgl-three-js-volumetric-light-godrays.html godray
     // https://threejs.org/examples/webgl_postprocessing_godrays.html
     // https://medium.com/@andrew_b_berg/volumetric-light-scattering-in-three-js-6e1850680a41
+
+    // https://stackoverflow.com/questions/15354117/three-js-blur-the-frame-buffer
+
+    // https://threejsfundamentals.org/threejs/lessons/threejs-post-processing.html - intro
+
+    // https://discourse.threejs.org/t/solved-effectcomposer-layers/3158/4 - autoClear & layer
+    // http://jsfiddle.net/prisoner849/mjfckw02/
+    // https://threejs.org/docs/#manual/en/introduction/How-to-use-post-processing
   }
 
   path_callback_Array = [
@@ -407,41 +417,67 @@ class Game {
             child.material = new THREE.MeshPhongMaterial({
               color: 0x9e4b4b,
               side: THREE.DoubleSide,
-              flatShading: true
+              flatShading: true,
+              emissive: 0x9e4b4b,
+              emissiveIntensity: 0
             });
           }
         });
+
         plane.scale.multiplyScalar(0.05);
+        const position_propeller = new THREE.Vector3(-8, 25, 140);
+        const position_headLight = new THREE.Vector3(-8, 25, 1200);
         const group = new THREE.Group();
         group.add(plane);
-        group.add(this._createPropeller(0));
-        group.add(this._createPropeller(this.deg(120)));
-        group.add(this._createPropeller(this.deg(240)));
+        group.add(this._createPropeller(0, position_propeller));
+        group.add(this._createPropeller(this.deg(120), position_propeller));
+        group.add(this._createPropeller(this.deg(240), position_propeller));
+        group.add(this._createHeadLight(0xa5a1a1, position_headLight, position_propeller));
         this.models.plane = group;
       }
     ]
   ]
 
+  _createHeadLight (color, positionOfFog, positionOfLight) {
+
+    const angle = Math.PI / 15,
+          length = 1 / Math.tan(angle) * (this.tunnel.radius * .6);
+          
+    const spotLight = new THREE.SpotLight(color, .3, length, angle, 0, 2);
+    // https://threejs.org/docs/#api/en/lights/SpotLight
+
+    spotLight.target.position.copy(positionOfFog)
+    spotLight.target.updateMatrixWorld()
+    spotLight.castShadow = false; //
+
+    spotLight.position.copy(positionOfLight)
+    const group = new THREE.Group();
+    group.add(spotLight);
+    if(this.config.testMode)
+      this.addSpotLightHelper(spotLight)
+
+    return group
+  }
+
   /* createPropeller */
-  _createPropeller (intialRotation) {
+  _createPropeller (intialRotation, position) {
     const geomPropeller = new THREE.BoxGeometry(90, 3, 3);
-    const material = new THREE.MeshPhongMaterial({
-        color: 0x6d6d6db6,
-        flatShading: THREE.FlatShading
+    const material = new THREE.MeshBasicMaterial({
+        color: 0x6d6d6d
     });
     const propeller = new THREE.Mesh(geomPropeller, material);
     propeller.rotation.z = intialRotation;
     propeller.rotation.x = this.deg(-12)
-    this.addUpdateFunc(() => {
+    this.event.addListener("update", () => {
       propeller.rotation.z += this.deg(12);
     });
-    propeller.position.set(-8, 25, 140);
+    propeller.position.copy(position);
 
     return propeller
   }
 
   deg(num) {
-    return 0.017453292519943295 * num
+    return THREE.MathUtils.degToRad(num)
   }
 
   RGB_Linear_Shade (p,c) {
@@ -454,35 +490,93 @@ class Game {
     this.lights.spotLight.color = new THREE.Color(colorHexValue);
   }
 
+  _createPoints(h, s, l) {
+    const positions = [];
+    const colors = [];
+    const opacities = [];
+    const rangeX = 500;
+    const rangeY = 500;
+    const rangeZ = this.tunnel.farEndOfTunnel - this.tunnel.radius * 2;
+
+    for(let i = 0, color = new THREE.Color(); i < 6000; i++) {
+      const x = THREE.MathUtils.randFloat(-rangeX, rangeX );
+      const y = THREE.MathUtils.randFloat(-rangeY, rangeY );
+      const z = THREE.MathUtils.randFloat(200, rangeZ );
+
+      positions.push( x, y, z );
+      color.setHSL(h, Math.random() * s, Math.random() * l)
+      colors.push(color.r, color.g, color.b)
+      opacities.push(Math.random())
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3 ));
+    geometry.setAttribute('alpha', new THREE.Float32BufferAttribute(opacities, 1 ));
+
+    // geometry.computeBoundingSphere();
+
+    // const material = new THREE.PointsMaterial({
+    //   size: 2,
+    //   sizeAttenuation: true,
+    //   transparent: true,
+    //   vertexColors: true,  // material.color.setHSL( h, s, l );
+    //   // color: 0x0080ff
+    //   // map: sprite,
+		// 	// alphaTest: 0.5
+    // });
+
+    // point cloud material
+    const shaderMaterial = new THREE.ShaderMaterial( {
+        uniforms:   {
+          color: { value: new THREE.Color( 0xffff00 ) },
+        },
+        vertexShader:  
+        `attribute float alpha; varying float vAlpha;
+        void main() {
+            vAlpha = alpha;
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            gl_PointSize = 4.0;
+            gl_Position = projectionMatrix * mvPosition;
+        }`,
+        fragmentShader: 
+        `uniform vec3 color;varying float vAlpha;
+        void main() {
+            gl_FragColor = vec4( color, vAlpha );
+        }`,
+        transparent: true
+    });
+    this.event.addListener("update", () => {
+      const alphas = geometry.attributes.alpha;
+      const count = alphas.count;
+      for( let i = 0; i < count; i ++ ) {
+          // dynamically change alphas
+          alphas.array[ i ] *= 0.99;
+          if ( alphas.array[ i ] < 0.01 ) { 
+              alphas.array[ i ] = 1.0;
+          }
+      }
+      geometry.attributes.alpha.needsUpdate = true;
+    })
+    return new THREE.Points( geometry, shaderMaterial );
+  }
+
   /* createObjects */
   _createObjects () {
     const geometry = new THREE.BoxGeometry( 300, 100, 10 );
-    const material = new THREE.MeshBasicMaterial({color: 0x00ff00});
+    const material = new THREE.MeshBasicMaterial({color: 0xadfadf});
     const testWing = new THREE.Mesh(geometry, material);
-          testWing.rotation.x = this.deg(45)
+          testWing.rotation.x = this.deg(78)
     const rotate_axis = new THREE.Vector3(0, 1, 0)
-    this.addUpdateFunc(() => {
+    this.event.addListener("update", () => {
       testWing.rotateOnAxis(rotate_axis, this.ui.data.rotate_force);
       testWing.position.y += this.ui.data.up_force
     })
-    return {
-      testWing
-    }
-  }
 
-   /* createCircleGeometry */
-   _createCircleGeometry () {
-    const Geometry = new THREE.CircleGeometry( 130,128,0,6.3 );
-    const material = new THREE.MeshBasicMaterial({
-      color: 0xa5a1a1,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.5
-    });
-    const CircleGeometry = new THREE.Mesh(Geometry, material);
-    CircleGeometry.position.set(-8, 25, 1000);
-    return CircleGeometry
-    
+    return {
+      testWing,
+      points: this._createPoints(209.882, 1, .6)
+    }
   }
   
   /* debugger */
@@ -505,7 +599,7 @@ class Game {
       this.event.addListener("started", () => {
         this._controls = new OrbitControls(this.camera, this.renderer.domElement);
         const throttleLog = new ThrottleLog(1600);
-        this.addUpdateFunc(() => 
+        this.event.addListener("update", () => 
           throttleLog.log(`position: (${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)})`, 
           `\nrotation: (${this.camera.rotation._x.toFixed(1)}, ${this.camera.rotation._y.toFixed(1)}, ${this.camera.rotation._z.toFixed(1)})`)
         )
@@ -564,12 +658,8 @@ class Game {
   }
 
   /* Unvarying functions */
-  #updateCallbackQueue = []
-  addUpdateFunc (func) {
-    this.#updateCallbackQueue.push(func);
-  }
   update () {
-    this.#updateCallbackQueue.forEach(e => void e());
+    this.event.dispatch("update", performance.now());
   }
 
   /* Helpers(used in _debug) */
@@ -590,13 +680,13 @@ class Game {
       obj3D.forEach(e => {
         e.boxHelper = new THREE.BoxHelper(e.mesh, 0x00ff00);
         this.scene.add(e.boxHelper);
-        this.addUpdateFunc(() => e.boxHelper.update());
+        this.event.addListener("update", () => e.boxHelper.update());
         return ;
       })
     else {
       obj3D.boxHelper = new THREE.BoxHelper(obj3D.mesh, 0x00ff00);
       this.scene.add(obj3D.boxHelper);
-      this.addUpdateFunc(() => obj3D.boxHelper.update());
+      this.event.addListener("update", () => obj3D.boxHelper.update());
     }
   }
 
@@ -621,32 +711,6 @@ class Game {
     return false;
   }
 
-  #createPointCloud(size, transparent, opacity, vertexColors, sizeAttenuation, color) {
-    let geometry = new THREE.Geometry();
-    const material = new THREE.PointCloudMaterial({
-          size: size,
-          transparent: transparent,
-          opacity: opacity,
-          vertexColors: vertexColors,
-          sizeAttenuation: sizeAttenuation,
-          color: color
-      });
-    const range = 500;
-    for (let i = 0; i < 15000; i++) {
-        geometry.vertices.push(
-            new THREE.Vector3(
-              Math.random() * range,
-              Math.random() * range,
-              Math.random() * range
-            ) // can change pointer to a texture. e.g. an img
-          );
-        // https://threejs.org/docs/#api/en/math/Color
-        geometry.colors.push(new THREE.Color(`hsl(33%, 100%, ${Math.random() * 60}%)`));
-        // color 0x00ff00's H S L: 33% 100% 50%
-        // Math.random() return a random value between 0 and 1
-    }
-    return new THREE.PointCloud(geometry, material);
-  }
   _log () {
     let mode = ['production', '#42c02e'];
     if(this.config.testMode)
