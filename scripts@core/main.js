@@ -44,8 +44,11 @@ class Game {
     this.lights = this._createLights();
     this.scene.add.apply(this.scene, Object.values(this.lights));
 
-    this.objects = this._createObjects();
-    this.scene.add.apply(this.scene, Object.values(this.objects));
+    // this.objects = this._createObjects();
+    // this.scene.add.apply(this.scene, Object.values(this.objects));
+
+    // this.CircleGeometry = this._createCircleGeometry();
+    // this.scene.add.apply(this.scene, Object.values(this.CircleGeometry));
  
     this.models = {};
     this._loadObjs(this.path_callback_Array).then(() => {
@@ -339,7 +342,7 @@ class Game {
     const propeller = new THREE.Mesh(geomPropeller, material);
     propeller.rotation.z = intialRotation;
     this.addUpdateFunc(() => {
-      propeller.rotation.z += this.deg(30)
+      propeller.rotation.z += this.deg(30);
     });
     propeller.scale.set(1, 1, 1);
     propeller.position.set(-8, 25, 140);
@@ -348,7 +351,7 @@ class Game {
   }
 
   deg(num) {
-    return 565.4866776461628 * num
+    return 0.017453292519943295 * num
   }
 
   changeColor (colorHexValue) {
@@ -360,7 +363,7 @@ class Game {
     const geometry = new THREE.BoxGeometry( 300, 100, 10 );
     const material = new THREE.MeshBasicMaterial({color: 0x00ff00});
     const testWing = new THREE.Mesh(geometry, material);
-          testWing.rotation.x = Math.PI * .45
+          testWing.rotation.x = this.deg(45)
 
     this.addUpdateFunc(() => {
       testWing.rotation.x += this.ui.data.rotate_force
@@ -371,6 +374,20 @@ class Game {
     }
   }
 
+   /* createCircleGeometry */
+   _createCircleGeometry () {
+    const Geometry = new THREE.CircleGeometry( 130,128,0,6.3 );
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xa5a1a1,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.5
+    });
+    const CircleGeometry = new THREE.Mesh(Geometry, material);
+    CircleGeometry.position.set(-8, 25, 1000);
+    return CircleGeometry
+    
+  }
   
   /* debugger */
   _debug () {
@@ -417,7 +434,8 @@ class Game {
         const group = new THREE.Group();
         group.add(plane);
         group.add(this._createPropeller(0));
-        group.add(this._createPropeller(Math.PI));
+        group.add(this._createPropeller(this.deg(180)));
+        group.add(this._createCircleGeometry ());
         this.models.plane = group;
       }
     ]
