@@ -9,7 +9,7 @@ import {
 } from "https://cdn.jsdelivr.net/npm/three@v0.121.0/build/three.module.min.js";
 
 import { OBJLoader2Parser } from "./utils/OBJLoader2Parser.js";
-import { MeshReceiver } from "./utils//MeshReceiver.js";
+import { MeshReceiver } from "./utils/MeshReceiver.js";
 import { MaterialHandler } from "./utils/MaterialHandler.js";
 
 /**

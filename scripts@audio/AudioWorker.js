@@ -60,16 +60,14 @@ function work() {
                 redirect: 'follow'
               })
           ).then(response => {
-            if (response.ok)
+            if (response.status === 200)
               resolve(response.arrayBuffer());
             else
               reject({ name: 'responseNotOk', message: response.url });
           });
-          /*
-          The Promise returned from fetch() won’t reject on HTTP error status even if the response is an HTTP 404 or 500.
-          Instead, it will resolve normally (with ok status set to false),
-          and it will only reject on network failure or if anything prevented the request from completing.
-          */
+          /* will only reject on network failure,
+           * or if anything prevented the request from completing.
+           */
         } else {
           reject({ name: 'saveDataModeOn', message: undefined });
         };
@@ -234,7 +232,7 @@ class GlobalAudioPlayer {
       return;
 
     const playF = () => {
-      this.playSong(this.songs.intro, true).catch(() => void 0);
+      this.playSong(this.songs.intro, true);
       this.playTriggered = true;
     }
     const callback = () => {
@@ -362,7 +360,7 @@ class GlobalAudioPlayer {
 
   async _play(name, audioBuffer, destination, loop) {
     if(this.songPlaying.source) {
-      this.stop();
+      await this.stop();
     }
     if(this.context.state === 'suspended') {
       await this.resume();
@@ -377,7 +375,7 @@ class GlobalAudioPlayer {
     this.songPlaying.source = source
     this.songPlaying.name = name;
     console.info("AudioPlayer: Playing: " + this.songPlaying.name)
-    const temp = new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       source.onended = isScheduled => {
         console.info("AudioPlayer: Ended: " + this.songPlaying.name)
         this.songPlaying.empty();
@@ -389,8 +387,7 @@ class GlobalAudioPlayer {
         this.songPlaying.source.onended = null; // in case async error
         reject('AudioPlayer: Force stopped: ' + this.songPlaying.name);
       }
-    })
-    return source._promisePtr = temp
+    }).catch(reason => console.info(reason))
   }
   /**
    * 播放按顺序的下一首歌
@@ -467,6 +464,7 @@ class GlobalAudioPlayer {
         this._fade.finally(resolve);
       })
       await this.stop(delay);
+      await this.resume();
       this.volume = this._user_preferred_volume;
       return this.playSong(param, loop);
     }
@@ -520,13 +518,13 @@ class GlobalAudioPlayer {
   async stop (delay = 0) {
     if(this.songPlaying.source) {
       const handleFunc = this.songPlaying.source.beforeForceStopped
-      this.songPlaying.source._promisePtr.catch(reason => console.info(reason))
+      // this.songPlaying.source._promisePtr.catch(reason => console.info(reason))
+      //NOTE: console.infoed but still throws an uncaught error, I am comfused.
       if(handleFunc && typeof handleFunc === "function")
         handleFunc();
       this.songPlaying.source.stop(delay);
-      this.songPlaying.empty();
       return new Promise(resolve => {
-        setTimeout(() => resolve(), delay * 1000);
+        setTimeout(() => resolve(this.songPlaying.empty()), delay * 1000);
       })
     }
     // An AudioBufferSourceNode can only be played once;

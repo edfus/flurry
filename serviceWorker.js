@@ -59,7 +59,7 @@ if(mode === "network-first") {
         }
 
         // got non-cached ok response
-        if(e.request.method === "GET" && ["cors", "basic"].includes(response.type)) {
+        if(e.request.method === "GET" && ["cors", "basic"].includes(response.type) || /(\.mp3)$/.test(request.url)) {
           const clone = response.clone();
           e.waitUntil(
             caches.open(cacheName).then(cache => cache.put(e.request.url, clone))
@@ -75,13 +75,12 @@ if(mode === "network-first") {
     e.respondWith(
       caches.match(e.request.url).then(async response => {
         if (response) {
-          // console.log(response)
           return response;
         } else {
           const request = e.request.clone();
           const response = await fetch(request);
 
-          if (response.status !== 200 || !["cors", "basic"].includes(response.type)) {
+          if (response.status !== 200 || !["cors", "basic"].includes(response.type) || /(\.mp3)$/.test(request.url)) {
             return response;
           }
           if(request.method === "GET") {
