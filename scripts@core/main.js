@@ -53,8 +53,8 @@ class Game {
       this.scene.add.apply(this.scene, Object.values(this.models));
     });
     
-    this.camera.position.set(-8.2, -8.2, -318.2);
-    this.camera.rotation.set(3.0, 0, 3.146)
+    this.camera.position.set(0, 10, -500);
+    this.camera.rotation.set(0, 3.14, 0)
 
     this.constructRenderLoops();
 
@@ -328,16 +328,15 @@ class Game {
   _createTunnel () {
     const points = [];
     const tunnel = {}
-    const { x, y } = this.camera.position;
     const maxI = 600;
     const delta = 25 / 4;
-    tunnel.closeEndOfTunnel = -300;
+    tunnel.closeEndOfTunnel = -1300;
     tunnel.lengthOfTunnel = maxI * delta;
     tunnel.farEndOfTunnel = tunnel.lengthOfTunnel + tunnel.closeEndOfTunnel;
-    tunnel.radius = 200;
+    tunnel.radius = 300;
 
     for (let i = 0; i < maxI; i++) {
-      points.push(new THREE.Vector3(x, y, tunnel.closeEndOfTunnel + delta * i));
+      points.push(new THREE.Vector3(0, 0, tunnel.closeEndOfTunnel + delta * i));
     }
     const curve = new THREE.CatmullRomCurve3(points)
     const tubeGeometry = new THREE.TubeGeometry(curve, 100, tunnel.radius, 50, false);
@@ -449,6 +448,18 @@ class Game {
         });
 
         plane.scale.multiplyScalar(0.05);
+        plane.rotation.x = this.deg(12);
+        const position_propeller = new THREE.Vector3(-8, -4, 140);
+        const position_headLight = new THREE.Vector3(-8, 25, 1200);
+        const group = new THREE.Group();
+        group.add(plane);
+        group.add(this._createPropeller(0, position_propeller));
+        // group.add(this._createPropeller(this.deg(120), position_propeller));
+        // group.add(this._createPropeller(this.deg(240), position_propeller));
+        group.add(this._createHeadLight(this.colors.lightBlue, position_headLight, position_propeller));
+        group.position.set(9,-10,0);
+        this.models.plane = group;
+        /*
         plane.name = "plane_obj"
         const position_propeller = new THREE.Vector3(-8, 25, 140);
         const position_headLight = new THREE.Vector3(-8, 25, 1200);
@@ -460,6 +471,7 @@ class Game {
         group.add(this._createHeadLight(this.colors.lightBlue, position_headLight, position_propeller));
         group.name = "plane";
         this.models.plane = group;
+        */
       }
     ]
   ]
@@ -487,13 +499,15 @@ class Game {
   }
 
   /* createPropeller */
-  _createPropeller (material, intialRotation, position) {
-    const geomPropeller = new THREE.BoxGeometry(90, 3, 3);
+  _createPropeller (intialRotation, position) {
+    const geomPropeller = new THREE.BoxGeometry(100, 5, 5);
+    const material = new THREE.MeshBasicMaterial({
+        color: 0x6d6d6d
+    });
     const propeller = new THREE.Mesh(geomPropeller, material);
     propeller.rotation.z = intialRotation;
-    propeller.rotation.x = this.deg(-12)
     this.event.addListener("update", () => {
-      propeller.rotation.z += this.deg(12);
+      propeller.rotation.z += this.deg(37.4);
     });
     propeller.position.copy(position);
     propeller.name = "plane_propeller";
@@ -577,7 +591,7 @@ class Game {
     })
     testWing.name = "testWing"
     return {
-      testWing
+      // testWing,
     }
   }
 
