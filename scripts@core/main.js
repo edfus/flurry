@@ -94,7 +94,7 @@ class Game {
     this._idle.smoke = this._addSmoke();
     this.scene.add(this._idle.smoke)
 
-    const color = new THREE.Color(this.colors.azure);
+    const color = this.newSceneColor();
     const hsl = this.colors.complementaryOf(color).getHSL({});
 
     this.setSceneColor(color);
