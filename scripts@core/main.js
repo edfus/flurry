@@ -43,9 +43,6 @@ class Game {
 
     this.lights = this._createLights();
     this.scene.add.apply(this.scene, Object.values(this.lights));
-
-    // this.objects = this._createObjects();
-    // this.scene.add.apply(this.scene, Object.values(this.objects));
  
     this.models = {};
     this._loadObjs(this.path_callback_Array).then(() => {
@@ -87,7 +84,9 @@ class Game {
   }
 
   newSceneColor () {
-    return new THREE.Color(this.colors.sceneColors[parseInt(Math.random() * this.colors.sceneColors.length)]);
+    const color = new THREE.Color(this.colors.sceneColors[parseInt(Math.random() * this.colors.sceneColors.length)]);
+    this.event.dispatch("newSceneColor", color)
+    return color;
   }
 
   idle_begin () {
@@ -168,12 +167,12 @@ class Game {
                               .addTriggerCallback(() => game.start(), {once: true})
                               .listenOnce();
                       this.ui.canvas2D.enable();
-                      this.idle_begin()
+                      this.idle_begin();
                     })
                     .execute(() => {
                         this.renderer.render(this.scene, this.camera);
                         this.ui.canvas2D.paint();
-                        this.update_idle()
+                        this.update_idle();
                       })
                     .untilGameStateBecomes("start")
                       .then(() => {
@@ -456,10 +455,22 @@ class Game {
         const group = new THREE.Group();
         group.add(plane);
         group.add(this._createPropeller(0, position_propeller));
-        group.add(this._createHeadLight(this.colors.lightBlue, position_headLight, position_propeller));
+        // group.add(this._createHeadLight(this.colors.lightBlue, position_headLight, position_propeller));
         group.position.set(9,-10,0);
         group.name = "plane";
         this.models.plane = group;
+        this.event.addListener("update_main", () => {
+          group.rotation.z += this.ui.data.rotate_force;
+          group.position.y += this.ui.data.up_force
+        }) //TODO: 更改rotate_force的计算，使其不突变。rotate_force和up_force在updateData函数中计算（UI.js)
+        //TODO：像_old一样，镜头/飞机是缓动的（这需要目标值，而不是force
+        //TODO：飞机上移的翘尾效果，相机和飞机的关系到底是什么？
+        // 在f12中敲下game.ui._debugEvents()即可获取rotate_force、up_force实时值
+        if(!this.ui.isTouchDevice)
+          this.event.addListener("update_main", () => {
+            group.position.y *= .95
+            group.rotation.z *= .95
+          }) // 暂时如此
       }
     ]
   ]
@@ -573,23 +584,6 @@ class Game {
     return points;
   }
 
-  /* createObjects */
-  _createObjects () {
-    const geometry = new THREE.BoxGeometry( 300, 100, 10 );
-    const material = new THREE.MeshBasicMaterial({color: this.colors.azure});
-    const testWing = new THREE.Mesh(geometry, material);
-          testWing.rotation.x = this.deg(78)
-    const rotate_axis = new THREE.Vector3(0, 1, 0)
-    this.event.addListener("update_main", () => {
-      testWing.rotateOnAxis(rotate_axis, this.ui.data.rotate_force);
-      testWing.position.y += this.ui.data.up_force
-    })
-    testWing.name = "testWing"
-    return {
-      testWing,
-    }
-  }
-
   setSceneColor (color_obj) {
     const colorHexValue = color_obj.getHex();
     const rgb = color_obj.getStyle()
@@ -617,6 +611,11 @@ class Game {
       this.addBoxHelper(Object.values(this.objects))
     if(this.lights.spotLight)
       this.addSpotLightHelper(this.lights.spotLight);
+
+    this.event.addListener("newSceneColor", color => {
+      console.log("New color! %c0x" + color.getHexString(), "color: #" + color.getHexString(),);
+    });
+      
 
     this.event.addListener("modelsAllLoaded", () => {
       this.addBoxHelper(Object.values(this.models))

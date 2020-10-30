@@ -64,12 +64,13 @@ class ButtonHandler {
       const callback = () => (listenerTriggered = true) && resolve(func()) 
       domElement.addEventListener("animationend", callback, {passive: true, once: true});
       if(measureNeeded)
-        setTimeout(() => {
-          if(!listenerTriggered) {
-            domElement.removeEventListener("animationend", callback, {once: true});
-            callback();
-          } //TODO
-        }, 1000)
+      setTimeout(() => {
+        if(!listenerTriggered) {
+          domElement.removeEventListener("animationend", callback, {once: true});
+          callback();
+        } //TODO
+      }, 1000)
+
     })
   }
   /**
@@ -78,26 +79,26 @@ class ButtonHandler {
    * @return {Promise}
    */
   static fadeOut(domElement, reflow = true) {
-    if(domElement.classList.contains("fade-out"))
-      return Promise.reject("High frequency.");
-    else if (domElement.classList.contains("fade-in") || domElement.style.animation.includes("fade-in")) {
+    const exec = () => {
+      domElement.classList.add("fade-out");
       return this._newPromiseListener(domElement, () => {
-        domElement.classList.add("fade-out");
-        return this._newPromiseListener(domElement, () => {
+        if(!domElement.dataset.cancelNextReset) { 
           if(reflow)
             domElement.style.display = 'none';
           domElement.style.opacity = 0;
-          domElement.classList.remove("fade-out");
-        })
-      }, true)
-    } else {
-      domElement.classList.add("fade-out");
-      return this._newPromiseListener(domElement, () => {
-        if(reflow)
-          domElement.style.display = 'none';
-        domElement.style.opacity = 0;
+        } else {
+          domElement.dataset.cancelNextReset = ''
+        }
         domElement.classList.remove("fade-out");
       })
+    }
+
+    if(domElement.classList.contains("fade-out"))
+      return Promise.reject("High frequency.");
+    else if(domElement.classList.contains("fade-in") || domElement.style.animation.includes("fade-in")) {
+      return this._newPromiseListener(domElement, () => exec())
+    } else {
+      return exec();
     }
   }
   /**
@@ -106,23 +107,7 @@ class ButtonHandler {
    * @return {Promise}
    */
   static fadeIn(domElement, seconds) {
-    if(domElement.classList.contains("fade-in"))
-      return Promise.reject("High frequency.");
-    else if (domElement.classList.contains("fade-out")) {
-      return this._newPromiseListener(domElement, () => {
-        domElement.style.opacity = 0;
-        domElement.style.display = 'block';
-        if(seconds)
-          domElement.style.animation = `fade-in ${seconds}s ease 1`
-        else domElement.classList.add("fade-in");
-        return this._newPromiseListener(domElement, () => {
-          domElement.style.opacity = 1;
-          if(seconds)
-            domElement.style.removeProperty('animation');
-          else domElement.classList.remove("fade-in");
-        })
-      }, true)
-    } else {
+    const exec = () => {
       domElement.style.opacity = 0;
       domElement.style.display = 'block';
       if(seconds)
@@ -130,10 +115,20 @@ class ButtonHandler {
       else domElement.classList.add("fade-in");
       return this._newPromiseListener(domElement, () => {
         domElement.style.opacity = 1;
+        domElement.style.display = 'block';
         if(seconds)
           domElement.style.removeProperty('animation');
         else domElement.classList.remove("fade-in");
       })
+    }
+
+    if(domElement.classList.contains("fade-in"))
+      return Promise.reject("High frequency.");
+    else if (domElement.classList.contains("fade-out")) {
+      domElement.dataset.cancelNextReset = "true"; 
+      return this._newPromiseListener(domElement, () => exec(), true);
+    } else {
+      return exec();
     }
   }
 }
@@ -170,7 +165,7 @@ class UserInteraction {
   }
 
   _debugEvents () {
-    const excludedEvents = ["mousemove"]
+    const excludedEvents = ["mousemove", "mouseleave", "keydown"]
     const excludedFuncs = []
 
     const tempPtr = this.event;
@@ -183,7 +178,7 @@ class UserInteraction {
         _log2 = _log2.log.bind(_log2);
         _log3 = _log3.log.bind(_log3);
     const log = console.log.bind(console);
-     
+    new ThrottleLog(500).autoLog(() => `(rotate: ${this.data.rotate_force}, up: ${this.data.up_force})\n fingersPos now: (${this.fingersPos[0].x_now}, ${this.fingersPos[0].y_now}), (${this.fingersPos[1].x_now}, ${this.fingersPos[1].y_now})`)
     const funcTrap = {
       apply (target, thisArg, argsList) {
         if(!excludedEvents.includes(argsList[0]))
@@ -396,25 +391,20 @@ class UserInteraction {
     rotate_force: 0, // -1 ~ 1
     up_force: 0 // -1 ~ 1
   }
-  normalize (value, minimum = .1) {
-    const temp = value * 1.2;
-    return temp < minimum
-            ? 0
-            : temp > 1
-              ? 1
-              : temp
-  }
-  updateData () {
+
+  updateData () { //TODO
     if(this.#frozen)
       return this.data;
+    // 数据：this.fingersPos[0]，this.fingersPos[1]分别都具有x_now、y_now，x_initial，y_initial属性
+    // 他们的范围都在：x( -屏幕宽度 / 2, +屏幕宽度 / 2) y( -屏幕高度 / 2, +屏幕高度 / 2)之间
     const relative_x0 = this.fingersPos[0].x_now / this.WIDTH
     const relative_x1 = this.fingersPos[1].x_now / this.WIDTH
     const relative_y0 = this.fingersPos[0].y_now / this.HEIGHT
     const relative_y1 = this.fingersPos[1].y_now / this.HEIGHT
 
-    const relativeD_x = Math.abs(relative_x0 - relative_x1);
+    const relativeD_x = Math.abs(relative_x0 - relative_x1); // abs：绝对值
     const relativeD_y = Math.abs(relative_y0 - relative_y1);
-    let length = Math.hypot(relativeD_x, relativeD_y)
+    let length = Math.hypot(relativeD_x, relativeD_y) // hypot：参数的平方和再开根，即直角边斜边
     if(length < .15)
       length = 0
 
@@ -514,22 +504,22 @@ class UserInteraction {
     },
     position0: new Proxy(this.fingersPos[0], {
       set: (target, prop, value) => {
-        value < 0 
-        ? value = 0
-        : prop === "x"
-          ? value > this.WIDTH && (value = this.WIDTH) // x
-          : value > this.HEIGHT && (value = this.HEIGHT) // y
+        const halfY = this.HEIGHT / 2
+        
+        value < 0
+        ? value < -halfY ? value = -halfY : 0
+        : value > halfY ? value = halfY : 0
 
         return Reflect.set(target, prop, value);
       }
     }),
     position1: new Proxy(this.fingersPos[1], {
       set: (target, prop, value) => {
-        value < 0 
-        ? value = 0
-        : prop === "x"
-          ? value > this.WIDTH && (value = this.WIDTH) // x
-          : value > this.HEIGHT && (value = this.HEIGHT) // y
+        const halfY = this.HEIGHT / 2
+        
+        value < 0
+        ? value < -halfY ? value = -halfY : 0
+        : value > halfY ? value = halfY : 0
 
         return Reflect.set(target, prop, value);
       }
@@ -543,31 +533,35 @@ class UserInteraction {
     updateDistanceConstant () {
       this.invoke(ui => {
         this.distance = Math.min(ui.HEIGHT, ui.WIDTH) / 12;
-        this.position0.x = -this.distance * 2
-        this.position1.x = this.distance * 2
+        ui.fingersPos[0].x_initial = -this.distance * 2;
+        ui.fingersPos[1].x_initial = this.distance * 2;
+        ui.fingersPos[0].y_initial = 0;
+        ui.fingersPos[1].y_initial = 0;
       })
     },
     updateData () {
-      this.invoke(ui => ui.updateData())
+      this.invoke(ui => {
+        ui.updateData();
+      })
     },
     ArrowUp () {
-      this.position0.y -= this.distance;
-      this.position1.y -= this.distance;
-      this.updateData()
+      this.position0.y_now -= this.distance;
+      this.position1.y_now -= this.distance;
+      this.updateData();
     },
     ArrowDown () { 
-      this.position0.y += this.distance;
-      this.position1.y += this.distance;
+      this.position0.y_now += this.distance;
+      this.position1.y_now += this.distance;
       this.updateData()
     },
     ArrowLeft () {
-      this.position0.y -= this.distance / 2
-      this.position1.y += this.distance / 2
+      this.position0.y_now -= this.distance / 2
+      this.position1.y_now += this.distance / 2
       this.updateData()
     },
     ArrowRight () { 
-      this.position0.y += this.distance / 2
-      this.position1.y -= this.distance / 2
+      this.position0.y_now += this.distance / 2
+      this.position1.y_now -= this.distance / 2
       this.updateData()
     }
   }
