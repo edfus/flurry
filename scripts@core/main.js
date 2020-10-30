@@ -629,6 +629,7 @@ class Game {
     import("../lib/OrbitControls.js").then(({OrbitControls}) => {
       this.event.addListener("started", () => {
         this._controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this._controls.enableKeys = false;
         const throttleLog = new ThrottleLog(1600);
         this.event.addListener("update_main", () => 
           throttleLog.log(`position: (${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)})`, 
