@@ -41,11 +41,8 @@ class Game {
     this.tunnel = this._createTunnel();
     this.scene.add(this.tunnel.mesh);
 
-    this.lights = this._createLights("rgb( 173, 250, 223 )");
+    this.lights = this._createLights();
     this.scene.add.apply(this.scene, Object.values(this.lights));
-
-    this.fog = this._createFog("rgb( 173, 250, 223 )");
-    this.scene.add(this.fog)
 
     this.objects = this._createObjects();
     this.scene.add.apply(this.scene, Object.values(this.objects));
@@ -87,6 +84,33 @@ class Game {
     this._log();
     this.event.dispatch("loaded");
     this.state.loaded = true;
+  }
+
+  newSceneColor () {
+    return new THREE.Color(this.colors.sceneColors[parseInt(Math.random() * this.colors.sceneColors.length)]);
+  }
+
+  idle_begin () {
+    this._idle = {}
+    this._idle.smoke = this._addSmoke();
+    this.scene.add(this._idle.smoke)
+
+    const color = this.newSceneColor();
+    const hsl = this.colors.complementaryOf(color).getHSL({});
+
+    this.setSceneColor(color);
+    switch((Math.random() % .3).toFixed(1)) {
+      default: 
+        this._idle.stars = this._createPoints(hsl.h, hsl.s, hsl.l);
+        this.scene.add(this._idle.stars)
+    }
+  }
+
+  idle_clear() {
+    for(const obj3D in this._idle) {
+      this.scene.remove(obj3D);
+    }
+    delete this._idle;
   }
 
   start () {
@@ -143,13 +167,16 @@ class Game {
                               .addTriggerCallback(() => game.start(), {once: true})
                               .listenOnce();
                       this.ui.canvas2D.enable();
+                      this.idle_begin()
                     })
                     .execute(() => {
                         this.renderer.render(this.scene, this.camera);
                         this.ui.canvas2D.paint();
+                        this.update_idle()
                       })
                     .untilGameStateBecomes("start")
                       .then(() => {
+                          this.idle_clear()
                           this.ui.canvas2D.disable();
                           RenderLoop.goto("startAnimation")
                           console.info('RenderLoop: game starts');
@@ -177,6 +204,7 @@ class Game {
                     .execute(() => {
                         this.update();
                         this.renderer.render(this.scene, this.camera);
+                        this.update_main();
                       })
                     .untilGameStateBecomes("crashed")
                       .then(() => {
@@ -251,6 +279,7 @@ class Game {
                           console.info('RenderLoop: game ended');
                         })
     )
+    .keepExecuting(() => this.update())
     .goto("idle")
     .wheneverGame("pause")
       .then(() => {
@@ -270,6 +299,7 @@ class Game {
   _createScene (width, height) {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color("black")
+    this.scene.name = "mainScene"
     
     const setting = this.config.cameraSetting;
     this.camera = new THREE.PerspectiveCamera(
@@ -291,9 +321,8 @@ class Game {
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio( window.devicePixelRatio );
     // this.renderer.shadowMap.enabled = true;
-    // this.renderer.autoClear = false;
-    // renderer.setClearColor( 0xffffff );
-
+    // this.composer.autoClear = false;
+    // composer.setClearColor( 0xffffff );
   }
 
   _createTunnel () {
@@ -318,79 +347,73 @@ class Game {
     });
 
     tunnel.mesh = new THREE.Mesh(tubeGeometry, tubeMaterial)
-
+    tunnel.mesh.name = "tunnel";
     return tunnel
   }
+
   /* lights */
-  _createLights (color) { // The renderer has a parameter called "maxLights" that defaults to 4.
+  _createLights () { 
+    /* The renderer has a parameter called "maxLights" that defaults to 4. */
     const delta = 1.8
 
-    const spotLight = new THREE.SpotLight();
-    spotLight.color = new THREE.Color(color);
-
-    spotLight.position.set(0, 0, this.tunnel.farEndOfTunnel * delta);
-
-    spotLight.intensity = 3;
-
-    spotLight.distance = this.tunnel.lengthOfTunnel * delta;
+    const spotLight = new THREE.SpotLight(0x0, 3, this.tunnel.lengthOfTunnel * delta);
 
     spotLight.angle = Math.atan(this.tunnel.radius / this.tunnel.lengthOfTunnel) * delta;
     spotLight.decay = .3; // decay = 2 leads to physically realistic light falloff
     spotLight.castShadow = false;
 
+    spotLight.position.set(0, 0, this.tunnel.farEndOfTunnel * delta);
     spotLight.target.position.set(0, 0, this.tunnel.closeEndOfTunnel);
     spotLight.target.updateMatrixWorld();
 
-    // http://stemkoski.github.io/Three.js/Color-Explorer.html
+    spotLight.name = "caveLight"
+
     const geometry = new THREE.SphereGeometry(this.tunnel.radius, 32, 32);
-    // const material = new THREE.MeshStandardMaterial({
-    //   color: spotLight.color,
-    //   emissive: spotLight.color,
-    //   emissiveIntensity: 100
-    // })  
-    const darkenColor = new THREE.Color(this.RGB_Linear_Shade(-.1, color));
+
     const sphereLight = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({
-                                          color: darkenColor,
-                                          emissive: darkenColor
+                                          // emissiveIntensity: 100
                                         }));
     sphereLight.position.set(0, 0, this.tunnel.farEndOfTunnel)
-
+    sphereLight.name = "sphereLight"
     return {
       spotLight,
       sphereLight
     };
   }
 
-  _createFog (color) {
-    this.scene.fog = new THREE.Fog(this.RGB_Linear_Shade(-.2, color), this.tunnel.farEndOfTunnel - 2 * this.tunnel.radius, this.tunnel.farEndOfTunnel);
+  _addSmoke () {
     // https://threejs.org/docs/#api/en/loaders/TextureLoader
     const texture =this._load.texture.load("./resource/textures/smoke.png");
-    const fogGeo = new THREE.PlaneBufferGeometry(500,500);
-    const fogMaterial = new THREE.MeshLambertMaterial({
+    const smokeGeo = new THREE.PlaneBufferGeometry(40, 40);
+    const smokeMaterial = new THREE.MeshLambertMaterial({
       map: texture,
       transparent: true,
-      opacity: .3
+      opacity: .2,
+      side: THREE.DoubleSide
     });
-    const fog = new THREE.Group();
-    const fogPos = this.tunnel.farEndOfTunnel / .7;
-    for(let p = 0; p < 5; p++) {
-      let fogSegment = new THREE.Mesh(fogGeo,fogMaterial);
-      fogSegment.position.set(
-        Math.random() * this.tunnel.radius,
-        Math.random() * this.tunnel.radius,
-        fogPos + Math.random() * this.tunnel.radius
+    const smoke = new THREE.Group();
+    const smokePos = this.tunnel.farEndOfTunnel * .7;
+    const delta = this.tunnel.radius * 1.8
+    for(let p = 0; p < 20; p++) {
+      let smokeSegment = new THREE.Mesh(smokeGeo, smokeMaterial);
+
+      smokeSegment.rotation.z = this.deg(Math.random() * 360);
+      smokeSegment.rotation.y = this.deg(Math.random() * 15);
+      smokeSegment.scale.multiplyScalar(Math.random());
+      smokeSegment.position.set(
+        (Math.random() - .5) * delta,
+        (Math.random() - .5) * delta,
+        Math.random() * smokePos
       );
-      fogSegment.rotation.x = 1.16;
-      fogSegment.rotation.y = -0.12;
-      fogSegment.rotation.z = this.deg(Math.random() * 360);
-      fog.add(fogSegment)
+      smoke.add(smokeSegment)
     }
-    this.event.addListener("update", () => {
-      fog.traverse(segement => {
+    this.event.addListener("update_idle", () => {
+      smoke.traverse(segement => {
         segement.rotation.z -= 0.002;
       });
     })
-    return fog
+    smoke.name = "smoke"
+    return smoke
   }
 
   _composeEffect () {
@@ -412,27 +435,30 @@ class Game {
   path_callback_Array = [
     ['/resource/obj/biplane0.obj', 
       plane => {
+        const material = new THREE.MeshPhongMaterial({
+          color: this.colors.planeRed,
+          side: THREE.DoubleSide,
+          flatShading: true,
+          emissive: this.colors.planeRed,
+          emissiveIntensity: 0
+        });
         plane.traverse(child => {
           if (child instanceof THREE.Mesh) {
-            child.material = new THREE.MeshPhongMaterial({
-              color: 0x9e4b4b,
-              side: THREE.DoubleSide,
-              flatShading: true,
-              emissive: 0x9e4b4b,
-              emissiveIntensity: 0
-            });
+            child.material = material
           }
         });
 
         plane.scale.multiplyScalar(0.05);
+        plane.name = "plane_obj"
         const position_propeller = new THREE.Vector3(-8, 25, 140);
         const position_headLight = new THREE.Vector3(-8, 25, 1200);
         const group = new THREE.Group();
         group.add(plane);
-        group.add(this._createPropeller(0, position_propeller));
-        group.add(this._createPropeller(this.deg(120), position_propeller));
-        group.add(this._createPropeller(this.deg(240), position_propeller));
-        group.add(this._createHeadLight(0xa5a1a1, position_headLight, position_propeller));
+        group.add(this._createPropeller(material, 0, position_propeller));
+        group.add(this._createPropeller(material, this.deg(120), position_propeller));
+        group.add(this._createPropeller(material, this.deg(240), position_propeller));
+        group.add(this._createHeadLight(this.colors.lightBlue, position_headLight, position_propeller));
+        group.name = "plane";
         this.models.plane = group;
       }
     ]
@@ -456,15 +482,13 @@ class Game {
     if(this.config.testMode)
       this.addSpotLightHelper(spotLight)
 
+    group.name = "plane_headLight"
     return group
   }
 
   /* createPropeller */
-  _createPropeller (intialRotation, position) {
+  _createPropeller (material, intialRotation, position) {
     const geomPropeller = new THREE.BoxGeometry(90, 3, 3);
-    const material = new THREE.MeshBasicMaterial({
-        color: 0x6d6d6d
-    });
     const propeller = new THREE.Mesh(geomPropeller, material);
     propeller.rotation.z = intialRotation;
     propeller.rotation.x = this.deg(-12)
@@ -472,7 +496,7 @@ class Game {
       propeller.rotation.z += this.deg(12);
     });
     propeller.position.copy(position);
-
+    propeller.name = "plane_propeller";
     return propeller
   }
 
@@ -480,31 +504,21 @@ class Game {
     return THREE.MathUtils.degToRad(num)
   }
 
-  RGB_Linear_Shade (p,c) {
-    var i=parseInt,r=Math.round,[a,b,c,d]=c.split(","),P=p<0,t=P?0:255*p,P=P?1+p:1-p;
-    return"rgb"+(d?"a(":"(")+r(i(a[3]=="a"?a.slice(5):a.slice(4))*P+t)+","+r(i(b)*P+t)+","+r(i(c)*P+t)+(d?","+d:")");
-    // https://stackoverflow.com/questions/5560248/programmatically-lighten-or-darken-a-hex-color-or-rgb-and-blend-colors
-  }
-
-  changeColor (colorHexValue) {
-    this.lights.spotLight.color = new THREE.Color(colorHexValue);
-  }
-
   _createPoints(h, s, l) {
     const positions = [];
     const colors = [];
     const opacities = [];
-    const rangeX = 500;
-    const rangeY = 500;
+    const rangeX = this.tunnel.radius;
+    const rangeY = this.tunnel.radius;
     const rangeZ = this.tunnel.farEndOfTunnel - this.tunnel.radius * 2;
 
-    for(let i = 0, color = new THREE.Color(); i < 6000; i++) {
+    for(let i = 0, color = new THREE.Color(); i < 1000; i++) {
       const x = THREE.MathUtils.randFloat(-rangeX, rangeX );
       const y = THREE.MathUtils.randFloat(-rangeY, rangeY );
-      const z = THREE.MathUtils.randFloat(200, rangeZ );
+      const z = THREE.MathUtils.randFloat(0, rangeZ );
 
       positions.push( x, y, z );
-      color.setHSL(h, Math.random() * s, Math.random() * l)
+      color.setHSL(h, s, Math.random() *  l)
       colors.push(color.r, color.g, color.b)
       opacities.push(Math.random())
     }
@@ -514,39 +528,26 @@ class Game {
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3 ));
     geometry.setAttribute('alpha', new THREE.Float32BufferAttribute(opacities, 1 ));
 
-    // geometry.computeBoundingSphere();
-
-    // const material = new THREE.PointsMaterial({
-    //   size: 2,
-    //   sizeAttenuation: true,
-    //   transparent: true,
-    //   vertexColors: true,  // material.color.setHSL( h, s, l );
-    //   // color: 0x0080ff
-    //   // map: sprite,
-		// 	// alphaTest: 0.5
-    // });
-
     // point cloud material
     const shaderMaterial = new THREE.ShaderMaterial( {
-        uniforms:   {
-          color: { value: new THREE.Color( 0xffff00 ) },
-        },
         vertexShader:  
-        `attribute float alpha; varying float vAlpha;
+        `attribute float alpha; varying float vAlpha; varying vec3 vColor;
         void main() {
             vAlpha = alpha;
+            vColor = color;
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
             gl_PointSize = 4.0;
             gl_Position = projectionMatrix * mvPosition;
         }`,
-        fragmentShader: 
-        `uniform vec3 color;varying float vAlpha;
+        fragmentShader:
+        `varying float vAlpha; varying vec3 vColor;
         void main() {
-            gl_FragColor = vec4( color, vAlpha );
+            gl_FragColor = vec4( vColor, vAlpha );
         }`,
-        transparent: true
+        transparent: true,
+        vertexColors: true
     });
-    this.event.addListener("update", () => {
+    this.event.addListener("update_idle", () => {
       const alphas = geometry.attributes.alpha;
       const count = alphas.count;
       for( let i = 0; i < count; i ++ ) {
@@ -558,33 +559,50 @@ class Game {
       }
       geometry.attributes.alpha.needsUpdate = true;
     })
-    return new THREE.Points( geometry, shaderMaterial );
+    const points = new THREE.Points(geometry, shaderMaterial);
+    points.name = "stars";
+    return points;
   }
 
   /* createObjects */
   _createObjects () {
     const geometry = new THREE.BoxGeometry( 300, 100, 10 );
-    const material = new THREE.MeshBasicMaterial({color: 0xadfadf});
+    const material = new THREE.MeshBasicMaterial({color: this.colors.azure});
     const testWing = new THREE.Mesh(geometry, material);
           testWing.rotation.x = this.deg(78)
     const rotate_axis = new THREE.Vector3(0, 1, 0)
-    this.event.addListener("update", () => {
+    this.event.addListener("update_main", () => {
       testWing.rotateOnAxis(rotate_axis, this.ui.data.rotate_force);
       testWing.position.y += this.ui.data.up_force
     })
-
+    testWing.name = "testWing"
     return {
-      testWing,
-      points: this._createPoints(209.882, 1, .6)
+      testWing
     }
+  }
+
+  setSceneColor (color_obj) {
+    const colorHexValue = color_obj.getHex();
+    const rgb = color_obj.getStyle()
+    const darkenRGBColor_10 = this.colors.RGB_Linear_Shade(-.1, rgb);
+    const darkenRGBColor_20 = this.colors.RGB_Linear_Shade(-.2, rgb);
+
+    this.lights.spotLight.color.setHex(colorHexValue);
+
+    this.lights.sphereLight.material.color.set(darkenRGBColor_10);
+    this.lights.sphereLight.material.emissive.set(darkenRGBColor_10);
+
+    if(!this.scene.fog)
+      this.scene.fog = new THREE.Fog(darkenRGBColor_20, this.tunnel.farEndOfTunnel - 4 * this.tunnel.radius, this.tunnel.farEndOfTunnel);
+    else this.scene.fog.color.set(darkenRGBColor_20)
   }
   
   /* debugger */
   _debug () {
     window.THREE = THREE;
-    this.scene.add(new THREE.AxesHelper(500))
-    // this.scene.background = new THREE.Color(0xa5a4a4);
-
+    const axes = new THREE.AxesHelper(500)
+    axes.name = "axes"
+    this.scene.add(axes) // r: x, g: y, b: z
     this.addCameraHelper(this.camera)
     if(this.objects)
       this.addBoxHelper(Object.values(this.objects))
@@ -599,7 +617,7 @@ class Game {
       this.event.addListener("started", () => {
         this._controls = new OrbitControls(this.camera, this.renderer.domElement);
         const throttleLog = new ThrottleLog(1600);
-        this.event.addListener("update", () => 
+        this.event.addListener("update_main", () => 
           throttleLog.log(`position: (${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)})`, 
           `\nrotation: (${this.camera.rotation._x.toFixed(1)}, ${this.camera.rotation._y.toFixed(1)}, ${this.camera.rotation._z.toFixed(1)})`)
         )
@@ -661,16 +679,24 @@ class Game {
   update () {
     this.event.dispatch("update", performance.now());
   }
+  update_main () {
+    this.event.dispatch("update_main");
+  }
+  update_idle () {
+    this.event.dispatch("update_idle");
+  }
 
   /* Helpers(used in _debug) */
   addSpotLightHelper (spotLight) {
-    const spotLightHelper = new THREE.SpotLightHelper(spotLight);;
+    const spotLightHelper = new THREE.SpotLightHelper(spotLight);
+    spotLightHelper.name = spotLight.name + "_helper"
     this.scene.add(spotLightHelper);
     spotLight.helper = spotLightHelper;
   }
 
   addCameraHelper (camera) {
     const helper = new THREE.CameraHelper(camera);
+    helper.name = camera.name + "_helper"
     this.scene.add(helper);
     this.ui.event.addListener("resize", () => helper.update())
   }
@@ -678,13 +704,15 @@ class Game {
   addBoxHelper (obj3D) {
     if(Array.isArray(obj3D))
       obj3D.forEach(e => {
-        e.boxHelper = new THREE.BoxHelper(e.mesh, 0x00ff00);
+        e.boxHelper = new THREE.BoxHelper(e.mesh, this.colors.greenForTest);
+        e.boxHelper.name = e.name + "_helper"
         this.scene.add(e.boxHelper);
         this.event.addListener("update", () => e.boxHelper.update());
         return ;
       })
     else {
-      obj3D.boxHelper = new THREE.BoxHelper(obj3D.mesh, 0x00ff00);
+      obj3D.boxHelper = new THREE.BoxHelper(obj3D.mesh, this.colors.greenForTest);
+      obj3D.boxHelper.name = obj3D.name + "_helper"
       this.scene.add(obj3D.boxHelper);
       this.event.addListener("update", () => obj3D.boxHelper.update());
     }

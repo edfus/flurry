@@ -103,21 +103,22 @@ class RenderLoop {
   static _inControl = null;
   static _game = null;
   static _then = [];
+  static _do = [];
   static start () {
-    if(this._inControl._if.every(f => f())){
+    if(this._inControl._if.every(f => f())) {
       this._inControl._then.forEach(f => f());
       if(!this._inControl._THENONCE_executed) {
         this._inControl._thenOnce.forEach(f => f());
         this._inControl._THENONCE_executed = true;
       }
-    } 
-    else {
+    } else {
       this._inControl._else.forEach(f => f());
       if(!this._inControl._ELSEONCE_executed) {
         this._inControl._elseOnce.forEach(f => f());
         this._inControl._ELSEONCE_executed = true;
       }
     }
+    this._do.forEach(f => f());
     requestAnimationFrame(() => this.start());
   }
   static goto (newRenderLoop) {
@@ -138,8 +139,14 @@ class RenderLoop {
     }
     return this;
   }
+
   static wheneverGame (stateName) {
     this._game.event.addListener(stateName, () => this._then.forEach(f => f()));
+    return this;
+  }
+
+  static keepExecuting (f) {
+    this._do.push(f)
     return this;
   }
 
