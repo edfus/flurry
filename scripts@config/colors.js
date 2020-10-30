@@ -2,7 +2,7 @@ export default {
   planeRed: 0x9e4b4b,
   lightBlue: 0x8fe7fd,
   azure: 0xadfadf,
-  sceneColors: [0xadfadf, 0x66ff99, 0xff8c49, 0xe6e6e6, 0xf04ea4],
+  sceneColors: [0xadfadf, 0x66ff99, 0xff8c49, 0xf04ea4],
   greenForTest: 0x00ff00,
   hslStarColor: {
     h: .583,

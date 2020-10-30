@@ -44,8 +44,8 @@ class Game {
     this.lights = this._createLights();
     this.scene.add.apply(this.scene, Object.values(this.lights));
 
-    this.objects = this._createObjects();
-    this.scene.add.apply(this.scene, Object.values(this.objects));
+    // this.objects = this._createObjects();
+    // this.scene.add.apply(this.scene, Object.values(this.objects));
  
     this.models = {};
     this._loadObjs(this.path_callback_Array).then(() => {
@@ -134,7 +134,8 @@ class Game {
         this.time.lastStamp = Date.now();
       }
       this.state.canBePaused = false;
-    }
+      return true;
+    } else return false;
   }
 
   resume () { // invoked in RenderLoop
@@ -325,12 +326,12 @@ class Game {
     // composer.setClearColor( 0xffffff );
   }
 
-  _createTunnel () {
+  _createTunnel () { // performance notice
     const points = [];
     const tunnel = {}
     const maxI = 600;
     const delta = 25 / 4;
-    tunnel.closeEndOfTunnel = -1300;
+    tunnel.closeEndOfTunnel = -300;
     tunnel.lengthOfTunnel = maxI * delta;
     tunnel.farEndOfTunnel = tunnel.lengthOfTunnel + tunnel.closeEndOfTunnel;
     tunnel.radius = 300;
@@ -446,32 +447,19 @@ class Game {
             child.material = material
           }
         });
-
         plane.scale.multiplyScalar(0.05);
         plane.rotation.x = this.deg(12);
+        plane.name = "plane_obj"
+
         const position_propeller = new THREE.Vector3(-8, -4, 140);
         const position_headLight = new THREE.Vector3(-8, 25, 1200);
         const group = new THREE.Group();
         group.add(plane);
         group.add(this._createPropeller(0, position_propeller));
-        // group.add(this._createPropeller(this.deg(120), position_propeller));
-        // group.add(this._createPropeller(this.deg(240), position_propeller));
         group.add(this._createHeadLight(this.colors.lightBlue, position_headLight, position_propeller));
         group.position.set(9,-10,0);
-        this.models.plane = group;
-        /*
-        plane.name = "plane_obj"
-        const position_propeller = new THREE.Vector3(-8, 25, 140);
-        const position_headLight = new THREE.Vector3(-8, 25, 1200);
-        const group = new THREE.Group();
-        group.add(plane);
-        group.add(this._createPropeller(material, 0, position_propeller));
-        group.add(this._createPropeller(material, this.deg(120), position_propeller));
-        group.add(this._createPropeller(material, this.deg(240), position_propeller));
-        group.add(this._createHeadLight(this.colors.lightBlue, position_headLight, position_propeller));
         group.name = "plane";
         this.models.plane = group;
-        */
       }
     ]
   ]
@@ -501,13 +489,20 @@ class Game {
   /* createPropeller */
   _createPropeller (intialRotation, position) {
     const geomPropeller = new THREE.BoxGeometry(100, 5, 5);
-    const material = new THREE.MeshBasicMaterial({
-        color: 0x6d6d6d
+    const material = new THREE.MeshLambertMaterial({
+      color: 0x6d6d6d,
+      side: THREE.DoubleSide,
+      flatShading: true,
+      emissive: this.colors.planeRed,
+      emissiveIntensity: 0
     });
+
     const propeller = new THREE.Mesh(geomPropeller, material);
     propeller.rotation.z = intialRotation;
+
+    const rotation = this.deg(37.4)
     this.event.addListener("update", () => {
-      propeller.rotation.z += this.deg(37.4);
+      propeller.rotation.z += rotation;
     });
     propeller.position.copy(position);
     propeller.name = "plane_propeller";
@@ -526,7 +521,7 @@ class Game {
     const rangeY = this.tunnel.radius;
     const rangeZ = this.tunnel.farEndOfTunnel - this.tunnel.radius * 2;
 
-    for(let i = 0, color = new THREE.Color(); i < 1000; i++) {
+    for(let i = 0, color = new THREE.Color(); i < 300; i++) {
       const x = THREE.MathUtils.randFloat(-rangeX, rangeX );
       const y = THREE.MathUtils.randFloat(-rangeY, rangeY );
       const z = THREE.MathUtils.randFloat(0, rangeZ );
@@ -591,7 +586,7 @@ class Game {
     })
     testWing.name = "testWing"
     return {
-      // testWing,
+      testWing,
     }
   }
 
@@ -799,8 +794,7 @@ game.whenPaused = new class {
         // game.audio.fadeIn(4);
         // this.resolve()
       } else {
-        game.audio.fadeOut(20);
-        game.pause();
+        if(game.pause()) game.audio.fadeOut(20);
       }
     }, {passive: true});
 
