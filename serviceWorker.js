@@ -1,4 +1,4 @@
-const noCache = true;
+const mode = ["network-first", "offline-first"][0];
 const version = "8.2.6--dev";
 const cacheName = "cache-" + version;
 const cacheResources = [
@@ -9,28 +9,27 @@ const DLC = [
 
 ];
 
-self.addEventListener('install', (event) =>{
+self.addEventListener('install', e =>{
   self.skipWaiting();
-  event.waitUntil(
+  e.waitUntil(
     caches.open(cacheName).then(cache =>
       cache.addAll(cacheResources)
-      // addAll() will overwrite any key/value pairs previously stored in the cache that match the request
-          .then(() => {
-            if('connection' in navigator && !navigator.connection.saveData && DLC.length){
-              cache.addAll(DLC);
-            }
-          })
+        .then(() => {
+          if('connection' in navigator && !navigator.connection.saveData && DLC.length){
+            cache.addAll(DLC);
+          }
+        })
     )
   )
 })
 
-self.addEventListener('activate', function (e) {
-  console.log('[ServiceWorker] Activate.');
+self.addEventListener('activate', e => {
+  console.info('[ServiceWorker] Activate.');
   e.waitUntil(
     caches.keys().then(keyList => 
-      Promise.all(keyList.map(function (key) {
+      Promise.all(keyList.map(key => {
         if (key !== cacheName) {
-          console.log('[ServiceWorker] Removing old cache:', key);
+          console.info('[ServiceWorker] Removing old cache: ', key);
           return caches.delete(key);
         }
       }))
@@ -40,40 +39,60 @@ self.addEventListener('activate', function (e) {
 });
 
 
-self.addEventListener('fetch', e => {
-  let hostname = e.request.url.split("//")[1].split('/')[0];
-  try {
-    // if(/(\.mp3)$/.test(e.request.url)){
-    //   e.respondWith(fetch(e.request,{
-    //       headers: new Headers()
-    //     })
-    //   )
-    // } else 
+if(mode === "network-first") {
+  self.addEventListener('fetch', e => 
     e.respondWith(
-      caches.match(e.request).then(async function(response) {
-        if (response != null) {
-          return response
-        } else {
-          if (e.request.cache === 'only-if-cached' && e.request.mode !== 'same-origin') {
-            console.dir(e.request);
-            return;
+      (async () => {
+        let response = await e.preloadResponse;
+
+        if (!response) {
+          try {
+            response = await fetch(e.request)
+          } finally { // in case network error(rejected promise)
+            if(!response || response.status !== 200) {
+              const cacheResponse = await caches.match(e.request.url)
+              if(cacheResponse)
+                return cacheResponse;
+              else return response;
+            }
           }
-          let request = e.request.clone();
-          return await fetch(request).then(async response=>{
-            if (!response || response.status !== 200 || response.type !== "basic" ? ( response.type !== "cors" ? true : hostname !== "cdnjs.cloudflare.com" ) : false ) {
-              return response;
-            }
-            if(!noCache && request.method === "GET"){
-              const cache = await caches.open(cacheName);
-              await cache.put(request.url, response.clone());
-            }
+        }
+
+        // got non-cached ok response
+        if(e.request.method === "GET" && ["cors", "basic"].includes(response.type)) {
+          const clone = response.clone();
+          e.waitUntil(
+            caches.open(cacheName).then(cache => cache.put(e.request.url, clone))
+          )
+          // put() will overwrite any key/value pair previously stored in the cache that matches the request.
+        }
+        return response;
+      })()
+    )
+  )
+} else {
+  self.addEventListener('fetch', e => 
+    e.respondWith(
+      caches.match(e.request.url).then(async response => {
+        if (response) {
+          // console.log(response)
+          return response;
+        } else {
+          const request = e.request.clone();
+          const response = await fetch(request);
+
+          if (response.status !== 200 || !["cors", "basic"].includes(response.type)) {
             return response;
-        })
+          }
+          if(request.method === "GET") {
+            const clone = response.clone();
+            e.waitUntil(
+              caches.open(cacheName).then(cache => cache.put(request.url, clone))
+            )
+          }
+          return response;
         }
       })
     )
-  } catch(err) {
-    console.error(err)
-  }
-})
- 
+  )
+}
