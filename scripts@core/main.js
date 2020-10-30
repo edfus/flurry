@@ -50,7 +50,7 @@ class Game {
       this.scene.add.apply(this.scene, Object.values(this.models));
     });
     
-    this.camera.position.set(0, 10, -500);
+    this.camera.position.set(0, 40, -500);
     this.camera.rotation.set(0, 3.14, 0)
 
     this.constructRenderLoops();
@@ -94,7 +94,7 @@ class Game {
     this._idle.smoke = this._addSmoke();
     this.scene.add(this._idle.smoke)
 
-    const color = this.newSceneColor();
+    const color = new THREE.Color(this.colors.azure);
     const hsl = this.colors.complementaryOf(color).getHSL({});
 
     this.setSceneColor(color);
@@ -357,6 +357,9 @@ class Game {
 
     const spotLight = new THREE.SpotLight(0x0, 3, this.tunnel.lengthOfTunnel * delta);
 
+    const pointlight = new THREE.PointLight( 0xffffff, 0.3, 300 );
+    pointlight.position.set( -8, 60, -50 );
+
     spotLight.angle = Math.atan(this.tunnel.radius / this.tunnel.lengthOfTunnel) * delta;
     spotLight.decay = .3; // decay = 2 leads to physically realistic light falloff
     spotLight.castShadow = false;
@@ -376,7 +379,8 @@ class Game {
     sphereLight.name = "sphereLight"
     return {
       spotLight,
-      sphereLight
+      sphereLight,
+      pointlight
     };
   }
 
@@ -435,11 +439,12 @@ class Game {
     ['/resource/obj/biplane0.obj', 
       plane => {
         const material = new THREE.MeshPhongMaterial({
-          color: this.colors.planeRed,
+          // color: this.colors.planeRed,
+          color: 0xffffff,
           side: THREE.DoubleSide,
           flatShading: true,
           emissive: this.colors.planeRed,
-          emissiveIntensity: 0
+          emissiveIntensity: 0.7
         });
         plane.traverse(child => {
           if (child instanceof THREE.Mesh) {
