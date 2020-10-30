@@ -58,6 +58,20 @@ class ButtonHandler {
       once ? this.removeListener() : void 0;
     }
   }
+  static _newPromiseListener (domElement, func, measureNeeded = false) {
+    return new Promise(resolve => {
+      let listenerTriggered = false;
+      const callback = () => (listenerTriggered = true) && resolve(func()) 
+      domElement.addEventListener("animationend", callback, {passive: true, once: true});
+      if(measureNeeded)
+        setTimeout(() => {
+          if(!listenerTriggered) {
+            domElement.removeEventListener("animationend", callback, {once: true});
+            callback();
+          } //TODO
+        }, 1000)
+    })
+  }
   /**
    * @param {HTMLElement} domElement 
    * @param {Boolean | undefined} reflow should DOM reflow or not
@@ -66,16 +80,25 @@ class ButtonHandler {
   static fadeOut(domElement, reflow = true) {
     if(domElement.classList.contains("fade-out"))
       return Promise.reject("High frequency.");
-    domElement.classList.add("fade-out");
-    return new Promise(resolve => {
-      domElement.addEventListener("animationend", () => {
+    else if (domElement.classList.contains("fade-in") || domElement.style.animation.includes("fade-in")) {
+      return this._newPromiseListener(domElement, () => {
+        domElement.classList.add("fade-out");
+        return this._newPromiseListener(domElement, () => {
+          if(reflow)
+            domElement.style.display = 'none';
+          domElement.style.opacity = 0;
+          domElement.classList.remove("fade-out");
+        })
+      }, true)
+    } else {
+      domElement.classList.add("fade-out");
+      return this._newPromiseListener(domElement, () => {
         if(reflow)
           domElement.style.display = 'none';
         domElement.style.opacity = 0;
         domElement.classList.remove("fade-out");
-        resolve()
-      }, {passive: true, once: true})
-    })
+      })
+    }
   }
   /**
    * @param {HTMLElement} domElement 
@@ -85,20 +108,33 @@ class ButtonHandler {
   static fadeIn(domElement, seconds) {
     if(domElement.classList.contains("fade-in"))
       return Promise.reject("High frequency.");
-    domElement.style.opacity = 0;
-    domElement.style.display = 'block';
-    if(seconds)
-      domElement.style.animation = `fade-in ${seconds}s ease 1`
-    else domElement.classList.add("fade-in");
-    return new Promise(resolve => {
-      domElement.addEventListener("animationend", () => {
+    else if (domElement.classList.contains("fade-out")) {
+      return this._newPromiseListener(domElement, () => {
+        domElement.style.opacity = 0;
+        domElement.style.display = 'block';
+        if(seconds)
+          domElement.style.animation = `fade-in ${seconds}s ease 1`
+        else domElement.classList.add("fade-in");
+        return this._newPromiseListener(domElement, () => {
+          domElement.style.opacity = 1;
+          if(seconds)
+            domElement.style.removeProperty('animation');
+          else domElement.classList.remove("fade-in");
+        })
+      }, true)
+    } else {
+      domElement.style.opacity = 0;
+      domElement.style.display = 'block';
+      if(seconds)
+        domElement.style.animation = `fade-in ${seconds}s ease 1`
+      else domElement.classList.add("fade-in");
+      return this._newPromiseListener(domElement, () => {
         domElement.style.opacity = 1;
         if(seconds)
           domElement.style.removeProperty('animation');
         else domElement.classList.remove("fade-in");
-        resolve();
-      }, {passive: true, once: true})
-    })
+      })
+    }
   }
 }
 const eventWeakMap = new WeakMap();
@@ -506,24 +542,33 @@ class UserInteraction {
     distance: 100,
     updateDistanceConstant () {
       this.invoke(ui => {
-        this.distance = Math.min(ui.HEIGHT, ui.WIDTH) / 12
+        this.distance = Math.min(ui.HEIGHT, ui.WIDTH) / 12;
+        this.position0.x = -this.distance * 2
+        this.position1.x = this.distance * 2
       })
     },
+    updateData () {
+      this.invoke(ui => ui.updateData())
+    },
     ArrowUp () {
-      this.position0.y -= this.distance
-      this.position1.y -= this.distance
+      this.position0.y -= this.distance;
+      this.position1.y -= this.distance;
+      this.updateData()
     },
     ArrowDown () { 
       this.position0.y += this.distance;
       this.position1.y += this.distance;
+      this.updateData()
     },
     ArrowLeft () {
       this.position0.y -= this.distance / 2
       this.position1.y += this.distance / 2
+      this.updateData()
     },
     ArrowRight () { 
       this.position0.y += this.distance / 2
       this.position1.y -= this.distance / 2
+      this.updateData()
     }
   }
   /* callbacks END */

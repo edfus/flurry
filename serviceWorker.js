@@ -53,7 +53,7 @@ if(mode === "network-first") {
               const cacheResponse = await caches.match(e.request.url)
               if(cacheResponse)
                 return cacheResponse;
-              else return response;
+              else return Response.error();
             }
           }
         }

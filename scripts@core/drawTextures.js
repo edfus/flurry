@@ -1,3 +1,5 @@
+import { CanvasTexture } from 'https://cdn.jsdelivr.net/npm/three@v0.121.0/build/three.module.min.js';
+// https://threejs.org/docs/#api/en/textures/CanvasTexture
 class Drawer {
   constructor () {
 
