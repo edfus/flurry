@@ -437,7 +437,7 @@ class Game {
   }
 
   path_callback_Array = [
-    ['/resource/obj/biplane0.gltf', 
+    ['/resource/obj/biplane0.glb', 
       result => {
         const plane = result.scene.children[0];
         result.scenes = null;
