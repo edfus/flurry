@@ -10,6 +10,7 @@
   --error-color: #666;
   --light-sky-blue: #b3e5fc;
   --color: #fff;
+  --theme-color: #adf;
 }
 
 @font-face {
@@ -24,6 +25,25 @@
 html, body {
   height: 100%;
   font-size: 16px; /* rem */
+}
+
+.blur {
+  position: relative;
+}
+
+.blur::after {
+  content: '';
+  position: absolute;
+  top: -25%;
+  left: 20%;
+  width: 60%;
+  height: 150%;
+  background-color: var(--theme-color);
+  opacity: .5;
+  filter: blur(20px);
+}
+.blur svg {
+  filter: url(#glow);
 }
 
 @media screen and (min-width: 450px) and (max-width: 824px) {  /* iphone X width: 812px, pixel XL: 823px */
@@ -50,10 +70,7 @@ html, body {
   }
 }
 
-
-
 /* in mobile browser 100vh will overflow (as there exists the navigation UI) */
-
 body {
   margin: 0;
   overflow: hidden;
@@ -110,7 +127,7 @@ main > canvas, #ui-canvas {
 
 .ui-score {
   position: absolute;
-  color: var(--color);
+  color: var(--theme-color);
   padding: 1.25rem;
   margin-left: .5rem;
 }
@@ -129,7 +146,6 @@ main > canvas, #ui-canvas {
   pointer-events: all;
 }
 
-/* TODO: https://stackoverflow.com/questions/54112231/is-it-possible-to-create-a-glow-effect-in-svg */
 /* full screen button */
 .fullscreen > .row {
 	display: flex;
@@ -152,7 +168,7 @@ main > canvas, #ui-canvas {
 } 
 
 .fullscreen .box:before {
-	border: 0.3125rem solid var(--color);
+	border: 0.3125rem solid var(--theme-color);
 }
 
 .fullscreen.hover .box._1:before {
@@ -226,26 +242,17 @@ main > canvas, #ui-canvas {
 	left: 0;
 	top: 0;
 }
-/* hover & focus */
-.ui-buttons.right svg{
-  fill: var(--color);
-  transition: fill .2s ease-in-out;
+
+.ui-button{
+  fill: var(--theme-color);
+  transition: filter .2s ease-in-out;
 }
-.ui-buttons.right .ui-button:hover svg{
-  fill: #aaaaaa6f;
-}
-.ui-buttons.right .ui-button:focus svg{
-  fill: #999999;
-}
-.ui-button.refresh {
-  fill: var(--color)
-}
-.ui-button.refresh:hover, .ui-button.refresh:focus {
-  fill: #c3e1ff
+.ui-button:hover, .ui-button:focus{
+  filter: brightness(120%);
 }
 
 .ui-button.home {
-  stroke: var(--color);
+  stroke: var(--theme-color);
   stroke-width: 4;
   stroke-linejoin: round;
   position: absolute;

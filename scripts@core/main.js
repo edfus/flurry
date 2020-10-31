@@ -104,7 +104,10 @@ class Game {
 
     if(!this.scene.fog)
       this.scene.fog = new THREE.Fog(darkenRGBColor_20, this.tunnel.farEndOfTunnel - 4 * this.tunnel.radius, this.tunnel.farEndOfTunnel);
-    else this.scene.fog.color.set(darkenRGBColor_20)
+    else this.scene.fog.color.set(darkenRGBColor_20);
+
+    
+    document.documentElement.style.setProperty('--theme-color', "#".concat(color_obj.set(darkenRGBColor_20).getHexString()));
   }
 
   idle_begin () {
