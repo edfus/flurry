@@ -108,17 +108,12 @@ class Game {
   }
 
   idle_begin () {
-    this._idle = {}
-    this._idle.smoke = this._addSmoke();
-    this.scene.add(this._idle.smoke);
-    this.event.addListener("update_idle", this._idle.smoke._update_function)
-    this._idle.smoke._update_period = "update_idle";
-
     const color = this.newSceneColor();
     const hsl = this.colors.complementaryOf(color).getHSL({});
+    this._idle = {}
 
     this.setSceneColor(color);
-    switch("0.2") {
+    switch((Math.random() % .3).toFixed(1)) {
       case "0.2":
         this._idle.snow = this._addSnow();
         this.scene.add(this._idle.snow)
@@ -130,6 +125,10 @@ class Game {
         this.scene.add(this._idle.stars)
         this.event.addListener("update_idle", this._idle.stars._update_function);
         this._idle.stars._update_period = "update_idle";
+        this._idle.smoke = this._addSmoke();
+        this.scene.add(this._idle.smoke);
+        this.event.addListener("update_idle", this._idle.smoke._update_function)
+        this._idle.smoke._update_period = "update_idle";
     }
   }
 
@@ -474,12 +473,12 @@ class Game {
         pointlight.name = "plane_shining";
       
         const position_propeller = new THREE.Vector3(-8, -4, 140);
-        // const position_headLight = new THREE.Vector3(-8, 25, 1200);
+        const position_headLight = new THREE.Vector3(-8, 25, 400);
         const group = new THREE.Group();
         group.add(plane);
         group.add(pointlight);
         group.add(this._createPropeller(0, position_propeller));
-        // group.add(this._createHeadLight(this.colors.lightBlue, position_headLight, position_propeller));
+        group.add(this._createHeadLight(this.colors.lightBlue, position_headLight, position_propeller));
         group.position.set(9,39,0);
 
         group.name = "plane";
@@ -504,20 +503,31 @@ class Game {
   _createHeadLight (color, positionOfFog, positionOfLight) {
 
     const angle = Math.PI / 15,
-          length = 1 / Math.tan(angle) * (this.tunnel.radius * .6);
+          length = 1 / Math.tan(angle) * this.tunnel.radius;
           
     const spotLight = new THREE.SpotLight(color, .3, length, angle, 0, 2);
     // https://threejs.org/docs/#api/en/lights/SpotLight
 
-    spotLight.target.position.copy(positionOfFog)
-    spotLight.target.updateMatrixWorld()
-    spotLight.castShadow = false; //
+    spotLight.castShadow = false; //NOTE
 
-    spotLight.position.copy(positionOfLight)
+    spotLight.position.copy(positionOfLight);
+
+    const lensFlareGeo = new THREE.PlaneBufferGeometry(256, 256);
+    const lensFlareMaterial = new THREE.MeshLambertMaterial({ //TODO
+      map: this.getTexture.headLight(),
+      transparent: true,
+      opacity: 1,
+      side: THREE.DoubleSide,
+      color: 0xffffff,
+      emissive: 0xffffff,
+      emissiveIntensity: .6
+    });
+    const lensFlare = new THREE.Mesh(lensFlareGeo, lensFlareMaterial);
+    lensFlare.position.copy(positionOfFog)
+    spotLight.target = lensFlare;
     const group = new THREE.Group();
     group.add(spotLight);
-    if(this.config.testMode)
-      this.addSpotLightHelper(spotLight)
+    group.add(lensFlare);
 
     group.name = "plane_headLight"
     return group
@@ -730,7 +740,7 @@ class Game {
     });
 
     this.event.addListener("planeLoaded", (plane, light) => {
-      this.addPointLightHelper(light, 100);
+      // this.addPointLightHelper(light, 100);
       this.addBoxHelper(plane)
     }, {once: true});
 
