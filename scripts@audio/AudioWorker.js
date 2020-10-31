@@ -206,7 +206,7 @@ class GlobalAudioPlayer {
 
     let min, preloadIndex;
     if(this.songs.shuffle === true && localStorage.songsAllLoaded) {
-      min = ((songs.length - this.preloadLength) * Math.random()).toFixed(0)
+      min = ((songs.length - this.preloadLength) / 2 * Math.random()).toFixed(0) // 0, 1, 2
       preloadIndex = {
         min: min,
         max: min + this.preloadLength

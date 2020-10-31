@@ -16,11 +16,6 @@ const themes = [
 ]; // 无index属性
 themes.forEach(e => e.reserve = true);
 const songs = [
-  // {
-  //   name: "Voices",
-  //   url: `${host}resource/audio/Loner%20Soundtrack/1_Voices.mp3`,
-  //   index: 0
-  // },
   {
     name: "Void",
     url: `${host}resource/audio/Loner%20Soundtrack/2_Void.mp3`
@@ -40,6 +35,10 @@ const songs = [
   {
     name: "DeepSea",
     url: `${host}resource/audio/Loner%20Soundtrack/6_DeepSea.mp3`
+  },
+  {
+    name: "Voices",
+    url: `${host}resource/audio/Loner%20Soundtrack/1_Voices.mp3`
   },
   {
     name: "SeaSand",
