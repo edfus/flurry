@@ -634,11 +634,11 @@ class Game {
     for(let i = 0; i < amount; i++) {
       const x = THREE.MathUtils.randFloat(-rangeX, rangeX );
       const y = THREE.MathUtils.randFloat(-rangeY, rangeY );
-      const z = THREE.MathUtils.randFloat(-200, rangeZ );
+      const z = THREE.MathUtils.randFloat(50, rangeZ );
       
-      const v_x = Math.floor(Math.random() * 6 - 3) * 0.5;
-      const v_y = Math.floor(Math.random() * 15 + 5) * -0.3;
-      const v_z = Math.floor(Math.random() * 6 - 3) * 0.5;
+      const v_x = Math.floor(Math.random() * 5 - 2.5);
+      const v_y = -Math.floor(Math.random() * 3 + 1.5);
+      const v_z = Math.floor(Math.random() * 0.1 - 0.05) ;
       const velocity = new THREE.Vector3(v_x, v_y, v_z);
       
       positions.push( x, y, z );
@@ -664,12 +664,12 @@ class Game {
       const count = positions.count;
       for(let i = 0, index = 0; i < count; i++) {
         const velocity = velocities[i];
-        positions.array[index++] += Math.sin(timeStamp * velocity.x) * 0.0001;
+        positions.array[index++] += Math.sin(timeStamp * 0.001 * velocity.x) ;
         positions.array[index] += velocity.y;
         if(positions.array[index] < -rangeY) {
           positions.array[index] = rangeY;
         }
-        positions.array[++index] += Math.cos(timeStamp * velocity.z) * 0.00015;
+        positions.array[++index] += Math.cos(timeStamp * 0.001 * velocity.z) * 0.01 ;
         index++; 
       }
       geometry.attributes.position.needsUpdate = true;
