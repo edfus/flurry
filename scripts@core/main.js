@@ -461,7 +461,7 @@ class Game {
         plane.name = "plane_obj"
 
         const position_propeller = new THREE.Vector3(-8, -4, 140);
-        const position_headLight = new THREE.Vector3(-8, 25, 1200);
+        // const position_headLight = new THREE.Vector3(-8, 25, 1200);
         const group = new THREE.Group();
         group.add(plane);
         group.add(this._createPropeller(0, position_propeller));
@@ -509,7 +509,23 @@ class Game {
 
   /* createPropeller */
   _createPropeller (intialRotation, position) {
-    const geomPropeller = new THREE.BoxGeometry(100, 5, 5);
+    const angle = 3;
+    const width = 10;
+    const length = 50;
+    const shape_propeller = new THREE.Shape();
+    const minusV = length * Math.tan(this.deg(angle))
+    const halfWidth = width / 2;
+    const halfWidth_M = halfWidth - minusV;
+
+    shape_propeller.moveTo(halfWidth_M, 0)
+    shape_propeller.lineTo(halfWidth, length)
+    shape_propeller.lineTo(-halfWidth, length)
+    shape_propeller.lineTo(-halfWidth_M, 0)
+    shape_propeller.lineTo(-halfWidth, -length)
+    shape_propeller.lineTo(halfWidth, -length)
+    shape_propeller.lineTo(halfWidth_M, 0)
+
+    const geomPropeller = new THREE.ShapeBufferGeometry( shape_propeller );
     const material = new THREE.MeshLambertMaterial({
       color: 0x6d6d6d,
       side: THREE.DoubleSide,
