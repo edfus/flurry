@@ -1,4 +1,4 @@
-const host = config.testMode ? `//${location.host}/` : `https://flurry.ml/`;
+const host = config.testMode ? `http://${location.host}/` : `https://flurry.ml/`;
 // type: "audio/mpeg",
 const themes = [
   {

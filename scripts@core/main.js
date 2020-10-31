@@ -252,7 +252,7 @@ class Game {
                           this.ui.pauseButton.hide();
                           this.score.pause();
                           this.ui.freeze();
-                          if(this.time.total > 180000 || this.config.testMode) {
+                          if(this.time.total > 180000) {
                             this.audio.cancelFadeOut();
                             this.audio.playSong("outro")
                           }
@@ -298,7 +298,7 @@ class Game {
                         this.ui.homeButton.hide(true);
                         this.ui.startButton.hide();
                         this.ui.canvas2D.disable();
-                        if(this.time.total > 180000 || this.config.testMode) {
+                        if(this.time.total > 180000) {
                           this.audio.cancelFadeOut();
                           this.audio.playSong("outro")
                         }
