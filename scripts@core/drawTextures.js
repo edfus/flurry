@@ -22,6 +22,19 @@ class Drawer {
   }
   snow (R = 255, G = 255, B = 255) {
     this.context.save();
+    this.context.clearRect(0, 0, this.width, this.height);
+    const r = this.radius;
+    const gradient = this.context.createRadialGradient(r, r, 0, r, r, r);
+      gradient.addColorStop(0, `rgba(${R}, ${G}, ${B}, .15)`);
+      gradient.addColorStop(1, `rgba(${R}, ${G}, ${B}, 0)`);
+    this.context.fillStyle = gradient;
+    this.context.fillRect(0, 0, this.width, this.height);
+    this.context.restore();
+    return this._render();
+  }
+  headLight (R = 255, G = 255, B = 255) {
+    this.context.save();
+    this.context.clearRect(0, 0, this.width, this.height);
     const r = this.radius;
     const gradient = this.context.createRadialGradient(r, r, 0, r, r, r);
       gradient.addColorStop(0, `rgba(${R}, ${G}, ${B}, .15)`);

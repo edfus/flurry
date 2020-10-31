@@ -252,7 +252,6 @@ class Game {
                         }),
       new RenderLoop("main")
                     .execute(() => {
-                        this.update();
                         this.renderer.render(this.scene, this.camera);
                         this.update_main();
                       })
@@ -555,11 +554,6 @@ class Game {
     propeller.rotation.z = intialRotation;
 
     const rotation = this.deg(32) //TODO 加快
-    propeller.rotation = new Proxy(propeller.rotation, {
-      set () {
-
-      }
-    })
     this.event.addListener("update", () => {
       propeller.rotation.z -= rotation;
     });
