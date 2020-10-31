@@ -646,7 +646,7 @@ class Game {
       const y = THREE.MathUtils.randFloat(-rangeY, rangeY );
       const z = THREE.MathUtils.randFloat(50, rangeZ );
       
-      const v_x = Math.floor(Math.random() * 5 - 2.5);
+      const v_x = Math.floor(Math.random() * 2 - 1);
       const v_y = -Math.floor(Math.random() * 3 + 1.5);
       const v_z = Math.floor(Math.random() * 0.1 - 0.05) ;
       const velocity = new THREE.Vector3(v_x, v_y, v_z);
@@ -658,7 +658,7 @@ class Game {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     const material = new THREE.PointsMaterial({
-        size: 20,
+        size: 25,
         color: 0xffffff,
         vertexColors: false,
         map: this.getTexture.snow(),
@@ -669,17 +669,28 @@ class Game {
     const points = new THREE.Points(geometry, material);
     points.name = "snow";
     
+    const wind = {
+      x: Math.random(),
+      z: Math.random(),
+      index: 0,
+      indexMax: velocities.length * 3
+    }
     points._update_function = timeStamp => {
       const positions = geometry.attributes.position;
       const count = positions.count;
       for(let i = 0, index = 0; i < count; i++) {
         const velocity = velocities[i];
-        positions.array[index++] += Math.sin(timeStamp * 0.001 * velocity.x) ;
+        positions.array[index++] += Math.sin(timeStamp * 0.001 * velocity.x) + wind.x;
         positions.array[index] += velocity.y;
         if(positions.array[index] < -rangeY) {
           positions.array[index] = rangeY;
+          if(++wind.index > wind.indexMax) {
+            wind.x = -wind.x;
+            wind.z = -wind.z;
+            wind.index = 0;
+          }
         }
-        positions.array[++index] += Math.cos(timeStamp * 0.001 * velocity.z) * 0.01 ;
+        positions.array[++index] += Math.cos(timeStamp * 0.001 * velocity.z) + wind.z;
         index++; 
       }
       geometry.attributes.position.needsUpdate = true;
