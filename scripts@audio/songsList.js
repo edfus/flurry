@@ -3,12 +3,14 @@ const host = config.testMode ? `//${location.host}/` : `https://flurry.ml/`;
 const themes = [
   {
     name: "Intro",
+    author: "Inner Peace Studio",
     url: `${host}resource/audio/Loner%20Soundtrack/0_Intro.mp3`,
     role: 'intro'
   },
   {
-    name: "C418 - Moog City 2",
-    url: `${host}resource/audio/C418%20-%20Moog%20City%202.mp3`,
+    name: "Moog City 2",
+    author: "C418",
+    url: `${host}resource/audio/C418%20-%20Moog%20City%202_cutted.mp3`,
     role: 'outro'
   }
 ]; // 无index属性
@@ -48,6 +50,6 @@ const songs = [
     url: `${host}resource/audio/Loner%20Soundtrack/8_Rainyday.mp3`
   },
 ];
-songs.forEach((e, i) => e.index = i);
+songs.forEach((e, i) => {e.index = i; e.author = "Inner Peace Studio"});
 
 export { themes , songs }
