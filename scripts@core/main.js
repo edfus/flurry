@@ -50,7 +50,7 @@ class Game {
       this.scene.add.apply(this.scene, Object.values(this.models));
     });
     
-    this.camera.position.set(0, 40, -500);
+    this.camera.position.set(0, 80, -500);
     this.camera.rotation.set(0, 3.14, 0)
 
     this.constructRenderLoops();
@@ -460,8 +460,8 @@ class Game {
         plane.rotation.x = this.deg(12);
         plane.name = "plane_obj";
 
-        const pointlight = new THREE.PointLight( 0xffffff, 0.3, 300 );
-        pointlight.position.set( -8, 60, -50 );
+        const pointlight = new THREE.PointLight( 0xffffff, 0.5, 200 );
+        pointlight.position.set( -8, 60, -10 );
         pointlight.name = "plane_shining";
       
         const position_propeller = new THREE.Vector3(-8, -4, 140);
@@ -471,7 +471,7 @@ class Game {
         group.add(pointlight);
         group.add(this._createPropeller(0, position_propeller));
         // group.add(this._createHeadLight(this.colors.lightBlue, position_headLight, position_propeller));
-        group.position.set(9,-10,0);
+        group.position.set(9,39,0);
         group.name = "plane";
         this.models.plane = group;
         this.event.addListener("update_main", () => {
@@ -516,7 +516,7 @@ class Game {
   /* createPropeller */
   _createPropeller (intialRotation, position) {
     const angle = 3;
-    const width = 10;
+    const width = 8;
     const length = 50;
     const shape_propeller = new THREE.Shape();
     const minusV = length * Math.tan(this.deg(angle))
@@ -537,15 +537,15 @@ class Game {
       side: THREE.DoubleSide,
       flatShading: true,
       emissive: this.colors.planeRed,
-      emissiveIntensity: 0
+      emissiveIntensity: 0.3
     });
 
     const propeller = new THREE.Mesh(geomPropeller, material);
     propeller.rotation.z = intialRotation;
 
-    const rotation = this.deg(37.4)
+    const rotation = this.deg(32)
     this.event.addListener("update", () => {
-      propeller.rotation.z += rotation;
+      propeller.rotation.z -= rotation;
     });
     propeller.position.copy(position);
     propeller.name = "plane_propeller";
