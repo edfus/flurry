@@ -19,7 +19,7 @@ function work() {
         return newEvent('requestFulfilled', newAudio, [newAudio.arrayBuffer]);
       else if (newAudio.reserve) {
         return newEvent('newSongLoaded', newAudio, [newAudio.arrayBuffer]);
-      } else if (newAudio.index && newAudio.index >= this.preloadIndex.min && this.preloadIndex.max > newAudio.index) { // > not >=
+      } else if (newAudio.index && newAudio.index >= this.preloadIndex.min && newAudio.index < this.preloadIndex.max) { // > not >=
         return newEvent('newSongLoaded', newAudio, [newAudio.arrayBuffer]);
       } else {
         delete newAudio.arrayBuffer;
@@ -70,8 +70,8 @@ function work() {
            */
         } else {
           reject({ name: 'saveDataModeOn', message: undefined });
-        };
-      });
+        }
+      })
     }
 
     enableForceLoad() {
@@ -206,7 +206,7 @@ class GlobalAudioPlayer {
 
     let min, preloadIndex;
     if(this.songs.shuffle === true && localStorage.songsAllLoaded) {
-      min = ((songs.length - this.preloadLength) / 2 * Math.random()).toFixed(0) // 0, 1, 2
+      min = Number(((songs.length - this.preloadLength) / 2 * Math.random()).toFixed(0)) // 0, 1, 2
       preloadIndex = {
         min: min,
         max: min + this.preloadLength

@@ -45,7 +45,7 @@ class Game {
     this.scene.add.apply(this.scene, Object.values(this.lights));
  
     this.models = {};
-    this._loadObjs(this.path_callback_Array).then(() => {
+    this._loadglTFs(this.path_callback_Array).then(() => {
       this.event.dispatch("modelsAllLoaded");
       this.scene.add.apply(this.scene, Object.values(this.models));
     });
@@ -397,9 +397,6 @@ class Game {
 
     const spotLight = new THREE.SpotLight(0x0, 3, this.tunnel.lengthOfTunnel * delta);
 
-    const pointlight = new THREE.PointLight( 0xffffff, 0.3, 300 );
-    pointlight.position.set( -8, 60, -50 );
-
     spotLight.angle = Math.atan(this.tunnel.radius / this.tunnel.lengthOfTunnel) * delta;
     spotLight.decay = .3; // decay = 2 leads to physically realistic light falloff
     spotLight.castShadow = false;
@@ -419,8 +416,7 @@ class Game {
     sphereLight.name = "sphereLight"
     return {
       spotLight,
-      sphereLight,
-      pointlight
+      sphereLight
     };
   }
 
@@ -441,15 +437,19 @@ class Game {
   }
 
   path_callback_Array = [
-    ['/resource/obj/biplane0.obj', 
-      plane => {
+    ['/resource/obj/biplane0.glb', 
+      result => {
+        const plane = result.scene.children[0];
+        result.scenes = null;
+        result.scene = null;
+        result = null
         const material = new THREE.MeshPhongMaterial({
-          // color: this.colors.planeRed,
-          color: 0xffffff,
+          color: this.colors.planeRed,
+          // color: 0xffffff,
           side: THREE.DoubleSide,
           flatShading: true,
           emissive: this.colors.planeRed,
-          emissiveIntensity: 0.7
+          emissiveIntensity: .4
         });
         plane.traverse(child => {
           if (child instanceof THREE.Mesh) {
@@ -458,12 +458,17 @@ class Game {
         });
         plane.scale.multiplyScalar(0.05);
         plane.rotation.x = this.deg(12);
-        plane.name = "plane_obj"
+        plane.name = "plane_obj";
 
+        const pointlight = new THREE.PointLight( 0xffffff, 0.3, 300 );
+        pointlight.position.set( -8, 60, -50 );
+        pointlight.name = "plane_shining";
+      
         const position_propeller = new THREE.Vector3(-8, -4, 140);
-        const position_headLight = new THREE.Vector3(-8, 25, 1200);
+        // const position_headLight = new THREE.Vector3(-8, 25, 1200);
         const group = new THREE.Group();
         group.add(plane);
+        group.add(pointlight);
         group.add(this._createPropeller(0, position_propeller));
         // group.add(this._createHeadLight(this.colors.lightBlue, position_headLight, position_propeller));
         group.position.set(9,-10,0);
@@ -481,6 +486,7 @@ class Game {
             group.position.y *= .95
             group.rotation.z *= .95
           }) // 暂时如此
+        this.event.dispatch("planeLoaded", plane, pointlight);
       }
     ]
   ]
@@ -509,7 +515,23 @@ class Game {
 
   /* createPropeller */
   _createPropeller (intialRotation, position) {
-    const geomPropeller = new THREE.BoxGeometry(100, 5, 5);
+    const angle = 3;
+    const width = 10;
+    const length = 50;
+    const shape_propeller = new THREE.Shape();
+    const minusV = length * Math.tan(this.deg(angle))
+    const halfWidth = width / 2;
+    const halfWidth_M = halfWidth - minusV;
+
+    shape_propeller.moveTo(halfWidth_M, 0)
+    shape_propeller.lineTo(halfWidth, length)
+    shape_propeller.lineTo(-halfWidth, length)
+    shape_propeller.lineTo(-halfWidth_M, 0)
+    shape_propeller.lineTo(-halfWidth, -length)
+    shape_propeller.lineTo(halfWidth, -length)
+    shape_propeller.lineTo(halfWidth_M, 0)
+
+    const geomPropeller = new THREE.ShapeBufferGeometry( shape_propeller );
     const material = new THREE.MeshLambertMaterial({
       color: 0x6d6d6d,
       side: THREE.DoubleSide,
@@ -643,11 +665,12 @@ class Game {
     this.event.addListener("newSceneColor", color => {
       console.log("New color! %c0x" + color.getHexString(), "color: #" + color.getHexString(),);
     });
-      
 
-    this.event.addListener("modelsAllLoaded", () => {
-      this.addBoxHelper(Object.values(this.models))
+    this.event.addListener("planeLoaded", (plane, light) => {
+      this.addPointLightHelper(light, 100);
+      this.addBoxHelper(plane)
     }, {once: true});
+
     /* dynamic import */
     import("../lib/OrbitControls.js").then(({OrbitControls}) => {
       this.event.addListener("started", () => {
@@ -729,6 +752,13 @@ class Game {
     spotLightHelper.name = spotLight.name + "_helper"
     this.scene.add(spotLightHelper);
     spotLight.helper = spotLightHelper;
+  }
+
+  addPointLightHelper (pointLight, size) {
+    const pointLightHelper = new THREE.PointLightHelper(pointLight, size);
+    pointLightHelper.name = pointLight.name + "_helper";
+    this.scene.add(pointLightHelper);
+    pointLight.helper = pointLightHelper;
   }
 
   addCameraHelper (camera) {
