@@ -45,7 +45,7 @@ class Game {
     this.scene.add.apply(this.scene, Object.values(this.lights));
  
     this.models = {};
-    this._loadObjs(this.path_callback_Array).then(() => {
+    this._loadglTFs(this.path_callback_Array).then(() => {
       this.event.dispatch("modelsAllLoaded");
       this.scene.add.apply(this.scene, Object.values(this.models));
     });
@@ -441,8 +441,12 @@ class Game {
   }
 
   path_callback_Array = [
-    ['/resource/obj/biplane0.obj', 
-      plane => {
+    ['/resource/obj/biplane0.gltf', 
+      result => {
+        const plane = result.scene.children[0];
+        result.scenes = null;
+        result.scene = null;
+        result = null
         const material = new THREE.MeshPhongMaterial({
           // color: this.colors.planeRed,
           color: 0xffffff,
