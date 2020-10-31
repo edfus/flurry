@@ -501,7 +501,6 @@ class GlobalAudioPlayer {
 
   async cancelScheduledFunc (func) {
     const digestHex = await this._digestText(func.toString());
-    console.log(func.toString(), digestHex)
     if(this._schedule[digestHex] && this._schedule[digestHex].in)
       return this._schedule[digestHex].cancel = true;
     else return false;
