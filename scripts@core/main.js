@@ -134,14 +134,16 @@ class Game {
   }
 
   idle_clear() {
-    // for(const obj3D in this._idle) {
-    //   this.scene.remove(this._idle[obj3D]);
-    //   this.dispose(this._idle[obj3D])
-    // }
-    // delete this._idle;
+    for(const obj3D in this._idle) {
+      this.scene.remove(this._idle[obj3D]);
+      this.dispose(this._idle[obj3D])
+    }
+    delete this._idle;
   }
 
   dispose (obj) {
+    if(obj.parent)
+      obj.parent.remove(obj);
     if(obj.children)
       for (let i = 0; i < obj.children.length; i++) {
           this.dispose(obj.children[i]);
@@ -377,7 +379,7 @@ class Game {
     const points = [];
     const tunnel = {}
     const maxI = 600;
-    const delta = 25 / 4;
+    const delta = 25 / 4; //TODO: enlarge radius and delta
     tunnel.closeEndOfTunnel = -300;
     tunnel.lengthOfTunnel = maxI * delta;
     tunnel.farEndOfTunnel = tunnel.lengthOfTunnel + tunnel.closeEndOfTunnel;
@@ -467,7 +469,7 @@ class Game {
         plane.scale.multiplyScalar(0.05);
         plane.rotation.x = this.deg(12);
         plane.name = "plane_obj";
-
+        // 减少机翼长度，屁股上移，光泽
         const pointlight = new THREE.PointLight( 0xffffff, 0.5, 200 );
         pointlight.position.set( -8, 60, -10 );
         pointlight.name = "plane_shining";
@@ -480,7 +482,7 @@ class Game {
         group.add(this._createPropeller(0, position_propeller));
         // group.add(this._createHeadLight(this.colors.lightBlue, position_headLight, position_propeller));
         group.position.set(9,39,0);
-        group.rotation.x = this.deg(-6);
+
         group.name = "plane";
         this.models.plane = group;
         this.event.addListener("update_main", () => {
@@ -552,7 +554,12 @@ class Game {
     const propeller = new THREE.Mesh(geomPropeller, material);
     propeller.rotation.z = intialRotation;
 
-    const rotation = this.deg(32)
+    const rotation = this.deg(32) //TODO 加快
+    propeller.rotation = new Proxy(propeller.rotation, {
+      set () {
+
+      }
+    })
     this.event.addListener("update", () => {
       propeller.rotation.z -= rotation;
     });
@@ -603,7 +610,7 @@ class Game {
         `varying float vAlpha; varying vec3 vColor;
         void main() {
             gl_FragColor = vec4( vColor, vAlpha );
-        }`,
+        }`, // gl_FragColor是否会自动被THREE.js设置，导致重复设置？
         transparent: true,
         vertexColors: true
     });
@@ -652,7 +659,7 @@ class Game {
         vertexColors: false,
         map: this.getTexture.snow(),
         transparent: true,
-        // depthWrite: false
+        depthTest: false,
         // blending: THREE.AdditiveBlending,
     });
     const points = new THREE.Points(geometry, material);
