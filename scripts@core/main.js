@@ -88,11 +88,29 @@ class Game {
     this.event.dispatch("newSceneColor", color)
     return color;
   }
+  
+  setSceneColor (color_obj) {
+    const colorHexValue = color_obj.getHex();
+    const rgb = color_obj.getStyle()
+    const darkenRGBColor_10 = this.colors.RGB_Linear_Shade(-.1, rgb);
+    const darkenRGBColor_20 = this.colors.RGB_Linear_Shade(-.2, rgb);
+
+    this.lights.spotLight.color.setHex(colorHexValue);
+
+    this.lights.sphereLight.material.color.set(darkenRGBColor_10);
+    this.lights.sphereLight.material.emissive.set(darkenRGBColor_10);
+
+    if(!this.scene.fog)
+      this.scene.fog = new THREE.Fog(darkenRGBColor_20, this.tunnel.farEndOfTunnel - 4 * this.tunnel.radius, this.tunnel.farEndOfTunnel);
+    else this.scene.fog.color.set(darkenRGBColor_20)
+  }
 
   idle_begin () {
     this._idle = {}
     this._idle.smoke = this._addSmoke();
-    this.scene.add(this._idle.smoke)
+    this.scene.add(this._idle.smoke);
+    this.event.addListener("update_idle", this._idle.smoke._update_function)
+    this._idle.smoke._update_period = "update_idle";
 
     const color = this.newSceneColor();
     const hsl = this.colors.complementaryOf(color).getHSL({});
@@ -100,16 +118,37 @@ class Game {
     this.setSceneColor(color);
     switch((Math.random() % .3).toFixed(1)) {
       default: 
-        this._idle.stars = this._createPoints(hsl.h, hsl.s, hsl.l);
+        this._idle.stars = this._addStars(hsl.h, hsl.s, hsl.l);
         this.scene.add(this._idle.stars)
+        this.event.addListener("update_idle", this._idle.stars._update_function);
+        this._idle.stars._update_period = "update_idle";
     }
   }
 
   idle_clear() {
     for(const obj3D in this._idle) {
-      this.scene.remove(obj3D);
+      this.scene.remove(this._idle[obj3D]);
+      this.dispose(this._idle[obj3D])
     }
     delete this._idle;
+  }
+
+  dispose (obj) {
+    if(obj.children)
+      for (let i = 0; i < obj.children.length; i++) {
+          this.dispose(obj.children[i]);
+      }
+    obj.geometry && obj.geometry.dispose();
+    if(obj.material) {
+      if (obj.material.map)
+        obj.material.map.dispose();
+      obj.material.dispose();
+    }
+    if(obj._update_function) {
+      if(obj._update_period)
+        this.event.removeListener(obj._update_period, obj._update_function)
+      else throw "dispose: has obj._update_function, but !obj._update_period";
+    }
   }
 
   start () {
@@ -384,41 +423,6 @@ class Game {
     };
   }
 
-  _addSmoke () {
-    // https://threejs.org/docs/#api/en/loaders/TextureLoader
-    const texture =this._load.texture.load("./resource/textures/smoke.png");
-    const smokeGeo = new THREE.PlaneBufferGeometry(40, 40);
-    const smokeMaterial = new THREE.MeshLambertMaterial({
-      map: texture,
-      transparent: true,
-      opacity: .2,
-      side: THREE.DoubleSide
-    });
-    const smoke = new THREE.Group();
-    const smokePos = this.tunnel.farEndOfTunnel * .7;
-    const delta = this.tunnel.radius * 1.8
-    for(let p = 0; p < 20; p++) {
-      let smokeSegment = new THREE.Mesh(smokeGeo, smokeMaterial);
-
-      smokeSegment.rotation.z = this.deg(Math.random() * 360);
-      smokeSegment.rotation.y = this.deg(Math.random() * 15);
-      smokeSegment.scale.multiplyScalar(Math.random());
-      smokeSegment.position.set(
-        (Math.random() - .5) * delta,
-        (Math.random() - .5) * delta,
-        Math.random() * smokePos
-      );
-      smoke.add(smokeSegment)
-    }
-    this.event.addListener("update_idle", () => {
-      smoke.traverse(segement => {
-        segement.rotation.z -= 0.002;
-      });
-    })
-    smoke.name = "smoke"
-    return smoke
-  }
-
   _composeEffect () {
     const godray = null;
     // https://www.programmersought.com/article/12781728171/ Self-illuminating property.emissive
@@ -529,7 +533,7 @@ class Game {
     return THREE.MathUtils.degToRad(num)
   }
 
-  _createPoints(h, s, l) {
+  _addStars(h, s, l, amount = 300) {
     const positions = [];
     const colors = [];
     const opacities = [];
@@ -537,7 +541,7 @@ class Game {
     const rangeY = this.tunnel.radius;
     const rangeZ = this.tunnel.farEndOfTunnel - this.tunnel.radius * 2;
 
-    for(let i = 0, color = new THREE.Color(); i < 300; i++) {
+    for(let i = 0, color = new THREE.Color(); i < amount; i++) {
       const x = THREE.MathUtils.randFloat(-rangeX, rangeX );
       const y = THREE.MathUtils.randFloat(-rangeY, rangeY );
       const z = THREE.MathUtils.randFloat(0, rangeZ );
@@ -553,7 +557,6 @@ class Game {
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3 ));
     geometry.setAttribute('alpha', new THREE.Float32BufferAttribute(opacities, 1 ));
 
-    // point cloud material
     const shaderMaterial = new THREE.ShaderMaterial( {
         vertexShader:  
         `attribute float alpha; varying float vAlpha; varying vec3 vColor;
@@ -572,37 +575,56 @@ class Game {
         transparent: true,
         vertexColors: true
     });
-    this.event.addListener("update_idle", () => {
+    const points = new THREE.Points(geometry, shaderMaterial);
+    points.name = "stars";
+    points._update_function = () => {
       const alphas = geometry.attributes.alpha;
       const count = alphas.count;
-      for( let i = 0; i < count; i ++ ) {
-          // dynamically change alphas
-          alphas.array[ i ] *= 0.99;
-          if ( alphas.array[ i ] < 0.01 ) { 
-              alphas.array[ i ] = 1.0;
+      for(let i = 0; i < count; i++) {
+          alphas.array[i] *= 0.99;
+          if(alphas.array[i] < 0.01) { 
+              alphas.array[i]  = 1.0;
           }
       }
       geometry.attributes.alpha.needsUpdate = true;
-    })
-    const points = new THREE.Points(geometry, shaderMaterial);
-    points.name = "stars";
+    }
     return points;
   }
 
-  setSceneColor (color_obj) {
-    const colorHexValue = color_obj.getHex();
-    const rgb = color_obj.getStyle()
-    const darkenRGBColor_10 = this.colors.RGB_Linear_Shade(-.1, rgb);
-    const darkenRGBColor_20 = this.colors.RGB_Linear_Shade(-.2, rgb);
+  
+  _addSmoke () {
+    // https://threejs.org/docs/#api/en/loaders/TextureLoader
+    const texture =this._load.texture.load("./resource/textures/smoke.png");
+    const smokeGeo = new THREE.PlaneBufferGeometry(40, 40);
+    const smokeMaterial = new THREE.MeshLambertMaterial({
+      map: texture,
+      transparent: true,
+      opacity: .2,
+      side: THREE.DoubleSide
+    });
+    const smoke = new THREE.Group();
+    const smokePos = this.tunnel.farEndOfTunnel * .7;
+    const delta = this.tunnel.radius * 1.8
+    for(let p = 0; p < 20; p++) {
+      let smokeSegment = new THREE.Mesh(smokeGeo, smokeMaterial);
 
-    this.lights.spotLight.color.setHex(colorHexValue);
-
-    this.lights.sphereLight.material.color.set(darkenRGBColor_10);
-    this.lights.sphereLight.material.emissive.set(darkenRGBColor_10);
-
-    if(!this.scene.fog)
-      this.scene.fog = new THREE.Fog(darkenRGBColor_20, this.tunnel.farEndOfTunnel - 4 * this.tunnel.radius, this.tunnel.farEndOfTunnel);
-    else this.scene.fog.color.set(darkenRGBColor_20)
+      smokeSegment.rotation.z = this.deg(Math.random() * 360);
+      smokeSegment.rotation.y = this.deg(Math.random() * 15);
+      smokeSegment.scale.multiplyScalar(Math.random());
+      smokeSegment.position.set(
+        (Math.random() - .5) * delta,
+        (Math.random() - .5) * delta,
+        Math.random() * smokePos
+      );
+      smoke.add(smokeSegment)
+    }
+    smoke._update_function = () => {
+      smoke.traverse(segement => {
+        segement.rotation.z -= 0.002;
+      });
+    }
+    smoke.name = "smoke"
+    return smoke
   }
   
   /* debugger */
@@ -721,14 +743,14 @@ class Game {
         e.boxHelper = new THREE.BoxHelper(e.mesh, this.colors.greenForTest);
         e.boxHelper.name = e.name + "_helper"
         this.scene.add(e.boxHelper);
-        this.event.addListener("update", () => e.boxHelper.update());
+        this.event.addListener("update_main", () => e.boxHelper.update());
         return ;
       })
     else {
       obj3D.boxHelper = new THREE.BoxHelper(obj3D.mesh, this.colors.greenForTest);
       obj3D.boxHelper.name = obj3D.name + "_helper"
       this.scene.add(obj3D.boxHelper);
-      this.event.addListener("update", () => obj3D.boxHelper.update());
+      this.event.addListener("update_main", () => obj3D.boxHelper.update());
     }
   }
 
