@@ -6,6 +6,7 @@ import Event from '../scripts@miscellaneous/EventDispatcher.js';
 import RenderLoop from '../scripts@miscellaneous/RenderLoop.js';
 import AudioPlayer from '../scripts@audio/AudioWorker.js';
 import Score from '../scripts@miscellaneous/Score.js';
+import Drawer from './drawTextures.js';
 /* objects */
 import colors from '../scripts@config/colors.js';
 
@@ -31,6 +32,7 @@ class Game {
       texture: new THREE.TextureLoader()
     };
     this.init();
+    this.getTexture = new Drawer();
   }
 
   /* main functions */
@@ -77,7 +79,7 @@ class Game {
     this.config.getContainer().append(this.renderer.domElement);
     this.config.getUIContainer().append(this.ui.canvas2D.domElement);
     this.score.bind(this.config.getScoreContainer());
-    this.config.gameLoadedCallback();
+    this.event.addListener("planeLoaded", () => this.config.gameLoadedCallback(), {once: true})
     this._log();
     this.event.dispatch("loaded");
     this.state.loaded = true;
@@ -116,7 +118,13 @@ class Game {
     const hsl = this.colors.complementaryOf(color).getHSL({});
 
     this.setSceneColor(color);
-    switch((Math.random() % .3).toFixed(1)) {
+    switch("0.2") {
+      case "0.2":
+        this._idle.snow = this._addSnow();
+        this.scene.add(this._idle.snow)
+        this.event.addListener("update_idle", this._idle.snow._update_function);
+        this._idle.snow._update_period = "update_idle";
+        break;
       default: 
         this._idle.stars = this._addStars(hsl.h, hsl.s, hsl.l);
         this.scene.add(this._idle.stars)
@@ -126,11 +134,11 @@ class Game {
   }
 
   idle_clear() {
-    for(const obj3D in this._idle) {
-      this.scene.remove(this._idle[obj3D]);
-      this.dispose(this._idle[obj3D])
-    }
-    delete this._idle;
+    // for(const obj3D in this._idle) {
+    //   this.scene.remove(this._idle[obj3D]);
+    //   this.dispose(this._idle[obj3D])
+    // }
+    // delete this._idle;
   }
 
   dispose (obj) {
@@ -614,6 +622,59 @@ class Game {
     return points;
   }
 
+  _addSnow (amount = 300) {
+    const positions = [];
+    const velocities = [];
+    const rangeX = this.tunnel.radius;
+    const rangeY = this.tunnel.radius;
+    const rangeZ = this.tunnel.farEndOfTunnel - this.tunnel.radius * 2;
+
+    for(let i = 0; i < amount; i++) {
+      const x = THREE.MathUtils.randFloat(-rangeX, rangeX );
+      const y = THREE.MathUtils.randFloat(-rangeY, rangeY );
+      const z = THREE.MathUtils.randFloat(-200, rangeZ );
+      
+      const v_x = Math.floor(Math.random() * 6 - 3) * 0.5;
+      const v_y = Math.floor(Math.random() * 15 + 5) * -0.3;
+      const v_z = Math.floor(Math.random() * 6 - 3) * 0.5;
+      const velocity = new THREE.Vector3(v_x, v_y, v_z);
+      
+      positions.push( x, y, z );
+      velocities.push(velocity);
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    const material = new THREE.PointsMaterial({
+        size: 20,
+        color: 0xffffff,
+        vertexColors: false,
+        map: this.getTexture.snow(),
+        transparent: true,
+        // depthWrite: false
+        // blending: THREE.AdditiveBlending,
+    });
+    const points = new THREE.Points(geometry, material);
+    points.name = "snow";
+    
+    points._update_function = timeStamp => {
+      const positions = geometry.attributes.position;
+      const count = positions.count;
+      for(let i = 0, index = 0; i < count; i++) {
+        const velocity = velocities[i];
+        positions.array[index++] += Math.sin(timeStamp * velocity.x) * 0.0001;
+        positions.array[index] += velocity.y;
+        if(positions.array[index] < -rangeY) {
+          positions.array[index] = rangeY;
+        }
+        positions.array[++index] += Math.cos(timeStamp * velocity.z) * 0.00015;
+        index++; 
+      }
+      geometry.attributes.position.needsUpdate = true;
+    }
+    return points;
+  }
+
   
   _addSmoke () {
     // https://threejs.org/docs/#api/en/loaders/TextureLoader
@@ -740,10 +801,10 @@ class Game {
     this.event.dispatch("update", performance.now());
   }
   update_main () {
-    this.event.dispatch("update_main");
+    this.event.dispatch("update_main", performance.now());
   }
   update_idle () {
-    this.event.dispatch("update_idle");
+    this.event.dispatch("update_idle", performance.now());
   }
 
   /* Helpers(used in _debug) */
@@ -881,7 +942,7 @@ game.event.addListener("loaded", () => {
   game.renderLoop.start();
 }, {once: true});
 
-window.addEventListener("load", () => {
+window.addEventListener("DOMContentLoaded", () => {
   game.state.inited 
   ? game.load()
   : game.event.addListener("inited", () => game.load(), {once: true});
