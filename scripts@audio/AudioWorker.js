@@ -359,12 +359,17 @@ class GlobalAudioPlayer {
   }
 
   async _play(name, audioBuffer, destination, loop) {
+    if(this._fade.isFading) {
+      this.cancelFadeOut()
+    }
     if(this.songPlaying.source) {
       await this.stop();
     }
     if(this.context.state === 'suspended') {
       await this.resume();
     }
+    this.volume = this._user_preferred_volume;
+
     const source =  this.context.createBufferSource();
     source.buffer = audioBuffer;
     source.loop = loop; 
@@ -387,7 +392,7 @@ class GlobalAudioPlayer {
         this.songPlaying.source.onended = null; // in case async error
         reject('AudioPlayer: Force stopped: ' + this.songPlaying.name);
       }
-    }).catch(reason => console.info(reason))
+    })
   }
   /**
    * 播放按顺序的下一首歌
@@ -399,7 +404,7 @@ class GlobalAudioPlayer {
    */
   async playNext (autoPlay = false) {
     let nextSong;
-    //FIX after restart
+
     if(this.songs.nextsToPlay.length && this.songs.nextsToPlay[0])
       nextSong = this.songs.nextsToPlay.shift();
     else {
@@ -450,56 +455,76 @@ class GlobalAudioPlayer {
     }
   }
 
+  _schedule = {
+    _getSongFunc: (param, loop) => {
+      const func = () => this.playSong(param, loop)
+      func.toString = () => Function.prototype.toString.call(func).concat(` ${param}-${loop}`)
+      return func;
+    }
+  };
+
+  async scheduleFunc (func, delay) {
+    const protoF = async () => {
+      await new Promise(resolve => setTimeout(resolve, delay * 1000))
+      if(!this._schedule[digestHex].cancel) {
+        delete this._schedule[digestHex];
+        return func();
+      } else {
+        delete this._schedule[digestHex];
+        return Promise.reject("AudioPlayer: Schedule cancelled")
+      }
+    }
+    const digestHex = await this._digestText(func.toString())
+    this._schedule[digestHex] = {}
+    this._schedule[digestHex].in = true;
+    if(!this.songPlaying.source) {
+      return protoF()
+    }
+    if(this._fade.isFading) {
+      await new Promise(resolve => {
+        this._fade.finally(resolve);
+      })
+      await this.stop(0);
+      await this.resume();
+      return protoF();
+    }
+
+    const pr_onended = this.songPlaying.source.onended;
+    return new Promise(resolve => {
+      this.songPlaying.source.loop = false;
+      this.songPlaying.source.onended = () => {
+        pr_onended(true);
+        resolve(protoF())
+      }
+    })
+  }
+
+  async cancelScheduledFunc (func) {
+    const digestHex = await this._digestText(func.toString());
+    console.log(func.toString(), digestHex)
+    if(this._schedule[digestHex] && this._schedule[digestHex].in)
+      return this._schedule[digestHex].cancel = true;
+    else return false;
+  }
+
   /**
    * 
    * @param {string | Object} param 要播放歌曲的role或包含其信息的对象
    * @param {boolean} loop 是否循环
    */
   async scheduleSong (param, loop, delay = 0) {
-    if(!this.songPlaying.source) {
-      return this.playSong(param, loop);
-    }
-    if(this._fade.isFading) {
-      await new Promise(resolve => {
-        this._fade.finally(resolve);
-      })
-      await this.stop(delay);
-      await this.resume();
-      this.volume = this._user_preferred_volume;
-      return this.playSong(param, loop);
-    }
-
-    const pr_onended = this.songPlaying.source.onended;
-    return new Promise(resolve => {
-      this.songPlaying.source.loop = false;
-      this.songPlaying.source.onended = () => {
-        pr_onended(true);
-        resolve(this.playSong(param, loop))
-      }
-    })
+    return this.scheduleFunc(this._schedule._getSongFunc(param, loop), delay);
   }
 
-  async scheduleFunc (func) {
-    if(!this.songPlaying.source) {
-      return func();
-    }
-    if(this._fade.isFading) {
-      await new Promise(resolve => {
-        this._fade.finally(resolve);
-      })
-      await this.stop(delay);
-      this.volume = this._user_preferred_volume;
-      return func();
-    }
+  async cancelScheduledSong (param, loop) {
+    return this.cancelScheduledFunc(this._schedule._getSongFunc(param, loop));
+  }
 
-    const pr_onended = this.songPlaying.source.onended;
-    return new Promise(resolve => {
-      this.songPlaying.source.loop = false;
-      this.songPlaying.source.onended = () => {
-        pr_onended(true);
-        resolve(func())
-      }
-    })
+  async _digestText (text) {
+    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));                     // convert buffer to byte array
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join(''); // convert bytes to hex string
+    return hashHex;
   }
 
   pause () {
@@ -523,8 +548,13 @@ class GlobalAudioPlayer {
       if(handleFunc && typeof handleFunc === "function")
         handleFunc();
       this.songPlaying.source.stop(delay);
-      return new Promise(resolve => {
-        setTimeout(() => resolve(this.songPlaying.empty()), delay * 1000);
+      this.songPlaying.empty();
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          if(this.songPlaying.source)
+            reject("AudioPlayer: incomplete stop after delay " + delay)
+          else resolve()
+        }, delay * 1000);
       })
     }
     // An AudioBufferSourceNode can only be played once;
@@ -632,8 +662,8 @@ class GlobalAudioPlayer {
       return Promise.reject(new Error("!this.songPlaying.source"));
     if(this._fade.isFading) {
       this._fade.dump('Dumped. fadeIn now');
-      fadeTime = (this._user_preferred_volume - this.volume) * fadeTime;
       this.nodes.songsGain.gain.cancelScheduledValues(currTime);
+      fadeTime = (this._user_preferred_volume - this.volume) * fadeTime;
       this.nodes.songsGain.gain.linearRampToValueAtTime(this.volume, currTime + .001);
       this.nodes.songsGain.gain.linearRampToValueAtTime(this._user_preferred_volume, currTime + .001 + fadeTime);
       return this._fade.newPromise(void 0, fadeTime * 1000);
