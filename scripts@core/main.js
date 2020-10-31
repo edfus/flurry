@@ -226,6 +226,7 @@ class Game {
                         this.ui.titleMenuButtons.hide().then(() => {
                           this.ui.pauseButton.show();
                         });
+                        this.audio.cancelScheduledSong("intro", true)
                         this.audio.playNext(true);
                       })
                     .execute(() => {
@@ -264,7 +265,7 @@ class Game {
                         this.ui.canvas2D.enable();
                         (async () => {
                           await this.ui.pauseButton.hide();
-                          this.audio.fadeOut(10);
+                          this.audio.fadeOut(20);
                           await this.ui.startButton.show();
                           this.ui.startButton.listenOnce();
                         })()
@@ -817,12 +818,8 @@ game.whenPaused = new class {
   }
   init () { // all methods related to changing game state
     document.addEventListener("visibilitychange", () => {
-      if(document.visibilityState === 'visible') {
-        // game.audio.fadeIn(4);
-        // this.resolve()
-      } else {
-        if(game.pause()) game.audio.fadeOut(20);
-      }
+      if(document.visibilityState === "hidden")
+        game.pause()
     }, {passive: true});
 
     if(Dialog.isBusy)

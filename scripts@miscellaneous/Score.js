@@ -76,13 +76,15 @@ class Score {
     localStorage.score_obj = JSON.stringify(store_obj);
 
     localStorage.score = encrypt(this.#value);
+    if(!localStorage.uuid)
+      localStorage.uuid = uuidv4()
   }
 
   loadPrevious () {
     return decrypt(localStorage.score)
   }
 }
-
+//TODO： SubtleCrypto.sign()
 function _algorithm(value) { // 简单地散列useragent，以之异或为校验和转换为16进制到value末尾
   let str = '';
   let i = 0;
@@ -113,5 +115,11 @@ function decrypt (value) {
 function encrypt (value) {
   return value.toString(16) + identifier + _algorithm(value.toString(16));
 }
+
+function uuidv4() {
+  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+  );
+} // https://stackoverflow.com/questions/105034/how-to-create-a-guid-uuid
 
 export default Score;
