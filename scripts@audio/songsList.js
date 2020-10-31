@@ -21,20 +21,20 @@ const songs = [
     url: `${host}resource/audio/Loner%20Soundtrack/2_Void.mp3`
   },
   {
-    name: "Rain",
-    url: `${host}resource/audio/Loner%20Soundtrack/3_Rain.mp3`
-  },
-  {
     name: "Tunnel",
     url: `${host}resource/audio/Loner%20Soundtrack/4_Tunnel.mp3`
   },
   {
-    name: "Time",
-    url: `${host}resource/audio/Loner%20Soundtrack/5_Time.mp3`
-  },
-  {
     name: "DeepSea",
     url: `${host}resource/audio/Loner%20Soundtrack/6_DeepSea.mp3`
+  },
+  {
+    name: "Rain",
+    url: `${host}resource/audio/Loner%20Soundtrack/3_Rain.mp3`
+  },
+  {
+    name: "Time",
+    url: `${host}resource/audio/Loner%20Soundtrack/5_Time.mp3`
   },
   {
     name: "Voices",
