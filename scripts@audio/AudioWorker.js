@@ -19,7 +19,7 @@ function work() {
         return newEvent('requestFulfilled', newAudio, [newAudio.arrayBuffer]);
       else if (newAudio.reserve) {
         return newEvent('newSongLoaded', newAudio, [newAudio.arrayBuffer]);
-      } else if (newAudio.index >= 0 && this.preloadIndex > newAudio.index) {
+      } else if (newAudio.index && newAudio.index >= this.preloadIndex.min && this.preloadIndex.max > newAudio.index) { // > not >=
         return newEvent('newSongLoaded', newAudio, [newAudio.arrayBuffer]);
       } else {
         delete newAudio.arrayBuffer;
@@ -192,7 +192,7 @@ class GlobalAudioPlayer {
   songs = {
     nextsToPlay: new Array(this.preloadLength), // for next two songs to play, reserve their array buffer 
     currentIndex: 0,
-    shuffle: false
+    shuffle: true
   };
   sequenceArr = [];
   songPlaying = {name: '', source: null};
@@ -203,10 +203,25 @@ class GlobalAudioPlayer {
   constructor () {
     this.#worker = this.#newWorker(work);
     this.#worker.onmessage = this.#onmessage.bind(this);
+
+    let min, preloadIndex;
+    if(this.songs.shuffle === true && localStorage.songsAllLoaded) {
+      min = ((songs.length - this.preloadLength) * Math.random()).toFixed(0)
+      preloadIndex = {
+        min: min,
+        max: min + this.preloadLength
+      }
+    } else {
+      preloadIndex = {
+        min: 0,
+        max: this.preloadLength
+      }
+    }
+
     this.#worker.postMessage({
       initLoader: true, 
       songs: [...songs, ...themes],
-      preloadIndex: this.preloadLength
+      preloadIndex: preloadIndex
     })
     this.context = new AudioContext();
     this.nodes = {
@@ -330,6 +345,7 @@ class GlobalAudioPlayer {
           })
           return ; 
         case 'allLoaded': 
+          localStorage.songsAllLoaded = true;
           return this.allLoaded = true; 
         default:  Dialog.newError(data.eventName, data);
       }
@@ -405,21 +421,28 @@ class GlobalAudioPlayer {
   async playNext (autoPlay = false) {
     let nextSong;
 
-    if(this.songs.nextsToPlay.length && this.songs.nextsToPlay[0])
-      nextSong = this.songs.nextsToPlay.shift();
-    else {
+    for(let i = 0; i < this.songs.nextsToPlay.length; i++) {
+      if(this.songs.nextsToPlay[i]) {
+        nextSong = this.songs.nextsToPlay[i];
+        this.songs.nextsToPlay.splice(0, i + 1)
+      }
+    }
+
+    if(!nextSong) {
       if(this.songPlaying.source) {
+        console.warn("AudioPlayer: new song is not available, running fallback")
         this.songPlaying.source.loop = true;
         return new Promise(resolve => {
           setTimeout(() => resolve(this.playNext(autoPlay)), this.songPlaying.source.buffer.duration * 999.9)
         })
       } else {
         return new Promise(resolve => {
-          console.info("AudioPlayer: song not available")
+          console.warn("AudioPlayer: songs not available")
           setTimeout(() => resolve(this.playNext(autoPlay)), 1000)
         })
       }
     }
+
     this.songs.currentIndex = nextSong.index;
     this.request(nextSong.index + this.preloadLength)
     if(autoPlay)
