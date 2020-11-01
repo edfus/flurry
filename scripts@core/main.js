@@ -114,7 +114,7 @@ class Game {
     const color = this.newSceneColor();
     const hsl = this.colors.complementaryOf(color).getHSL({});
     this._idle = {}
-
+    // color.r, color.g, color.b
     this.setSceneColor(color);
     switch((Math.random() % .3).toFixed(1)) {
       case "0.2":
@@ -128,10 +128,10 @@ class Game {
         this.scene.add(this._idle.stars)
         this.event.addListener("update_idle", this._idle.stars._update_function);
         this._idle.stars._update_period = "update_idle";
-        this._idle.smoke = this._addSmoke();
-        this.scene.add(this._idle.smoke);
-        this.event.addListener("update_idle", this._idle.smoke._update_function)
-        this._idle.smoke._update_period = "update_idle";
+        this._idle.waste = this._addSolidWaste();
+        this.scene.add(this._idle.waste);
+        this.event.addListener("update_idle", this._idle.waste._update_function)
+        this._idle.waste._update_period = "update_idle";
     }
   }
 
@@ -579,6 +579,10 @@ class Game {
     return THREE.MathUtils.degToRad(num)
   }
 
+  _addMeteor () {
+
+  }
+
   _addStars(h, s, l, amount = 300) {
     const positions = [];
     const colors = [];
@@ -649,7 +653,7 @@ class Game {
       const y = THREE.MathUtils.randFloat(-rangeY, rangeY );
       const z = THREE.MathUtils.randFloat(50, rangeZ );
       
-      const v_x = Math.floor(Math.random() * 2 - 1);
+      const v_x = Math.floor(Math.random() - .5);
       const v_y = -Math.floor(Math.random() * 3 + 1.5);
       const v_z = Math.floor(Math.random() * 0.1 - 0.05) ;
       const velocity = new THREE.Vector3(v_x, v_y, v_z);
@@ -661,7 +665,7 @@ class Game {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     const material = new THREE.PointsMaterial({
-        size: 25,
+        size: 40,
         color: 0xffffff,
         vertexColors: false,
         map: this.getTexture.snow(),
@@ -673,17 +677,18 @@ class Game {
     points.name = "snow";
     
     const wind = {
-      x: Math.random(),
+      x: Math.random() * .1,
       z: Math.random(),
       index: 0,
-      indexMax: velocities.length * 3
+      indexMax: amount * 5,
+      invert: false
     }
     points._update_function = timeStamp => {
       const positions = geometry.attributes.position;
       const count = positions.count;
       for(let i = 0, index = 0; i < count; i++) {
         const velocity = velocities[i];
-        positions.array[index++] += Math.sin(timeStamp * 0.001 * velocity.x) + wind.x;
+        positions.array[index++] += Math.sin(timeStamp * 0.0006 * velocity.x) + wind.x;
         positions.array[index] += velocity.y;
         if(positions.array[index] < -rangeY) {
           positions.array[index] = rangeY;
@@ -693,7 +698,7 @@ class Game {
             wind.index = 0;
           }
         }
-        positions.array[++index] += Math.cos(timeStamp * 0.001 * velocity.z) + wind.z;
+        positions.array[++index] += Math.cos(timeStamp * 0.0006 * velocity.z) + wind.z;
         index++; 
       }
       geometry.attributes.position.needsUpdate = true;
@@ -701,40 +706,39 @@ class Game {
     return points;
   }
 
-  
-  _addSmoke () {
+  _addSolidWaste () {
     // https://threejs.org/docs/#api/en/loaders/TextureLoader
     const texture =this._load.texture.load("./resource/textures/smoke.png");
-    const smokeGeo = new THREE.PlaneBufferGeometry(40, 40);
-    const smokeMaterial = new THREE.MeshLambertMaterial({
+    const wasteGeo = new THREE.PlaneBufferGeometry(40, 40);
+    const wasteMaterial = new THREE.MeshLambertMaterial({
       map: texture,
       transparent: true,
       opacity: .2,
       side: THREE.DoubleSide
     });
-    const smoke = new THREE.Group();
-    const smokePos = this.tunnel.farEndOfTunnel * .7;
+    const waste = new THREE.Group();
+    const wastePos = this.tunnel.farEndOfTunnel * .7;
     const delta = this.tunnel.radius * 1.8
     for(let p = 0; p < 20; p++) {
-      let smokeSegment = new THREE.Mesh(smokeGeo, smokeMaterial);
+      let wasteSegment = new THREE.Mesh(wasteGeo, wasteMaterial);
 
-      smokeSegment.rotation.z = this.deg(Math.random() * 360);
-      smokeSegment.rotation.y = this.deg(Math.random() * 15);
-      smokeSegment.scale.multiplyScalar(Math.random());
-      smokeSegment.position.set(
+      wasteSegment.rotation.z = this.deg(Math.random() * 360);
+      wasteSegment.rotation.y = this.deg(Math.random() * 15);
+      wasteSegment.scale.multiplyScalar(Math.random());
+      wasteSegment.position.set(
         (Math.random() - .5) * delta,
         (Math.random() - .5) * delta,
-        Math.random() * smokePos
+        Math.random() * wastePos
       );
-      smoke.add(smokeSegment)
+      waste.add(wasteSegment)
     }
-    smoke._update_function = () => {
-      smoke.traverse(segement => {
+    waste._update_function = () => {
+      waste.traverse(segement => {
         segement.rotation.z -= 0.002;
       });
     }
-    smoke.name = "smoke"
-    return smoke
+    waste.name = "solid waste"
+    return waste
   }
   
   /* debugger */
