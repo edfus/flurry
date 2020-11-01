@@ -333,8 +333,7 @@
     const { [args.length - 1]: lastParam, length: len } = args; // es6 shorthand syntax
 
     if(typeof lastParam === 'number'){
-      if(!config.testMode)
-        errorDialog.msToHide = lastParam;
+      errorDialog.msToHide = lastParam;
       errorDialog.paragraphs = args.slice(0, len - 1)
     } else {
       errorDialog.paragraphs = args // when no param passed args will just be an empty array, without undefined in it

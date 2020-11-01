@@ -17,8 +17,7 @@ class Game {
    * game的start、resume、pause、end等函数中不涉及ui的显隐控制，音乐播放等
    * game通过eventDispatcher控制renderLoop。
    * 能只dispatch event的状态函数，就不要设置this.state.inited = true。
-   * renderLoop中不修改除canBePaused以外的任何game.state
-   * renderLoop中不调用除resume以外的任何game的状态函数（start、pause等）
+   * renderLoop中不调用除resume、end以外的任何game的状态函数（start、pause等）
    * renderLoop中不涉及THREE.js的模型创建、光影更改、碰撞判定等，只调用game的相关函数。
    */
   constructor() {
@@ -32,8 +31,19 @@ class Game {
       texture: new THREE.TextureLoader()
     };
     this.getTexture = new Drawer();
+    this.collidableMeshList = [];
     this.init();
   }
+
+createobject(){
+  var cube = new THREE.Mesh(new THREE.CubeGeometry(10, 10, 10),
+        new THREE.MeshBasicMaterial({
+            color: 0x1000f7
+        })
+);
+cube.position.set(-145,20,55);
+return cube;
+}
 
   /* main functions */
   init() {
@@ -43,6 +53,9 @@ class Game {
 
     this.tunnel = this._createTunnel();
     this.scene.add(this.tunnel.mesh);
+
+    this.cube = this.createobject();
+    this.scene.add(this.cube);
 
     this.lights = this._createLights();
     this.scene.add.apply(this.scene, Object.values(this.lights));
@@ -92,12 +105,19 @@ class Game {
   }
 
   newSceneColor () {
-    const color = new THREE.Color(this.colors.sceneColors[parseInt(Math.random() * this.colors.sceneColors.length)]);
-    this.event.dispatch("newSceneColor", color)
-    return color;
+    let colorArray = this.colors.sceneColors[parseInt(Math.random() * this.colors.sceneColors.length)];
+    colorArray = [
+      new THREE.Color(colorArray[0]),
+      colorArray[1]
+    ];
+    this.event.dispatch("newSceneColor", colorArray);
+    return colorArray
   }
   
-  setSceneColor (color_obj) {
+  setSceneColor (colorArray) {
+    const color_obj = colorArray[0]
+    const themeColor = colorArray[1]
+
     const colorHexValue = color_obj.getHex();
     const rgb = color_obj.getStyle()
     const darkenRGBColor_10 = this.colors.RGB_Linear_Shade(-.1, rgb);
@@ -112,18 +132,19 @@ class Game {
       this.scene.fog = new THREE.Fog(darkenRGBColor_20, this.tunnel.farEndOfTunnel - 4 * this.tunnel.radius, this.tunnel.farEndOfTunnel);
     else this.scene.fog.color.set(darkenRGBColor_20);
 
-    
-    document.documentElement.style.setProperty('--theme-color', "#".concat(color_obj.set(darkenRGBColor_20).getHexString()));
+    document.documentElement.style.setProperty('--theme-color', themeColor);
   }
 
   idle_begin () {
+    this.state.canBePaused = false;
     this.state.now = "idle";
     this.event.dispatch("idle");
-    const color = this.newSceneColor();
+    const colorArray = this.newSceneColor();
+    this.setSceneColor(colorArray);
+    const color = colorArray[0];
     const hsl = this.colors.complementaryOf(color).getHSL({});
     this._idle = {}
-    // color.r, color.g, color.b
-    this.setSceneColor(color);
+    
     switch((Math.random() % .3).toFixed(1)) {
       case "0.2":
         this._idle.snow = this._addSnow();
@@ -145,36 +166,16 @@ class Game {
 
   idle_clear() {
     for(const obj3D in this._idle) {
-      this.scene.remove(this._idle[obj3D]);
       this.dispose(this._idle[obj3D])
     }
     delete this._idle;
-  }
-
-  dispose (obj) {
-    if(obj.parent)
-      obj.parent.remove(obj);
-    if(obj.children)
-      for (let i = 0; i < obj.children.length; i++) {
-          this.dispose(obj.children[i]);
-      }
-    obj.geometry && obj.geometry.dispose();
-    if(obj.material) {
-      if (obj.material.map)
-        obj.material.map.dispose();
-      obj.material.dispose();
-    }
-    if(obj._update_function) {
-      if(obj._update_period)
-        this.event.removeListener(obj._update_period, obj._update_function)
-      else throw "dispose: has obj._update_function, but !obj._update_period";
-    }
   }
 
   start () {
     this.state.now = "start"
     this.event.dispatch("start");
     setTimeout(() => {
+      this.state.canBePaused = true;
       this.state.now = "started"
       this.event.dispatch("started");
       this.state.started = true;
@@ -190,36 +191,48 @@ class Game {
 
   pause () {
     if(this.state.canBePaused) { // modified in RenderLoop
+      this.state.canBePaused = false;
       this.state.now = "pause"
       this.event.dispatch("pause");
-      if(this.state.started) {
-        this.time.total += Date.now() - this.time.lastStamp;
-        this.time.lastStamp = Date.now();
-      }
-      this.state.canBePaused = false;
+      this.time.total += Date.now() - this.time.lastStamp;
+      this.time.lastStamp = Date.now();
       return true;
     } else return false;
   }
 
   resume () { // invoked in RenderLoop
+    this.state.canBePaused = true;
     this.state.now = "resume"
     this.event.dispatch("resume");
-    if(this.state.started) {
-      this.time.paused += Date.now() - this.time.lastStamp;
-      this.time.lastStamp = Date.now();
-    }
+    this.time.paused += Date.now() - this.time.lastStamp;
+    this.time.lastStamp = Date.now();
   }
 
   planeCrash () {
-    this.state.now = "crashed"
-    this.event.dispatch("crashed");
+    this.state.canBePaused = false;
+    this.state.now = "crash"
+    this.event.dispatch("crash");
+    this.time.total += Date.now() - this.time.lastStamp;
+    this.time.lastStamp = Date.now();
+    console.log("Dialog.newError")
+    Dialog.newError("crashed!", 3000)
+    setTimeout(() => {
+      this.state.now = "crashed"
+      this.event.dispatch("crashed");
+    }, 3000) //TODO: crash animaiton
   }
 
   end () {
+    this.state.canBePaused = false;
     this.state.now = "end"
     this.event.dispatch("end");
     this.state.started = false;
-    setTimeout(() => (this.state.now = "ended") && this.event.dispatch("ended"), 300); //TODO: backToTitle animation
+    setTimeout(() => {
+      this.obstacles.running.forEach(obstacle => this.dispose(obstacle.mesh));
+      this.obstacles.running.clear();
+      this.state.now = "ended";
+      this.event.dispatch("ended")
+    }, 300); //TODO: backToTitle animation
   }
 
   constructRenderLoops () {
@@ -229,7 +242,6 @@ class Game {
       new RenderLoop("idle")
                     .executeOnce(() => {
                       this.ui.freeze();
-                      this.state.canBePaused = false;
                       this.ui.startButton
                               .addTriggerCallback(() => game.start(), {once: true})
                               .listenOnce();
@@ -262,7 +274,6 @@ class Game {
                       })
                     .untilGameStateBecomes("started")
                       .then(() => {
-                          this.state.canBePaused = true;
                           this.whenPaused.initButtons();
                           this.score.start();
                           this.ui.unfreeze()
@@ -273,17 +284,29 @@ class Game {
                         this.renderer.render(this.scene, this.camera);
                         this.update_main();
                       })
-                    .untilGameStateBecomes("crashed")
+                    .untilGameStateBecomes("crash")
                       .then(() => {
-                          this.state.canBePaused = false;
                           this.ui.pauseButton.hide();
+                          this.ui.homeButton.hide(true);
                           this.score.pause();
                           this.ui.freeze();
-                          if(this.time.total > 180000) {
-                            this.audio.cancelFadeOut();
-                            this.audio.playSong("outro")
+                          this.audio.fadeOut(6);
+                          if(this.time.total > 18) {
+                            this.audio.scheduleSong("outro", false, 3)
                           }
-                          RenderLoop.goto("backToTitle")
+                          RenderLoop.goto("crash")
+                        }),
+      new RenderLoop("crash")
+                    .execute(() => {
+                        this.renderer.render(this.scene, this.camera);
+                        this.update_crash();
+                      })
+                    .untilGameStateBecomes("crashed")
+                      .then(() => {
+                          ////////////////
+                          this.end() // 因为要严格要求只有在crashed后才能end，所以在此end
+                          ////////////////
+                          RenderLoop.goto("backToTitle");
                         }),
       new RenderLoop("paused")
                     .executeOnce(() => {
@@ -307,7 +330,6 @@ class Game {
                         this.resume() // 因为要严格要求只有在pause后才能resume，所以在此resume
                         // 这是RenderLoop中唯一一处修改游戏状态的函数。
                         ////////////////
-                        this.state.canBePaused = true;
                         this.score.start();
                         this.ui.unfreeze();
                         this.ui.canvas2D.disable();
@@ -321,7 +343,9 @@ class Game {
                         console.info('RenderLoop: game resumed');
                       })
                       .else(() => {
-                        this.state.canBePaused = false;
+                        ////////////////
+                        this.end() // 因为要严格要求只有在pause后才能end，所以在此end
+                        ////////////////
                         this.ui.homeButton.hide(true);
                         this.ui.startButton.hide();
                         this.ui.canvas2D.disable();
@@ -341,7 +365,7 @@ class Game {
                           this.ui.titleMenuButtons.show().then(() => {
                             this.ui.startButton.show();
                           });
-                          this.audio.scheduleSong("intro", true, 6)
+                          this.audio.scheduleSong("intro", true, 8)
                           RenderLoop.goto("idle")
                           console.info('RenderLoop: game ended');
                         })
@@ -422,6 +446,10 @@ class Game {
     this.obstacles = {
       start_z: 4000,
       end_z: -700,
+      detect_z: {
+        max: 500,
+        min: -150
+      },
       gap: 10 * 1000,
       pool: new Array(amountInPool),
       running: new Set() // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set
@@ -451,12 +479,27 @@ class Game {
     this.event.addListener("update_main", timeStamp => {
       this.obstacles.running.forEach(obstacle => {
         obstacle.move();
-        if(obstacle.mesh.position.z <= this.obstacles.end_z) {
-          this.obstacles.running.delete(obstacle);
-          this.scene.remove(obstacle.mesh);
-          this.dispose(obstacle.mesh);
-          this.event.dispatch("obstacleRemoved");
-        }
+        if(obstacle.mesh.position.z <= this.obstacles.detect_z.max) {
+          console.log(obstacle.mesh.position.z, this.obstacles.detect_z.max)
+          if(obstacle.needsDetect === false) {
+            if(obstacle.mesh.position.z <= this.obstacles.end_z) {
+              this.obstacles.running.delete(obstacle);
+              this.dispose(obstacle.mesh);
+              this.event.dispatch("obstacleRemoved");
+              return ;
+            }
+          } else {
+            if(!obstacle.hasOwnProperty('needsDetect')) {
+              obstacle.needsDetect = true;
+              this.collidableMeshList.push(obstacle.mesh);
+              return ;
+            } else if(obstacle.mesh.position.z <= this.obstacles.detect_z.min) {
+              obstacle.needsDetect = false;
+              this.collidableMeshList.splice(this.collidableMeshList.indexOf(obstacle.mesh), 1);
+              return ;
+            }
+          }
+        }   
       })
       if(timeStamp - this.obstacles.prTimeStamp > this.obstacles.gap) {
         this._addObstacle();
@@ -546,6 +589,15 @@ class Game {
         plane.scale.multiplyScalar(0.05);
         plane.rotation.x = this.deg(12);
         plane.name = "plane_obj";
+        plane.isPlane = true;
+        
+        this.event.addListener("update_main", () => {
+          if(this.collidableMeshList.length)
+            if(this.isCollided_buffer(plane, this.collidableMeshList))
+              this.planeCrash();
+            else console.log("detecting. not crashed")
+        })
+
         // 减少机翼长度，屁股上移，光泽
         const pointlight = new THREE.PointLight( 0xffffff, 0.5, 200 );
         pointlight.position.set( -8, 60, -10 );
@@ -602,7 +654,7 @@ class Game {
       emissiveIntensity: .6
     });
     const lensFlare = new THREE.Mesh(lensFlareGeo, lensFlareMaterial);
-    lensFlare.position.copy(positionOfFog)
+    lensFlare.position.set(-8, 25, 800)
     spotLight.target = lensFlare;
     const group = new THREE.Group();
     group.add(spotLight);
@@ -642,9 +694,9 @@ class Game {
     const propeller = new THREE.Mesh(geomPropeller, material);
     propeller.rotation.z = intialRotation;
 
-    const rotation = this.deg(32) //TODO 加快
+    const rotation = this.deg(65) //TODO 加快
     this.event.addListener("update", () => {
-      propeller.rotation.z -= rotation;
+      propeller.rotation.z += rotation;
     });
     propeller.position.copy(position);
     propeller.name = "plane_propeller";
@@ -816,6 +868,65 @@ class Game {
     waste.name = "solid waste"
     return waste
   }
+
+  isCollided (obj3d, collidableMeshList) {
+    const vertices = obj3d.geometry.vertices;
+    const position = obj3d.position;
+    for(let i = vertices.length - 1; i >= 0; i--) {
+      const localVertex = vertices[i].clone();
+      const globalVertex = localVertex.applyMatrix4(obj3d.matrix);
+      const directionVector = globalVertex.sub(position);
+  
+      const ray = new THREE.Raycaster(position, directionVector.clone().normalize());
+      const collisionResults = ray.intersectObjects(collidableMeshList);
+      if(collisionResults.length > 0 && collisionResults[0].distance < directionVector.length())
+          return true;
+    }
+    return false;
+  }
+
+  isCollided_buffer (obj3d, collidableMeshList) {
+    if(obj3d.isPlane)
+      return obj3d.children.some(child => this.isCollided_buffer(child, collidableMeshList))
+    const vertices = obj3d.geometry.attributes.position.array;
+    const position = obj3d.position;
+    for(let i = 0; i < vertices.length; i += 3) {
+      const localVertex = new THREE.Vector3(vertices[i], vertices[i + 1], vertices[i + 2])
+      const globalVertex = localVertex.applyMatrix4(obj3d.matrix);
+      const directionVector = globalVertex.sub(position);
+  
+      const ray = new THREE.Raycaster(position, directionVector.clone().normalize());
+      const collisionResults = ray.intersectObjects(collidableMeshList);
+      if(collisionResults.length > 0 && collisionResults[0].distance < directionVector.length())
+          return true;
+    }
+    return false;
+  }
+
+  dispose (obj) {
+    if(obj.mesh) {
+      obj = obj.mesh
+      console.warn("Game.prototype.dispose expects mesh(obj3D)")
+    }
+    this.scene.remove(obj);
+    if(obj.parent)
+      obj.parent.remove(obj);
+    if(obj.children)
+      for (let i = 0; i < obj.children.length; i++) {
+          this.dispose(obj.children[i]);
+      }
+    obj.geometry && obj.geometry.dispose();
+    if(obj.material) {
+      if (obj.material.map)
+        obj.material.map.dispose();
+      obj.material.dispose();
+    }
+    if(obj._update_function) {
+      if(obj._update_period)
+        this.event.removeListener(obj._update_period, obj._update_function)
+      else throw "dispose: has obj._update_function, but !obj._update_period";
+    }
+  }
   
   /* debugger */
   _debug () {
@@ -828,14 +939,14 @@ class Game {
       this.addBoxHelper(Object.values(this.objects))
     if(this.lights.spotLight)
       this.addSpotLightHelper(this.lights.spotLight);
-    this.obstacles.gap = 1000;
     this.event.addListener("obstacleRemoved", () => console.log("obstacleRemoved", Date.now()))
     this.event.addListener("obstacleAdded", () => console.log("obstacleAdded", Date.now()))
 
-    this.event.addListener("newSceneColor", color => {
-      console.log("New color! %c0x" + color.getHexString(), "color: #" + color.getHexString(),);
+    this.event.addListener("newSceneColor", colorArray => {
+      console.log("New color! %c0x" + colorArray[0].getHexString() + " %c" + colorArray[1], "color: #" +colorArray[0].getHexString(),  "color: " + colorArray[1]);
     });
 
+    this.event.addListener("crashed", () => console.log("%ccrashed", "color: red; background: aqua"))
     this.event.addListener("planeLoaded", (plane, light) => {
       // this.addPointLightHelper(light, 100);
       this.addBoxHelper(plane)
@@ -853,6 +964,8 @@ class Game {
         )
         this.event.addListener("pause", () => this._controls.enabled = false, {once: false})
         this.event.addListener("resume", () => this._controls.enabled = true, {once: false})
+        this.event.addListener("started", () => this._controls.enabled = true, {once: false})
+        this.event.addListener("ended", () => this._controls.enabled = false, {once: false})
       }, {once: true})
     })
   }
@@ -915,6 +1028,9 @@ class Game {
   update_idle () {
     this.event.dispatch("update_idle", Date.now());
   }
+  update_crash () {
+    this.event.dispatch("update_crash", Date.now());
+  }
 
   /* Helpers(used in _debug) */
   addSpotLightHelper (spotLight) {
@@ -953,27 +1069,6 @@ class Game {
       this.scene.add(obj3D.boxHelper);
       this.event.addListener("update_main", () => obj3D.boxHelper.update());
     }
-  }
-
-  /* Examples */
-  #broadPhaseDetect (obj_vector3) {
-    return this.airplane.mesh.position.clone().sub(obj_vector3).length - 3; // 3 - tolerance
-  }
-
-  #isCollided(obj3d, collidableMeshList) {
-    const vertices = obj3d.geometry.vertices;
-    const position = obj3d.position;
-    for(let i = vertices.length - 1; i >= 0; i--) {
-      const localVertex = vertices[i].clone();
-      const globalVertex = localVertex.applyMatrix4(obj3d.matrix);
-      const directionVector = globalVertex.sub(position);
-  
-      const ray = new THREE.Raycaster(position, directionVector.clone().normalize());
-      const collisionResults = ray.intersectObjects(collidableMeshList);
-      if(collisionResults.length > 0 && collisionResults[0].distance < directionVector.length())
-          return true;
-    }
-    return false;
   }
 
   _log () {
@@ -1034,7 +1129,7 @@ game.whenPaused = new class {
     game.ui.pauseButton.addTriggerCallback(() => game.pause(), {once: false, toBeClearedWhenReset: true})
                        .listenOnce();
 
-    game.ui.homeButton.addTriggerCallback(() => this.reject(game.end()), {once: true})
+    game.ui.homeButton.addTriggerCallback(() => this.reject(), {once: true})
                       .listenOnce();
   }
 

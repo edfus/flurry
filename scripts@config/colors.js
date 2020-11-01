@@ -2,8 +2,13 @@ export default {
   planeRed: 0x581515,
   lightBlue: 0x8fe7fd,
   azure: 0xadfadf,
-  sceneColors: [0x0beff7, 0x1000f7, 0xfd0000, 0xf04ea4],
-  // [0xadfadf, 0x66ff99, 0xf04ea4]
+  sceneColors: [
+    [0xd7e607, "#0beff7"], 
+    [0x0e9f52, "#0beff7"], 
+    [0xdc0e07, "#0beff7"], 
+    [0x02e6e6, "#0beff7"]
+  ],
+  // 以前的： ["d7e607", "0e9f52", "dc0e07", "02e6e6"]
   greenForTest: 0x00ff00,
   hslStarColor: {
     h: .583,
