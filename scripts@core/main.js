@@ -17,8 +17,7 @@ class Game {
    * game的start、resume、pause、end等函数中不涉及ui的显隐控制，音乐播放等
    * game通过eventDispatcher控制renderLoop。
    * 能只dispatch event的状态函数，就不要设置this.state.inited = true。
-   * renderLoop中不修改除canBePaused以外的任何game.state
-   * renderLoop中不调用除resume以外的任何game的状态函数（start、pause等）
+   * renderLoop中不调用除resume、end以外的任何game的状态函数（start、pause等）
    * renderLoop中不涉及THREE.js的模型创建、光影更改、碰撞判定等，只调用game的相关函数。
    */
   constructor() {
@@ -137,6 +136,7 @@ return cube;
   }
 
   idle_begin () {
+    this.state.canBePaused = false;
     this.state.now = "idle";
     this.event.dispatch("idle");
     const colorArray = this.newSceneColor();
@@ -166,36 +166,16 @@ return cube;
 
   idle_clear() {
     for(const obj3D in this._idle) {
-      this.scene.remove(this._idle[obj3D]);
       this.dispose(this._idle[obj3D])
     }
     delete this._idle;
-  }
-
-  dispose (obj) {
-    if(obj.parent)
-      obj.parent.remove(obj);
-    if(obj.children)
-      for (let i = 0; i < obj.children.length; i++) {
-          this.dispose(obj.children[i]);
-      }
-    obj.geometry && obj.geometry.dispose();
-    if(obj.material) {
-      if (obj.material.map)
-        obj.material.map.dispose();
-      obj.material.dispose();
-    }
-    if(obj._update_function) {
-      if(obj._update_period)
-        this.event.removeListener(obj._update_period, obj._update_function)
-      else throw "dispose: has obj._update_function, but !obj._update_period";
-    }
   }
 
   start () {
     this.state.now = "start"
     this.event.dispatch("start");
     setTimeout(() => {
+      this.state.canBePaused = true;
       this.state.now = "started"
       this.event.dispatch("started");
       this.state.started = true;
@@ -211,37 +191,48 @@ return cube;
 
   pause () {
     if(this.state.canBePaused) { // modified in RenderLoop
+      this.state.canBePaused = false;
       this.state.now = "pause"
       this.event.dispatch("pause");
-      if(this.state.started) {
-        this.time.total += Date.now() - this.time.lastStamp;
-        this.time.lastStamp = Date.now();
-      }
-      this.state.canBePaused = false;
+      this.time.total += Date.now() - this.time.lastStamp;
+      this.time.lastStamp = Date.now();
       return true;
     } else return false;
   }
 
   resume () { // invoked in RenderLoop
+    this.state.canBePaused = true;
     this.state.now = "resume"
     this.event.dispatch("resume");
-    if(this.state.started) {
-      this.time.paused += Date.now() - this.time.lastStamp;
-      this.time.lastStamp = Date.now();
-    }
+    this.time.paused += Date.now() - this.time.lastStamp;
+    this.time.lastStamp = Date.now();
   }
 
   planeCrash () {
-    Dialog.newError("crashed!")
-    this.state.now = "crashed"
-    this.event.dispatch("crashed");
+    this.state.canBePaused = false;
+    this.state.now = "crash"
+    this.event.dispatch("crash");
+    this.time.total += Date.now() - this.time.lastStamp;
+    this.time.lastStamp = Date.now();
+    console.log("Dialog.newError")
+    Dialog.newError("crashed!", 3000)
+    setTimeout(() => {
+      this.state.now = "crashed"
+      this.event.dispatch("crashed");
+    }, 3000) //TODO: crash animaiton
   }
 
   end () {
+    this.state.canBePaused = false;
     this.state.now = "end"
     this.event.dispatch("end");
     this.state.started = false;
-    setTimeout(() => (this.state.now = "ended") && this.event.dispatch("ended"), 300); //TODO: backToTitle animation
+    setTimeout(() => {
+      this.obstacles.running.forEach(obstacle => this.dispose(obstacle.mesh));
+      this.obstacles.running.clear();
+      this.state.now = "ended";
+      this.event.dispatch("ended")
+    }, 300); //TODO: backToTitle animation
   }
 
   constructRenderLoops () {
@@ -251,7 +242,6 @@ return cube;
       new RenderLoop("idle")
                     .executeOnce(() => {
                       this.ui.freeze();
-                      this.state.canBePaused = false;
                       this.ui.startButton
                               .addTriggerCallback(() => game.start(), {once: true})
                               .listenOnce();
@@ -284,7 +274,6 @@ return cube;
                       })
                     .untilGameStateBecomes("started")
                       .then(() => {
-                          this.state.canBePaused = true;
                           this.whenPaused.initButtons();
                           this.score.start();
                           this.ui.unfreeze()
@@ -295,17 +284,29 @@ return cube;
                         this.renderer.render(this.scene, this.camera);
                         this.update_main();
                       })
-                    .untilGameStateBecomes("crashed")
+                    .untilGameStateBecomes("crash")
                       .then(() => {
-                          this.state.canBePaused = false;
                           this.ui.pauseButton.hide();
+                          this.ui.homeButton.hide(true);
                           this.score.pause();
                           this.ui.freeze();
-                          if(this.time.total > 180000) {
-                            this.audio.cancelFadeOut();
-                            this.audio.playSong("outro")
+                          this.audio.fadeOut(6);
+                          if(this.time.total > 18) {
+                            this.audio.scheduleSong("outro", false, 3)
                           }
-                          RenderLoop.goto("backToTitle")
+                          RenderLoop.goto("crash")
+                        }),
+      new RenderLoop("crash")
+                    .execute(() => {
+                        this.renderer.render(this.scene, this.camera);
+                        this.update_crash();
+                      })
+                    .untilGameStateBecomes("crashed")
+                      .then(() => {
+                          ////////////////
+                          this.end() // 因为要严格要求只有在crashed后才能end，所以在此end
+                          ////////////////
+                          RenderLoop.goto("backToTitle");
                         }),
       new RenderLoop("paused")
                     .executeOnce(() => {
@@ -329,7 +330,6 @@ return cube;
                         this.resume() // 因为要严格要求只有在pause后才能resume，所以在此resume
                         // 这是RenderLoop中唯一一处修改游戏状态的函数。
                         ////////////////
-                        this.state.canBePaused = true;
                         this.score.start();
                         this.ui.unfreeze();
                         this.ui.canvas2D.disable();
@@ -343,7 +343,9 @@ return cube;
                         console.info('RenderLoop: game resumed');
                       })
                       .else(() => {
-                        this.state.canBePaused = false;
+                        ////////////////
+                        this.end() // 因为要严格要求只有在pause后才能end，所以在此end
+                        ////////////////
                         this.ui.homeButton.hide(true);
                         this.ui.startButton.hide();
                         this.ui.canvas2D.disable();
@@ -363,7 +365,7 @@ return cube;
                           this.ui.titleMenuButtons.show().then(() => {
                             this.ui.startButton.show();
                           });
-                          this.audio.scheduleSong("intro", true, 6)
+                          this.audio.scheduleSong("intro", true, 8)
                           RenderLoop.goto("idle")
                           console.info('RenderLoop: game ended');
                         })
@@ -482,7 +484,6 @@ return cube;
           if(obstacle.needsDetect === false) {
             if(obstacle.mesh.position.z <= this.obstacles.end_z) {
               this.obstacles.running.delete(obstacle);
-              this.scene.remove(obstacle.mesh);
               this.dispose(obstacle.mesh);
               this.event.dispatch("obstacleRemoved");
               return ;
@@ -868,11 +869,6 @@ return cube;
     return waste
   }
 
-  /* Examples */
-  broadPhaseDetect (obj_vector3) {
-    return this.airplane.mesh.position.clone().sub(obj_vector3).length - 3; // 3 - tolerance
-  }
-
   isCollided (obj3d, collidableMeshList) {
     const vertices = obj3d.geometry.vertices;
     const position = obj3d.position;
@@ -905,6 +901,31 @@ return cube;
           return true;
     }
     return false;
+  }
+
+  dispose (obj) {
+    if(obj.mesh) {
+      obj = obj.mesh
+      console.warn("Game.prototype.dispose expects mesh(obj3D)")
+    }
+    this.scene.remove(obj);
+    if(obj.parent)
+      obj.parent.remove(obj);
+    if(obj.children)
+      for (let i = 0; i < obj.children.length; i++) {
+          this.dispose(obj.children[i]);
+      }
+    obj.geometry && obj.geometry.dispose();
+    if(obj.material) {
+      if (obj.material.map)
+        obj.material.map.dispose();
+      obj.material.dispose();
+    }
+    if(obj._update_function) {
+      if(obj._update_period)
+        this.event.removeListener(obj._update_period, obj._update_function)
+      else throw "dispose: has obj._update_function, but !obj._update_period";
+    }
   }
   
   /* debugger */
@@ -943,6 +964,8 @@ return cube;
         )
         this.event.addListener("pause", () => this._controls.enabled = false, {once: false})
         this.event.addListener("resume", () => this._controls.enabled = true, {once: false})
+        this.event.addListener("started", () => this._controls.enabled = true, {once: false})
+        this.event.addListener("ended", () => this._controls.enabled = false, {once: false})
       }, {once: true})
     })
   }
@@ -1004,6 +1027,9 @@ return cube;
   }
   update_idle () {
     this.event.dispatch("update_idle", Date.now());
+  }
+  update_crash () {
+    this.event.dispatch("update_crash", Date.now());
   }
 
   /* Helpers(used in _debug) */
@@ -1103,7 +1129,7 @@ game.whenPaused = new class {
     game.ui.pauseButton.addTriggerCallback(() => game.pause(), {once: false, toBeClearedWhenReset: true})
                        .listenOnce();
 
-    game.ui.homeButton.addTriggerCallback(() => this.reject(game.end()), {once: true})
+    game.ui.homeButton.addTriggerCallback(() => this.reject(), {once: true})
                       .listenOnce();
   }
 
