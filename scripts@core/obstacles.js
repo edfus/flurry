@@ -87,8 +87,9 @@ class Obstacle {
       color: options.color,
       shininess: options.shininess,
       specular: options.specular, // 高光色彩
-      emissive: options.color,
-      emissiveIntensity: 0 //
+      emissive: options.emissive,
+      emissiveIntensity: options.emissiveIntensity,
+      //metalness: options.metalness
     });
   }
 }
