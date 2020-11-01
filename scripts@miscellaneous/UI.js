@@ -411,7 +411,7 @@ class UserInteraction {
     const totalD_y0 = this.fingersPos[0].y_now - this.fingersPos[0].y_initial
     const totalD_y1 = this.fingersPos[1].y_now - this.fingersPos[1].y_initial
 
-    const r = -(relative_x0 - relative_x1) * (relative_y0 - relative_y1)
+    const r = (relative_x0 - relative_x1) * (relative_y0 - relative_y1)
     console.log(relative_x0);
     console.log(relative_x1);
     console.log(relative_y0);
@@ -565,13 +565,13 @@ class UserInteraction {
       this.updateData()
     },
     ArrowLeft () {
-      this.position0.y_now = -this.distance
-      this.position1.y_now = this.distance
+      this.position0.y_now = this.distance
+      this.position1.y_now = -this.distance
       this.updateData()
     },
     ArrowRight () {
-      this.position0.y_now = this.distance
-      this.position1.y_now = -this.distance
+      this.position0.y_now = -this.distance
+      this.position1.y_now = this.distance
       this.updateData()
     }
   }
