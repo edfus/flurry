@@ -396,10 +396,10 @@ class UserInteraction {
     update: () => {
       if(this.#frozen)
       return this.target;
-      this.target.raw[0].x = this.target.normalize(this.fingersPos[0].x, -1, 1, 40, 80);
-      this.target.raw[0].y = this.target.normalize(this.fingersPos[0].y, -.75, .75, 25, 175);
-      this.target.raw[1].x = this.target.normalize(this.fingersPos[1].x, -1, 1, 40, 80);
-      this.target.raw[1].y = this.target.normalize(this.fingersPos[1].y, -.75, .75, 25, 175);
+      this.target.raw[0].x = this.target.normalize(this.fingersPos[0].x, -1, 1, -150, 150);
+      this.target.raw[0].y = this.target.normalize(this.fingersPos[0].y, -.75, .75, -150, 150);
+      this.target.raw[1].x = this.target.normalize(this.fingersPos[1].x, -1, 1, -150, 150);
+      this.target.raw[1].y = this.target.normalize(this.fingersPos[1].y, -.75, .75, -150, 150);
       this.target.sum.x = this.target.raw[0].x + this.target.raw[1].x;
       this.target.sum.y = this.target.raw[0].y + this.target.raw[1].y;
       this.target.average.x = this.target.sum.x / 2;
