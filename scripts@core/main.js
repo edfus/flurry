@@ -621,11 +621,11 @@ return cube;
         //TODO：像_old一样，镜头/飞机是缓动的（这需要目标值，而不是force
         //TODO：飞机上移的翘尾效果，相机和飞机的关系到底是什么？
         // 在f12中敲下game.ui._debugEvents()即可获取rotate_force、up_force实时值
-        if(!this.ui.isTouchDevice)
-          this.event.addListener("update_main", () => {
-            group.position.y *= .95
-            group.rotation.z *= .5
-          }) // 暂时如此
+        // if(!this.ui.isTouchDevice)
+        //   this.event.addListener("update_main", () => {
+        //     group.position.y *= .95
+        //     group.rotation.z *= .5
+        //   }) // 暂时如此
         this.event.dispatch("planeLoaded", plane, pointlight);
       }
     ]

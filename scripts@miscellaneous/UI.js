@@ -551,8 +551,6 @@ class UserInteraction {
         ui.fingersPos[1].x_initial = delta;
         ui.fingersPos[0].x_now = -delta;
         ui.fingersPos[1].x_now = delta;
-        ui.fingersPos[0].y_initial = 0;
-        ui.fingersPos[1].y_initial = 0;
         ui.updateData();
       })
     },
