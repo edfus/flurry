@@ -9,7 +9,7 @@ class Score {
   _previousMS = Infinity;
   constructor (initialSpeed, initialScore = this.loadPrevious()) {
     this.speed = initialSpeed;
-    if(isNaN(initialScore) || isFinite(initialScore))
+    if(isNaN(initialScore) || !isFinite(initialScore))
       initialScore = 0;
     this.#value = Number(initialScore); // in case
   }
@@ -18,7 +18,7 @@ class Score {
   bind (domElement) {
     this.#dom = domElement;
     if(this.#value < 10000) {
-      this.#dom.innerText = String(this.updateValue().toFixed(2)).concat(" m");
+      this.#dom.innerText = String(this.#value.toFixed(2)).concat(" m");
     } else {
       this.#dom.innerText = String((this.#value / 1000).toFixed(1)).concat(" Km");
     }
@@ -51,7 +51,7 @@ class Score {
       this.#dom.innerText = String(this.updateValue().toFixed(2)).concat(" m");
         requestAnimationFrame(() => this.update())
     } else {
-      this.#dom.innerText = String((this.#value / 1000).toFixed(1)).concat(" Km");
+      this.#dom.innerText = String((this.updateValue() / 1000).toFixed(1)).concat(" Km");
         this.intervalUpdate(1e5 / this.speed) // ms per 0.1km
     }
   }
