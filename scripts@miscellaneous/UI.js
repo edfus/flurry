@@ -394,14 +394,14 @@ class UserInteraction {
     update: () => {
       if(this.#frozen)
       return this.target;
-      this.target[0].x = this.normalize(this.fingersPos[0].x, -1, 1, 40, 80);
-      this.target[0].y = this.normalize(this.fingersPos[0].y, -.75, .75, 25, 175);
-      this.target[1].x = this.normalize(this.fingersPos[1].x, -1, 1, 40, 80);
-      this.target[1].y = this.normalize(this.fingersPos[1].y, -.75, .75, 25, 175);
-      this.target_sum.x = this.target[0].x + this.target[1].x;
-      this.target_sum.y = this.target[0].y + this.target[1].y;
-      this.target_average.x = this.target_sum.x / 2;
-      this.target_average.y = this.target_sum.y / 2;
+      this.target.raw[0].x = this.target.normalize(this.fingersPos[0].x, -1, 1, 40, 80);
+      this.target.raw[0].y = this.target.normalize(this.fingersPos[0].y, -.75, .75, 25, 175);
+      this.target.raw[1].x = this.target.normalize(this.fingersPos[1].x, -1, 1, 40, 80);
+      this.target.raw[1].y = this.target.normalize(this.fingersPos[1].y, -.75, .75, 25, 175);
+      this.target.sum.x = this.target.raw[0].x + this.target.raw[1].x;
+      this.target.sum.y = this.target.raw[0].y + this.target.raw[1].y;
+      this.target.average.x = this.target.sum.x / 2;
+      this.target.average.y = this.target.sum.y / 2;
     },
     normalize (mouseRP, mouseRP_min, mouseRP_max, position_min, position_max) {
       let mouseRPinBox = Math.max(Math.min(mouseRP, mouseRP_max), mouseRP_min);
@@ -514,13 +514,18 @@ class UserInteraction {
             });
     },
     target: new Proxy(this.target, {
-      set: (target, prop, value) => {      
+      set (target, prop, value)  {      
         // value < 0
         // ? value < -halfY ? value = -halfY : 0
         // : value > halfY ? value = halfY : 0
 
-        return Reflect.set(target, prop, value);
-      }
+        return Reflect.set(...arguments);
+      },
+      get (target, property, receiver){
+        if(typeof target[property] === 'function') {
+          return target[property].bind(target);
+        } else return Reflect.get(...arguments)
+      } 
     }),
     distance: 20,
     invoke: (ui => {
@@ -529,20 +534,24 @@ class UserInteraction {
       }
     })(this),
     ArrowUp (event) {
-      this.target[0].y += this.distance;
-      this.target[1].y += this.distance;
+      this.target.raw[0].y += this.distance;
+      this.target.raw[1].y += this.distance;
+      this.target.update();
     },
     ArrowDown (event) {
-      this.target[0].y -= this.distance;
-      this.target[1].y -= this.distance;
+      this.target.raw[0].y -= this.distance;
+      this.target.raw[1].y -= this.distance;
+      this.target.update();
     },
     ArrowLeft (event) {
-      this.target[0].x += this.distance;
-      this.target[1].x += this.distance;
+      this.target.raw[0].x += this.distance;
+      this.target.raw[1].x += this.distance;
+      this.target.update();
     },
     ArrowRight (event) {
-      this.target[0].x -= this.distance;
-      this.target[1].x -= this.distance;
+      this.target.raw[0].x -= this.distance;
+      this.target.raw[1].x -= this.distance;
+      this.target.update();
     }
   }
   /* callbacks END */
