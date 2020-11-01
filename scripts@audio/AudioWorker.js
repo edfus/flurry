@@ -247,7 +247,7 @@ class GlobalAudioPlayer {
       return;
 
     const playF = () => {
-      this.playSong(this.songs.intro, true);
+      this.playSong(this.songs.intro, true).catch(() => void 0);
       this.playTriggered = true;
     }
     const callback = () => {
