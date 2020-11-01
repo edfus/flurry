@@ -691,7 +691,7 @@ class Game {
     const propeller = new THREE.Mesh(geomPropeller, material);
     propeller.rotation.z = intialRotation;
 
-    const rotation = this.deg(32) //TODO 加快
+    const rotation = this.deg(65) //TODO 加快
     this.event.addListener("update_idle", () => {
       propeller.rotation.z -= rotation;
     });
