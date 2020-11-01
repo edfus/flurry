@@ -195,7 +195,7 @@ class GlobalAudioPlayer {
     shuffle: true
   };
   sequenceArr = [];
-  songPlaying = {name: '', source: null};
+  songPlaying = {name: '', source: null, listener: []};
   
 
   context = null;
@@ -259,7 +259,7 @@ class GlobalAudioPlayer {
         )
     }
 
-    if(config.inApp || config.testMode){
+    if(config.inApp){
       playF();
     } else {
       if(localStorage.allowAutoPlay === 'true') {
@@ -395,6 +395,8 @@ class GlobalAudioPlayer {
 
     this.songPlaying.source = source
     this.songPlaying.name = name;
+    this.songPlaying.listener.forEach(f => f());
+    this.songPlaying.listener = [];
     console.info("AudioPlayer: Playing: " + this.songPlaying.name)
     return new Promise((resolve, reject) => {
       source.onended = isScheduled => {
@@ -504,12 +506,29 @@ class GlobalAudioPlayer {
       return protoF()
     }
     if(this._fade.isFading) {
-      await new Promise(resolve => {
-        this._fade.finally(resolve);
-      })
-      await this.stop(0);
-      await this.resume();
-      return protoF();
+      console.log(arguments)
+      console.log(this._fade.isFading, this._fade._hasSchedule)
+      if("_hasSchedule" in this._fade) {
+        const prDelay = this._fade._hasSchedule;
+        await new Promise(resolve => {
+          this._fade.finally(resolve);
+        });
+        await new Promise(resolve => setTimeout(resolve, prDelay * 1001))
+        
+        return new Promise(resolve => {
+          this.songPlaying.listener.push(() => {
+            resolve(this.scheduleFunc(...arguments))
+          })
+        }) 
+      } else {
+        this._fade._hasSchedule = delay;
+        await new Promise(resolve => {
+          this._fade.finally(resolve);
+        })
+        await this.stop(0);
+        await this.resume();
+        return protoF();
+      } 
     }
 
     const pr_onended = this.songPlaying.source.onended;
@@ -599,7 +618,7 @@ class GlobalAudioPlayer {
       }).then(() => typeof this._then === "function" && this._then())
         .catch(reason => typeof this._catch === "function" ? this._catch(reason) : (() => {throw reason})())
         .finally(() => {
-          typeof this._finally === "function" && this._finally();
+          this._finally && this._finally.forEach(f => f());
           this._finally = this._then = this._catch = null;
         })
     }
@@ -610,6 +629,7 @@ class GlobalAudioPlayer {
         this._resolve(info);
         this._resolve = null;
         this._reject = null;
+        delete this._hasSchedule;
       }
     }
     reject (reason) {
@@ -619,7 +639,8 @@ class GlobalAudioPlayer {
         this.timer = 0;
         this._reject(reason);
         this._resolve = null;
-        this._reject = null;
+        this._reject = null; 
+        delete this._hasSchedule;
       }
     }
     then (func) {
@@ -633,7 +654,9 @@ class GlobalAudioPlayer {
       return this;
     }
     finally (func) {
-      this._finally = func;
+      if(!this._finally)
+        this._finally = []
+      this._finally.push(func);
       return this;
     }
     _dumpFunc = reason => void 0;
