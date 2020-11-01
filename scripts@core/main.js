@@ -35,16 +35,6 @@ class Game {
     this.init();
   }
 
-createobject(){
-  var cube = new THREE.Mesh(new THREE.CubeGeometry(10, 10, 10),
-        new THREE.MeshBasicMaterial({
-            color: 0x1000f7
-        })
-);
-cube.position.set(-145,20,55);
-return cube;
-}
-
   /* main functions */
   init() {
     this.state.now = "init"
