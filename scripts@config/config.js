@@ -68,6 +68,8 @@
     // fallback: window.config && config.loading_timeOut ? config.loading_timeOut : 400
   };
 
+  scoreIncreasingSpeed = 150; // m / s (700 km/h ≈ 200m/s)
+
   // export default {
   window.config = {
     testMode: TestMode,
@@ -78,6 +80,7 @@
     getUIContainer:  GetUIContainer,
     getScoreContainer: GetScoreContainer,
     gameLoadedCallback: GameLoadedCallback,
+    speed_score: scoreIncreasingSpeed,
   }
 }
 

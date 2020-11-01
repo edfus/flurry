@@ -421,15 +421,15 @@ class Game {
       color: 0x111111,
       shininess: 30,
       specular: 0xffffff,
-      xyDistance: 220,
+      xyDistance: 80,
       zDistance: 5000,
       spacing: 2000,
-      amplitude: 110, // peak
+      amplitude: 180, // peak
       xySpeed: 1,
-      zSpeed: 50,
+      zSpeed: 7,
       rev: 0.004, // 转速
       randomAngle: () => Math.random() * 7,
-      randomI: () => Math.floor(Math.random() * 4)
+      randomI: () => Math.floor(Math.random() * 5)
     })
 
     for(let i = 0; i < amountInPool; i++) {

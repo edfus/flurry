@@ -30,15 +30,21 @@ class Obstacle {
         break;
       case 2:
         this.mesh = new THREE.Mesh(
-            new THREE.BoxBufferGeometry(options.radius * 1.7, options.radius * 1.7, options.radius * 1.7), 
+            new THREE.BoxBufferGeometry(options.radius * 1.4, options.radius * 1.4, options.radius * 1.4), 
             material
         );
         break;
       case 3:
         this.mesh = new THREE.Mesh(
-            new THREE.IcosahedronBufferGeometry(options.radius, 2), 
+            new THREE.IcosahedronBufferGeometry(options.radius, 0), 
             material
           );
+        break;
+      case 4:
+        this.mesh = this.mesh = new THREE.Mesh(
+            new THREE.IcosahedronBufferGeometry(options.radius, 2), 
+            material
+        );
         break;
       default: throw " "
     }
