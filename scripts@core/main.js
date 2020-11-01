@@ -28,7 +28,6 @@ class Game {
     this.audio = new AudioPlayer();
     this.state = {};
     this.event = new Event();
-    this.event.addListener("newEvent", eventName => this.state.now = eventName); // RenderLoop relies on this
     this._load = {
       texture: new THREE.TextureLoader()
     };
@@ -38,6 +37,7 @@ class Game {
 
   /* main functions */
   init() {
+    this.state.now = "init"
     this.event.dispatch("init");
     this._createScene(this.ui.WIDTH, this.ui.HEIGHT);
 
@@ -75,9 +75,11 @@ class Game {
   
     this.event.dispatch("inited");
     this.state.inited = true;
+    this.state.now = "inited"
   }
 
   load () {
+    this.state.now = "load"
     this.event.dispatch("load");
     this.config.getContainer().append(this.renderer.domElement);
     this.config.getUIContainer().append(this.ui.canvas2D.domElement);
@@ -86,6 +88,7 @@ class Game {
     this._log();
     this.event.dispatch("loaded");
     this.state.loaded = true;
+    this.state.now = "loaded"
   }
 
   newSceneColor () {
@@ -114,6 +117,8 @@ class Game {
   }
 
   idle_begin () {
+    this.state.now = "idle";
+    this.event.dispatch("idle");
     const color = this.newSceneColor();
     const hsl = this.colors.complementaryOf(color).getHSL({});
     this._idle = {}
@@ -167,8 +172,10 @@ class Game {
   }
 
   start () {
+    this.state.now = "start"
     this.event.dispatch("start");
     setTimeout(() => {
+      this.state.now = "started"
       this.event.dispatch("started");
       this.state.started = true;
       this.time = {
@@ -183,6 +190,7 @@ class Game {
 
   pause () {
     if(this.state.canBePaused) { // modified in RenderLoop
+      this.state.now = "pause"
       this.event.dispatch("pause");
       if(this.state.started) {
         this.time.total += Date.now() - this.time.lastStamp;
@@ -194,6 +202,7 @@ class Game {
   }
 
   resume () { // invoked in RenderLoop
+    this.state.now = "resume"
     this.event.dispatch("resume");
     if(this.state.started) {
       this.time.paused += Date.now() - this.time.lastStamp;
@@ -202,13 +211,15 @@ class Game {
   }
 
   planeCrash () {
+    this.state.now = "crashed"
     this.event.dispatch("crashed");
   }
 
   end () {
+    this.state.now = "end"
     this.event.dispatch("end");
     this.state.started = false;
-    setTimeout(() => this.event.dispatch("ended"), 300); //TODO: backToTitle animation
+    setTimeout(() => (this.state.now = "ended") && this.event.dispatch("ended"), 300); //TODO: backToTitle animation
   }
 
   constructRenderLoops () {

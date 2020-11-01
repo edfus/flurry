@@ -1,26 +1,26 @@
 const map = new Array(1, 9, 5, 0, 3, 7, 2 ,8); // 2的n次方
 const identifier = 'o';
-
+let value = 0
 class Score { 
-  #dom = {innerText: ''};
-  #value = 0;
+  dom = {innerText: ''};
   speed = 0;
   _timer = 0; // timeoutID starts from 1
   _previousMS = Infinity;
-  constructor (initialSpeed, initialScore = this.loadPrevious()) {
+  
+  constructor (initialSpeed = 150, initialScore = this.loadPrevious()) {
     this.speed = initialSpeed;
     if(isNaN(initialScore) || !isFinite(initialScore))
       initialScore = 0;
-    this.#value = Number(initialScore); // in case
+    value = Number(initialScore); // in case
   }
   // set speed (newSpeed) {}
   
   bind (domElement) {
-    this.#dom = domElement;
-    if(this.#value < 10000) {
-      this.#dom.innerText = String(this.#value.toFixed(2)).concat(" m");
+    this.dom = domElement;
+    if(value < 10000) {
+      this.dom.innerText = String(value.toFixed(2)).concat(" m");
     } else {
-      this.#dom.innerText = String((this.#value / 1000).toFixed(1)).concat(" Km");
+      this.dom.innerText = String((value / 1000).toFixed(1)).concat(" Km");
     }
   }
 
@@ -40,26 +40,26 @@ class Score {
     if(this._timer !== -1)
       clearInterval(this._timer)
     this._timer = setInterval(() => {
-      this.#dom.innerText = String((this.updateValue() / 1000).toFixed(1)).concat(" Km");
+      this.dom.innerText = String((this.updateValue() / 1000).toFixed(1)).concat(" Km");
     }, ms)
   }
 
   update () {
     if(this._previousMS === Infinity)
       return '';
-    if(this.#value < 10000) {
-      this.#dom.innerText = String(this.updateValue().toFixed(2)).concat(" m");
+    if(value < 10000) {
+      this.dom.innerText = String(this.updateValue().toFixed(2)).concat(" m");
         requestAnimationFrame(() => this.update())
     } else {
-      this.#dom.innerText = String((this.updateValue() / 1000).toFixed(1)).concat(" Km");
+      this.dom.innerText = String((this.updateValue() / 1000).toFixed(1)).concat(" Km");
         this.intervalUpdate(1e5 / this.speed) // ms per 0.1km
     }
   }
 
   updateValue () {
-    this.#value += this.speed * (performance.now() - this._previousMS) / 1000;
+    value += this.speed * (performance.now() - this._previousMS) / 1000;
     this._previousMS = performance.now();
-    return this.#value;
+    return value;
   }
 
   get value () {
@@ -74,10 +74,10 @@ class Score {
         }
       );
     const store_obj = JSON.parse("score_obj" in localStorage ? localStorage.score_obj : `{}`)
-    store_obj[dateId] = store_obj[dateId] ? (this.#value > store_obj[dateId] ? this.#value : store_obj[dateId]) : this.#value;
+    store_obj[dateId] = store_obj[dateId] ? (value > store_obj[dateId] ? value : store_obj[dateId]) : value;
     localStorage.score_obj = JSON.stringify(store_obj);
 
-    localStorage.score = encrypt(this.#value);
+    localStorage.score = encrypt(value);
     if(!localStorage.uuid)
       localStorage.uuid = uuidv4()
   }
