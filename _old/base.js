@@ -309,7 +309,7 @@ function normalize(mouseRP, mouseRP_min, mouseRP_max, position_min, position_max
   let ratio = (mouseRPinBox - mouseRP_min) / mouseRPrange;
   let positionRange = position_max - position_min;
   return position_min + (ratio * positionRange);
-} 
+}
 
 
 ///////////////////////////////////////

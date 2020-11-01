@@ -136,9 +136,6 @@ const eventWeakMap = new WeakMap();
 class UserInteraction {
   isTouchDevice = false;
 
-  #windowHeight = 0;
-  #windowWidth  = 0;
-
   canvas2D = Canvas2D.emptyCanvas;
 
   constructor() {
@@ -147,12 +144,14 @@ class UserInteraction {
     this.event = new Event();
     eventWeakMap.set(this.event, event => this.event.dispatch(event.type, event));
 
-    this.#windowHeight = window.innerHeight;
-    this.#windowWidth = window.innerWidth;
+    this.HEIGHT = window.innerHeight;
+    this.WIDTH = window.innerWidth;
 
     this.event.addListener("resize", () => {
-      this.#windowHeight = window.innerHeight;
-      this.#windowWidth = window.innerWidth;
+      this.HEIGHT = window.innerHeight;
+      this.WIDTH = window.innerWidth;
+      this.half_H = this.HEIGHT / 2;
+      this.half_W = this.WIDTH / 2;
     })
 
     if(this.isTouchDevice) {
@@ -178,7 +177,7 @@ class UserInteraction {
         _log2 = _log2.log.bind(_log2);
         _log3 = _log3.log.bind(_log3);
     const log = console.log.bind(console);
-    new ThrottleLog(500).autoLog(() => `(rotate: ${this.data.rotate_force}, up: ${this.data.up_force})\n fingersPos now: (${this.fingersPos[0].x_now}, ${this.fingersPos[0].y_now}), (${this.fingersPos[1].x_now}, ${this.fingersPos[1].y_now})`)
+    // new ThrottleLog(500).autoLog(() => `(rotate: ${this.data.rotate_force}, up: ${this.data.up_force})\n fingersPos now: (${this.fingersPos[0].x_now}, ${this.fingersPos[0].y_now}), (${this.fingersPos[1].x_now}, ${this.fingersPos[1].y_now})`)
     const funcTrap = {
       apply (target, thisArg, argsList) {
         if(!excludedEvents.includes(argsList[0]))
@@ -278,19 +277,12 @@ class UserInteraction {
     this.startButton.reset();
   }
 
-  get HEIGHT () {
-    return this.#windowHeight;
-  }
-
-  get WIDTH () {
-    return this.#windowWidth;
-  }
-
   #frozen = false; //TODO
 
   freeze () { //TODO
-    this.fingersPos.clear()
-    // Object.freeze(this.fingersPos);
+    this.fingersPos.clear();
+    this.target.clear()
+
     this.unfreeze = function () {
       this.#frozen = false;
       delete this.unfreeze;
@@ -312,8 +304,6 @@ class UserInteraction {
       this._addListeners("mouse", ['move', 'leave'])
       if(!this.codeHandler.hasOwnProperty("mapAdded")){
         this.codeHandler.addMapping(this.codeMap);
-        this.codeHandler.updateDistanceConstant();
-        this.event.addListener("resize", () => this.codeHandler.updateDistanceConstant())
       }
       this._addListeners("key", ['down'])
     }
@@ -351,16 +341,13 @@ class UserInteraction {
 
   fingersPos = {
     0: {
-      x_now: 0, y_now: 0,
-      x_initial: 0, y_initial: 0
+      x: 0, y: 0,
     },
     1: {
-      x_now: 0, y_now: 0,
-      x_initial: 0, y_initial: 0
+      x: 0, y: 0
     },
     clear () {
-      this[0].x_now = this[0].y_now = this[0].x_initial = this[0].y_initial = 0;
-      this[1].x_now = this[1].y_now = this[1].x_initial = this[1].y_initial = 0;
+      this[0].x = this[0].y = this[1].x = this[1].y = 0;
       this._identifierMap = {};
     },
     _identifierMap: {},
@@ -372,55 +359,70 @@ class UserInteraction {
     },
     create (index, {identifier, pageX, pageY}) {
       this._identifierMap[identifier] = index;
-      this[index].x_initial = this[index].x_now = this.updateX(pageX)
-      this[index].y_initial = this[index].y_now = this.updateX(pageY)
+      this[index].x = this.updateX(pageX)
+      this[index].y = this.updateX(pageY)
     },
     updateX: x => {
-      return x - this.WIDTH / 2;
+      return -1 + x / this.half_W;
     },
     updateY: y => {
-      return y - this.HEIGHT / 2;
+      return 1 - y / this.half_H;
     },
     update (ptr, x, y) {
-      ptr.x_now = this.updateX(x)
-      ptr.y_now = this.updateX(y)
+      ptr.x = this.updateX(x)
+      ptr.y = this.updateX(y)
     }
   }
 
-  data =  {
-    rotate_force: 0, // -1 ~ 1
-    up_force: 0 // -1 ~ 1
+  target = {
+    raw: [
+      {x: 0, y: 0},
+      {x: 0, y: 0}
+    ],
+    average: {
+      x: 0,
+      y: 0
+    },
+    sum: {
+      x: 0,
+      y: 0
+    },
+    origin: {
+      x: 0,
+      y: 0
+    },
+    update: () => {
+      if(this.#frozen)
+      return this.target;
+      this.target[0].x = this.normalize(this.fingersPos[0].x, -1, 1, 40, 80);
+      this.target[0].y = this.normalize(this.fingersPos[0].y, -.75, .75, 25, 175);
+      this.target[1].x = this.normalize(this.fingersPos[1].x, -1, 1, 40, 80);
+      this.target[1].y = this.normalize(this.fingersPos[1].y, -.75, .75, 25, 175);
+      this.target_sum.x = this.target[0].x + this.target[1].x;
+      this.target_sum.y = this.target[0].y + this.target[1].y;
+      this.target_average.x = this.target_sum.x / 2;
+      this.target_average.y = this.target_sum.y / 2;
+    },
+    normalize (mouseRP, mouseRP_min, mouseRP_max, position_min, position_max) {
+      let mouseRPinBox = Math.max(Math.min(mouseRP, mouseRP_max), mouseRP_min);
+      let mouseRPrange = mouseRP_max - mouseRP_min;
+      let ratio = (mouseRPinBox - mouseRP_min) / mouseRPrange;
+      let positionRange = position_max - position_min;
+      return position_min + (ratio * positionRange);
+    },
+    setOrigin ({x, y}) {
+      this.origin.x = x;
+      this.origin.y = y;
+      this.clear();
+    },
+    clear () {
+      this.average.x = this.raw[0].x = this.raw[1].x = this.raw[0].x = this.raw[1].x = this.origin.x;
+      this.average.y = this.raw[0].y = this.raw[1].y = this.raw[0].y = this.raw[1].y = this.origin.y;
+      this.sum.x = this.average.x * 2;
+      this.sum.y = this.average.y * 2;
+    }
   }
 
-  updateData () { //TODO
-    if(this.#frozen)
-      return this.data;
-    // 数据：this.fingersPos[0]，this.fingersPos[1]分别都具有x_now、y_now，x_initial，y_initial属性
-    // 他们的范围都在：x( -屏幕宽度 / 2, +屏幕宽度 / 2) y( -屏幕高度 / 2, +屏幕高度 / 2)之间
-    const relative_x0 = this.fingersPos[0].x_now / this.WIDTH
-    const relative_x1 = this.fingersPos[1].x_now / this.WIDTH
-    const relative_y0 = this.fingersPos[0].y_now / this.HEIGHT
-    const relative_y1 = this.fingersPos[1].y_now / this.HEIGHT
-
-    const relativeD_x = Math.abs(relative_x0 - relative_x1); // abs：绝对值
-    const relativeD_y = Math.abs(relative_y0 - relative_y1);
-    let length = Math.hypot(relativeD_x, relativeD_y) // hypot：参数的平方和再开根，即直角边斜边
-    // if(length < .15)
-    //   length = 0
-
-    const totalD_y0 = this.fingersPos[0].y_now - this.fingersPos[0].y_initial
-    const totalD_y1 = this.fingersPos[1].y_now - this.fingersPos[1].y_initial
-
-    const r = (relative_x0 - relative_x1) * (relative_y0 - relative_y1)
-    console.log(relative_x0);
-    console.log(relative_x1);
-    console.log(relative_y0);
-    console.log(relative_y1);
-    this.data.rotate_force = r * Math.abs(totalD_y0 - totalD_y1) * relativeD_y
-    this.data.up_force = -(totalD_y0 + totalD_y1) / this.HEIGHT;
-
-    return this.data;
-  }
   
   /* callbacks */
   bindCallbacks () {
@@ -446,7 +448,7 @@ class UserInteraction {
           this.canvas2D.pushPoint(touch.pageX, touch.pageY, touch.identifier);
         if(this.fingersPos.hasId(touch.identifier)) {
           this.fingersPos.update(this.fingersPos.getId(touch.identifier), touch.pageX, touch.pageY)
-          this.updateData()
+          this.target.update();
         }
       }
     })
@@ -454,7 +456,7 @@ class UserInteraction {
     this.event.addListener("touchend", event => {
       if(event.touches.length !== 2) {
         this.fingersPos.clear();
-        this.updateData()
+        this.target.update();
       }
       if(this.canvas2D.enabled) {
         for (const touch of event.changedTouches) {
@@ -485,7 +487,12 @@ class UserInteraction {
 
     this.event.addListener("keydown", event => {
       if(this.codeHandler.hasOwnProperty(event.code))
-        this.codeHandler[event.code]();
+        this.codeHandler[event.code]("keydown");
+    })
+
+    this.event.addListener("keyup", event => {
+      if(this.codeHandler.hasOwnProperty(event.code))
+        this.codeHandler[event.code]("keyup");
     })
   }
 
@@ -507,72 +514,36 @@ class UserInteraction {
                 this[code] = func;
             });
     },
-    position0: new Proxy(this.fingersPos[0], {
-      set: (target, prop, value) => {
-        const halfY = this.HEIGHT / 2
-        
-        value < 0
-        ? value < -halfY ? value = -halfY : 0
-        : value > halfY ? value = halfY : 0
+    target: new Proxy(this.target, {
+      set: (target, prop, value) => {      
+        // value < 0
+        // ? value < -halfY ? value = -halfY : 0
+        // : value > halfY ? value = halfY : 0
 
         return Reflect.set(target, prop, value);
       }
     }),
-    position1: new Proxy(this.fingersPos[1], {
-      set: (target, prop, value) => {
-        const halfY = this.HEIGHT / 2
-        
-        value < 0
-        ? value < -halfY ? value = -halfY : 0
-        : value > halfY ? value = halfY : 0
-
-        return Reflect.set(target, prop, value);
-      }
-    }),
+    distance: 20,
     invoke: (ui => {
       return function (func) {
         func.call(this, ui);
       }
     })(this),
-    distance: 100,
-    updateDistanceConstant () {
-      this.invoke(ui => {
-        this.distance = Math.min(ui.HEIGHT, ui.WIDTH) / 12;
-        ui.fingersPos[0].x_initial = -this.distance * 2;
-        ui.fingersPos[1].x_initial = this.distance * 2;
-        ui.fingersPos[0].y_initial = 0;
-        ui.fingersPos[1].y_initial = 0;
-      })
+    ArrowUp (event) {
+      this.target[0].y += this.distance;
+      this.target[1].y += this.distance;
     },
-    updateData () {
-      this.invoke(ui => {
-        const delta = this.distance * 2
-        ui.fingersPos[0].x_initial = -delta;
-        ui.fingersPos[1].x_initial = delta;
-        ui.fingersPos[0].x_now = -delta;
-        ui.fingersPos[1].x_now = delta;
-        ui.updateData();
-      })
+    ArrowDown (event) {
+      this.target[0].y -= this.distance;
+      this.target[1].y -= this.distance;
     },
-    ArrowUp () {
-      this.position0.y_now = -this.distance;
-      this.position1.y_now = -this.distance;
-      this.updateData();
+    ArrowLeft (event) {
+      this.target[0].x += this.distance;
+      this.target[1].x += this.distance;
     },
-    ArrowDown () {
-      this.position0.y_now = this.distance;
-      this.position1.y_now = this.distance;
-      this.updateData()
-    },
-    ArrowLeft () {
-      this.position0.y_now = this.distance
-      this.position1.y_now = -this.distance
-      this.updateData()
-    },
-    ArrowRight () {
-      this.position0.y_now = -this.distance
-      this.position1.y_now = this.distance
-      this.updateData()
+    ArrowRight (event) {
+      this.target[0].x -= this.distance;
+      this.target[1].x -= this.distance;
     }
   }
   /* callbacks END */

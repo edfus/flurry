@@ -35,16 +35,6 @@ class Game {
     this.init();
   }
 
-createobject(){
-  var cube = new THREE.Mesh(new THREE.CubeGeometry(10, 10, 10),
-        new THREE.MeshBasicMaterial({
-            color: 0x1000f7
-        })
-);
-cube.position.set(-145,20,55);
-return cube;
-}
-
   /* main functions */
   init() {
     this.state.now = "init"
@@ -53,9 +43,6 @@ return cube;
 
     this.tunnel = this._createTunnel();
     this.scene.add(this.tunnel.mesh);
-
-    this.cube = this.createobject();
-    this.scene.add(this.cube);
 
     this.lights = this._createLights();
     this.scene.add.apply(this.scene, Object.values(this.lights));
@@ -479,7 +466,6 @@ return cube;
       this.obstacles.running.forEach(obstacle => {
         obstacle.move();
         if(obstacle.mesh.position.z <= this.obstacles.detect_z.max) {
-          console.log(obstacle.mesh.position.z, this.obstacles.detect_z.max)
           if(obstacle.needsDetect === false) {
             if(obstacle.mesh.position.z <= this.obstacles.end_z) {
               this.obstacles.running.delete(obstacle);
@@ -604,7 +590,7 @@ return cube;
 
         // 减少机翼长度，屁股上移，光泽
         const pointlight = new THREE.PointLight( 0xffffff, 0.5, 200 );
-        pointlight.position.set( -8, 60, -10 );
+        pointlight.position.set(-8, 60, -10);
         pointlight.name = "plane_shining";
       
         const position_propeller = new THREE.Vector3(-8, -4, 140);
@@ -614,17 +600,25 @@ return cube;
         group.add(pointlight);
         group.add(this._createPropeller(0, position_propeller));
         group.add(this._createHeadLight(this.colors.lightBlue, position_headLight, position_propeller));
-        group.position.set(9,39,0);
-
         group.name = "plane";
+        const initialPosition = {
+          x: 9,
+          y: 39,
+          z: 0
+        }
+        
+        group.position.set(initialPosition.x, initialPosition.y, initialPosition.z);
+        
         this.models.plane = group;
+
+        this.ui.target.setOrigin(initialPosition);
+
         this.event.addListener("update_main", () => {
-          group.rotation.z += this.ui.data.rotate_force / 5;
-          group.position.y += this.ui.data.up_force * 10;
-        }) //TODO: 更改rotate_force的计算，使其不突变。rotate_force和up_force在updateData函数中计算（UI.js)
-        //TODO：像_old一样，镜头/飞机是缓动的（这需要目标值，而不是force
-        //TODO：飞机上移的翘尾效果，相机和飞机的关系到底是什么？
-        // 在f12中敲下game.ui._debugEvents()即可获取rotate_force、up_force实时值
+          group.position.y += (this.ui.target.average.y - group.position.y) * .1;
+          group.position.x += (this.ui.target.average.x - group.position.x) * .1;
+          group.rotation.z = (this.ui.target.average.y - group.position.x) * .1;
+        })
+
         this.event.dispatch("planeLoaded", plane, pointlight);
       }
     ]
@@ -653,7 +647,7 @@ return cube;
       emissiveIntensity: .6
     });
     const lensFlare = new THREE.Mesh(lensFlareGeo, lensFlareMaterial);
-    lensFlare.position.set(-8, 25, 800)
+    lensFlare.position.copy(positionOfFog)
     spotLight.target = lensFlare;
     const group = new THREE.Group();
     group.add(spotLight);
