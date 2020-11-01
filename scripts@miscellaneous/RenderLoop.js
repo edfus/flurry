@@ -7,6 +7,7 @@ class RenderLoop {
   constructor(name) {
     this.name = name;
     this._if = [];
+    this._ifOnce = [];
     this._then = [];
     this._else = [];
     this._thenOnce = [];
@@ -29,7 +30,7 @@ class RenderLoop {
     return this;
   }
   untilGameStateBecomes (stateName) {
-    this._if.push(() => this.constructor._game.state.now !== stateName);
+    this.constructor._game.event.addListener(stateName, () => this._ifOnce.push(() => false));
     this.#reverseNextThen = true;
     this.#promisifyNextThen = false;
 
@@ -104,22 +105,39 @@ class RenderLoop {
   static _game = null;
   static _then = [];
   static _do = [];
+
   static start () {
-    if(this._inControl._if.every(f => f())) {
-      this._inControl._then.forEach(f => f());
-      if(!this._inControl._THENONCE_executed) {
-        this._inControl._thenOnce.forEach(f => f());
-        this._inControl._THENONCE_executed = true;
-      }
+    if(this._isTrue()) {
+      this._execThen();
     } else {
-      this._inControl._else.forEach(f => f());
+      this._execElse();
+    }
+    this._do.forEach(f => f());
+    requestAnimationFrame(() => this.start());
+  }
+
+  static _isTrue () {
+    let temp = true;
+    if(this._inControl._ifOnce) {
+      temp = this._inControl._ifOnce.every(f => f())
+      this._inControl._ifOnce = [];
+    }
+    return temp && this._inControl._if.every(f => f())
+  }
+
+  static _execThen () {
+    this._inControl._then.forEach(f => f());
+    if(!this._inControl._THENONCE_executed) {
+      this._inControl._thenOnce.forEach(f => f());
+      this._inControl._THENONCE_executed = true;
+    }
+  }
+  static _execElse () {
+    this._inControl._else.forEach(f => f());
       if(!this._inControl._ELSEONCE_executed) {
         this._inControl._elseOnce.forEach(f => f());
         this._inControl._ELSEONCE_executed = true;
       }
-    }
-    this._do.forEach(f => f());
-    requestAnimationFrame(() => this.start());
   }
   static goto (newRenderLoop) {
     if(typeof newRenderLoop === "string")
@@ -141,7 +159,7 @@ class RenderLoop {
   }
 
   static wheneverGame (stateName) {
-    this._game.event.addListener(stateName, () => this._then.forEach(f => f()));
+    this._game.event.addListener(stateName, () => this._execThen());
     return this;
   }
 

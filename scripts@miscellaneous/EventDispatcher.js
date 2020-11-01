@@ -21,7 +21,8 @@ class Options {
 }
 
 const weakMap = new WeakMap();
-// window.weakMap = weakMap;
+if(config.testMode)
+  window.allEvents = weakMap;
 class Event {
   constructor () {
     weakMap.set(this, {maps: {}})
