@@ -32,6 +32,7 @@ class Game {
       texture: new THREE.TextureLoader()
     };
     this.getTexture = new Drawer();
+    this.collidableMeshList = [];
     this.init();
   }
 
@@ -92,12 +93,19 @@ class Game {
   }
 
   newSceneColor () {
-    const color = new THREE.Color(this.colors.sceneColors[parseInt(Math.random() * this.colors.sceneColors.length)]);
-    this.event.dispatch("newSceneColor", color)
-    return color;
+    let colorArray = this.colors.sceneColors[parseInt(Math.random() * this.colors.sceneColors.length)];
+    colorArray = [
+      new THREE.Color(colorArray[0]),
+      colorArray[1]
+    ];
+    this.event.dispatch("newSceneColor", colorArray);
+    return colorArray
   }
   
-  setSceneColor (color_obj) {
+  setSceneColor (colorArray) {
+    const color_obj = colorArray[0]
+    const themeColor = colorArray[1]
+
     const colorHexValue = color_obj.getHex();
     const rgb = color_obj.getStyle()
     const darkenRGBColor_10 = this.colors.RGB_Linear_Shade(-.1, rgb);
@@ -112,18 +120,18 @@ class Game {
       this.scene.fog = new THREE.Fog(darkenRGBColor_20, this.tunnel.farEndOfTunnel - 4 * this.tunnel.radius, this.tunnel.farEndOfTunnel);
     else this.scene.fog.color.set(darkenRGBColor_20);
 
-    
-    document.documentElement.style.setProperty('--theme-color', "#".concat(color_obj.set(darkenRGBColor_20).getHexString()));
+    document.documentElement.style.setProperty('--theme-color', themeColor);
   }
 
   idle_begin () {
     this.state.now = "idle";
     this.event.dispatch("idle");
-    const color = this.newSceneColor();
+    const colorArray = this.newSceneColor();
+    this.setSceneColor(colorArray);
+    const color = colorArray[0];
     const hsl = this.colors.complementaryOf(color).getHSL({});
     this._idle = {}
-    // color.r, color.g, color.b
-    this.setSceneColor(color);
+    
     switch((Math.random() % .3).toFixed(1)) {
       case "0.2":
         this._idle.snow = this._addSnow();
@@ -211,6 +219,7 @@ class Game {
   }
 
   planeCrash () {
+    Dialog.newError("crashed!")
     this.state.now = "crashed"
     this.event.dispatch("crashed");
   }
@@ -422,6 +431,10 @@ class Game {
     this.obstacles = {
       start_z: 8000,
       end_z: -1000,
+      detect_z: {
+        max: 500,
+        min: -150
+      }, 
       gap: 10 * 1000,
       pool: new Array(amountInPool),
       running: new Set() // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set
@@ -451,12 +464,28 @@ class Game {
     this.event.addListener("update_main", timeStamp => {
       this.obstacles.running.forEach(obstacle => {
         obstacle.move();
-        if(obstacle.mesh.position.z <= this.obstacles.end_z) {
-          this.obstacles.running.delete(obstacle);
-          this.scene.remove(obstacle.mesh);
-          this.dispose(obstacle.mesh);
-          this.event.dispatch("obstacleRemoved");
-        }
+        if(obstacle.mesh.position.z <= this.obstacles.detect_z.max) {
+          console.log(obstacle.mesh.position.z, this.obstacles.detect_z.max)
+          if(obstacle.needsDetect === false) {
+            if(obstacle.mesh.position.z <= this.obstacles.end_z) {
+              this.obstacles.running.delete(obstacle);
+              this.scene.remove(obstacle.mesh);
+              this.dispose(obstacle.mesh);
+              this.event.dispatch("obstacleRemoved");
+              return ;
+            }
+          } else {
+            if(!obstacle.hasOwnProperty('needsDetect')) {
+              obstacle.needsDetect = true;
+              this.collidableMeshList.push(obstacle.mesh);
+              return ;
+            } else if(obstacle.mesh.position.z <= this.obstacles.detect_z.min) {
+              obstacle.needsDetect = false;
+              this.collidableMeshList.splice(this.collidableMeshList.indexOf(obstacle.mesh), 1);
+              return ;
+            }
+          }
+        }   
       })
       if(timeStamp - this.obstacles.prTimeStamp > this.obstacles.gap) {
         this._addObstacle();
@@ -546,6 +575,15 @@ class Game {
         plane.scale.multiplyScalar(0.05);
         plane.rotation.x = this.deg(12);
         plane.name = "plane_obj";
+        plane.isPlane = true;
+        
+        this.event.addListener("update_main", () => {
+          if(this.collidableMeshList.length)
+            if(this.isCollided_buffer(plane, this.collidableMeshList))
+              this.planeCrash();
+            else console.log("detecting. not crashed")
+        })
+
         // 减少机翼长度，屁股上移，光泽
         const pointlight = new THREE.PointLight( 0xffffff, 0.5, 200 );
         pointlight.position.set( -8, 60, -10 );
@@ -816,6 +854,45 @@ class Game {
     waste.name = "solid waste"
     return waste
   }
+
+  /* Examples */
+  broadPhaseDetect (obj_vector3) {
+    return this.airplane.mesh.position.clone().sub(obj_vector3).length - 3; // 3 - tolerance
+  }
+
+  isCollided (obj3d, collidableMeshList) {
+    const vertices = obj3d.geometry.vertices;
+    const position = obj3d.position;
+    for(let i = vertices.length - 1; i >= 0; i--) {
+      const localVertex = vertices[i].clone();
+      const globalVertex = localVertex.applyMatrix4(obj3d.matrix);
+      const directionVector = globalVertex.sub(position);
+  
+      const ray = new THREE.Raycaster(position, directionVector.clone().normalize());
+      const collisionResults = ray.intersectObjects(collidableMeshList);
+      if(collisionResults.length > 0 && collisionResults[0].distance < directionVector.length())
+          return true;
+    }
+    return false;
+  }
+
+  isCollided_buffer (obj3d, collidableMeshList) {
+    if(obj3d.isPlane)
+      return obj3d.children.some(child => this.isCollided_buffer(child, collidableMeshList))
+    const vertices = obj3d.geometry.attributes.position;
+    const position = obj3d.position;
+    for(let i = 0; i < vertices.length; i += 3) {
+      const localVertex = new THREE.Vector3(vertices[i], vertices[i + 1], vertices[i + 2])
+      const globalVertex = localVertex.applyMatrix4(obj3d.matrix);
+      const directionVector = globalVertex.sub(position);
+  
+      const ray = new THREE.Raycaster(position, directionVector.clone().normalize());
+      const collisionResults = ray.intersectObjects(collidableMeshList);
+      if(collisionResults.length > 0 && collisionResults[0].distance < directionVector.length())
+          return true;
+    }
+    return false;
+  }
   
   /* debugger */
   _debug () {
@@ -832,10 +909,11 @@ class Game {
     this.event.addListener("obstacleRemoved", () => console.log("obstacleRemoved", Date.now()))
     this.event.addListener("obstacleAdded", () => console.log("obstacleAdded", Date.now()))
 
-    this.event.addListener("newSceneColor", color => {
-      console.log("New color! %c0x" + color.getHexString(), "color: #" + color.getHexString(),);
+    this.event.addListener("newSceneColor", colorArray => {
+      console.log("New color! %c0x" + colorArray[0].getHexString() + " %c" + colorArray[1], "color: #" +colorArray[0].getHexString(),  "color: " + colorArray[1]);
     });
 
+    this.event.addListener("crashed", () => console.log("%ccrashed", "color: red; background: aqua"))
     this.event.addListener("planeLoaded", (plane, light) => {
       // this.addPointLightHelper(light, 100);
       this.addBoxHelper(plane)
@@ -953,27 +1031,6 @@ class Game {
       this.scene.add(obj3D.boxHelper);
       this.event.addListener("update_main", () => obj3D.boxHelper.update());
     }
-  }
-
-  /* Examples */
-  #broadPhaseDetect (obj_vector3) {
-    return this.airplane.mesh.position.clone().sub(obj_vector3).length - 3; // 3 - tolerance
-  }
-
-  #isCollided(obj3d, collidableMeshList) {
-    const vertices = obj3d.geometry.vertices;
-    const position = obj3d.position;
-    for(let i = vertices.length - 1; i >= 0; i--) {
-      const localVertex = vertices[i].clone();
-      const globalVertex = localVertex.applyMatrix4(obj3d.matrix);
-      const directionVector = globalVertex.sub(position);
-  
-      const ray = new THREE.Raycaster(position, directionVector.clone().normalize());
-      const collisionResults = ray.intersectObjects(collidableMeshList);
-      if(collisionResults.length > 0 && collisionResults[0].distance < directionVector.length())
-          return true;
-    }
-    return false;
   }
 
   _log () {
