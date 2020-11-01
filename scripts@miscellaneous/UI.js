@@ -405,13 +405,18 @@ class UserInteraction {
     const relativeD_x = Math.abs(relative_x0 - relative_x1); // abs：绝对值
     const relativeD_y = Math.abs(relative_y0 - relative_y1);
     let length = Math.hypot(relativeD_x, relativeD_y) // hypot：参数的平方和再开根，即直角边斜边
-    if(length < .15)
-      length = 0
+    // if(length < .15)
+    //   length = 0
 
     const totalD_y0 = this.fingersPos[0].y_now - this.fingersPos[0].y_initial
     const totalD_y1 = this.fingersPos[1].y_now - this.fingersPos[1].y_initial
 
-    this.data.rotate_force = length * relativeD_y * (Math.abs(totalD_y0 - totalD_y1) + 1)
+    const r = -(relative_x0 - relative_x1) * (relative_y0 - relative_y1)
+    console.log(relative_x0);
+    console.log(relative_x1);
+    console.log(relative_y0);
+    console.log(relative_y1);
+    this.data.rotate_force = r * Math.abs(totalD_y0 - totalD_y1) * relativeD_y
     this.data.up_force = -(totalD_y0 + totalD_y1) / this.HEIGHT;
 
     return this.data;
@@ -541,27 +546,32 @@ class UserInteraction {
     },
     updateData () {
       this.invoke(ui => {
+        const delta = this.distance * 2
+        ui.fingersPos[0].x_initial = -delta;
+        ui.fingersPos[1].x_initial = delta;
+        ui.fingersPos[0].x_now = -delta;
+        ui.fingersPos[1].x_now = delta;
         ui.updateData();
       })
     },
     ArrowUp () {
-      this.position0.y_now -= this.distance;
-      this.position1.y_now -= this.distance;
+      this.position0.y_now = -this.distance;
+      this.position1.y_now = -this.distance;
       this.updateData();
     },
-    ArrowDown () { 
-      this.position0.y_now += this.distance;
-      this.position1.y_now += this.distance;
+    ArrowDown () {
+      this.position0.y_now = this.distance;
+      this.position1.y_now = this.distance;
       this.updateData()
     },
     ArrowLeft () {
-      this.position0.y_now -= this.distance / 2
-      this.position1.y_now += this.distance / 2
+      this.position0.y_now = -this.distance
+      this.position1.y_now = this.distance
       this.updateData()
     },
-    ArrowRight () { 
-      this.position0.y_now += this.distance / 2
-      this.position1.y_now -= this.distance / 2
+    ArrowRight () {
+      this.position0.y_now = this.distance
+      this.position1.y_now = -this.distance
       this.updateData()
     }
   }

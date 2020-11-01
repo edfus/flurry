@@ -35,6 +35,16 @@ class Game {
     this.init();
   }
 
+createobject(){
+  var cube = new THREE.Mesh(new THREE.CubeGeometry(10, 10, 10),
+        new THREE.MeshBasicMaterial({
+            color: 0x1000f7
+        })
+);
+cube.position.set(-145,20,55);
+return cube;
+}
+
   /* main functions */
   init() {
     this.state.now = "init"
@@ -43,6 +53,9 @@ class Game {
 
     this.tunnel = this._createTunnel();
     this.scene.add(this.tunnel.mesh);
+
+    this.cube = this.createobject();
+    this.scene.add(this.cube);
 
     this.lights = this._createLights();
     this.scene.add.apply(this.scene, Object.values(this.lights));
@@ -606,8 +619,8 @@ class Game {
         group.name = "plane";
         this.models.plane = group;
         this.event.addListener("update_main", () => {
-          group.rotation.z += this.ui.data.rotate_force;
-          group.position.y += this.ui.data.up_force
+          group.rotation.z += this.ui.data.rotate_force / 5;
+          group.position.y += this.ui.data.up_force * 10;
         }) //TODO: 更改rotate_force的计算，使其不突变。rotate_force和up_force在updateData函数中计算（UI.js)
         //TODO：像_old一样，镜头/飞机是缓动的（这需要目标值，而不是force
         //TODO：飞机上移的翘尾效果，相机和飞机的关系到底是什么？
@@ -640,7 +653,7 @@ class Game {
       emissiveIntensity: .6
     });
     const lensFlare = new THREE.Mesh(lensFlareGeo, lensFlareMaterial);
-    lensFlare.position.copy(positionOfFog)
+    lensFlare.position.set(-8, 25, 800)
     spotLight.target = lensFlare;
     const group = new THREE.Group();
     group.add(spotLight);
