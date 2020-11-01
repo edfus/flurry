@@ -9,7 +9,9 @@ class Score {
   _previousMS = Infinity;
   constructor (initialSpeed, initialScore = this.loadPrevious()) {
     this.speed = initialSpeed;
-    this.#value = initialScore;
+    if(isNaN(initialScore) || isFinite(initialScore))
+      initialScore = 0;
+    this.#value = Number(initialScore); // in case
   }
   // set speed (newSpeed) {}
   
