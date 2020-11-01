@@ -36,6 +36,16 @@ class Game {
     this.init();
   }
 
+createobject(){
+  var cube = new THREE.Mesh(new THREE.CubeGeometry(10, 10, 10),
+        new THREE.MeshBasicMaterial({
+            color: 0x1000f7
+        })
+);
+cube.position.set(-145,20,55);
+return cube;
+}
+
   /* main functions */
   init() {
     this.state.now = "init"
@@ -44,6 +54,9 @@ class Game {
 
     this.tunnel = this._createTunnel();
     this.scene.add(this.tunnel.mesh);
+
+    this.cube = this.createobject();
+    this.scene.add(this.cube);
 
     this.lights = this._createLights();
     this.scene.add.apply(this.scene, Object.values(this.lights));
@@ -640,7 +653,7 @@ class Game {
       emissiveIntensity: .6
     });
     const lensFlare = new THREE.Mesh(lensFlareGeo, lensFlareMaterial);
-    lensFlare.position.copy(positionOfFog)
+    lensFlare.position.set(-8, 25, 800)
     spotLight.target = lensFlare;
     const group = new THREE.Group();
     group.add(spotLight);
@@ -680,9 +693,9 @@ class Game {
     const propeller = new THREE.Mesh(geomPropeller, material);
     propeller.rotation.z = intialRotation;
 
-    const rotation = this.deg(32) //TODO 加快
+    const rotation = this.deg(65) //TODO 加快
     this.event.addListener("update", () => {
-      propeller.rotation.z -= rotation;
+      propeller.rotation.z += rotation;
     });
     propeller.position.copy(position);
     propeller.name = "plane_propeller";
