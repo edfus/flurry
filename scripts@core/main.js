@@ -6,7 +6,7 @@ import Event from '../scripts@miscellaneous/EventDispatcher.js';
 import RenderLoop from '../scripts@miscellaneous/RenderLoop.js';
 import AudioPlayer from '../scripts@audio/AudioWorker.js';
 import Score from '../scripts@miscellaneous/Score.js';
-import Drawer from './drawTextures.js';
+import Drawer from '../scripts@effect/drawTextures.js';
 /* objects */
 import colors from '../scripts@config/colors.js';
 

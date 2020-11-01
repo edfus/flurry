@@ -1,4 +1,5 @@
 import { CanvasTexture, FloatType } from 'https://cdn.jsdelivr.net/npm/three@v0.121.0/build/three.module.min.js';
+import SVG from './texture/svgBlob.js'
 // https://threejs.org/docs/#api/en/textures/CanvasTexture
 class Drawer {
   constructor () {
