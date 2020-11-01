@@ -429,7 +429,7 @@ class Game {
       
     Obstacle.setOptions({
       radius: 100,
-      color: 0xffffff,
+      color: 0x808a87,
       shininess: 0,
       specular: 0xffffff,
       xyDistance: 80,
