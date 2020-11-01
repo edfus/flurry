@@ -422,7 +422,6 @@ class UserInteraction {
       this.sum.y = this.average.y * 2;
     }
   }
-
   
   /* callbacks */
   bindCallbacks () {
