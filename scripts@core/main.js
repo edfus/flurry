@@ -220,7 +220,7 @@ class Game {
       this.obstacles.running.clear();
       this.state.now = "ended";
       this.event.dispatch("ended")
-    }, 300); //TODO: backToTitle animation
+    }, 300); //TODO: end animation
   }
 
   constructRenderLoops () {
@@ -259,6 +259,7 @@ class Game {
                       })
                     .execute(() => {
                         this.renderer.render(this.scene, this.camera);
+                        this.update_startAnim();
                       })
                     .untilGameStateBecomes("started")
                       .then(() => {
@@ -294,7 +295,7 @@ class Game {
                           ////////////////
                           this.end() // 因为要严格要求只有在crashed后才能end，所以在此end
                           ////////////////
-                          RenderLoop.goto("backToTitle");
+                          RenderLoop.goto("endAnimation");
                         }),
       new RenderLoop("paused")
                     .executeOnce(() => {
@@ -309,6 +310,7 @@ class Game {
                         })()
                       })
                     .execute(() => {
+                        this.update_paused();
                         this.ui.canvas2D.paint();
                         this.renderer.render(this.scene, this.camera);
                       })
@@ -341,10 +343,11 @@ class Game {
                           this.audio.cancelFadeOut();
                           this.audio.playSong("outro")
                         }
-                        RenderLoop.goto("backToTitle")
+                        RenderLoop.goto("endAnimation")
                       }),
-      new RenderLoop("backToTitle")
+      new RenderLoop("endAnimation")
                     .execute(() => {
+                        this.update_endAnim();
                         this.renderer.render(this.scene, this.camera);
                       })
                     .untilGameStateBecomes("ended")
@@ -692,12 +695,13 @@ class Game {
     propeller.rotation.z = intialRotation;
 
     const rotation = this.deg(32) //TODO 加快
-    this.event.addListener("update_idle", () => {
+    const func = () => {
       propeller.rotation.z -= rotation;
-    });
-    this.event.addListener("update_main", () => {
-      propeller.rotation.z -= rotation;
-    });
+    }
+    ["update_idle", "update_main", "update_startAnim", "update_endAnim"].forEach(name => {
+      this.event.addListener(name, func);
+    })
+
     propeller.position.copy(position);
     propeller.name = "plane_propeller";
     return propeller
@@ -892,12 +896,12 @@ class Game {
     const position = obj3d.position;
     for(let i = 0; i < vertices.length; i += 3) {
       const localVertex = new THREE.Vector3(vertices[i], vertices[i + 1], vertices[i + 2])
-      const globalVertex = localVertex.applyMatrix4(obj3d.matrix);
-      const directionVector = globalVertex.sub(position);
+      // const globalVertex = localVertex.applyMatrix4(obj3d.matrix);
+      // const directionVector = globalVertex.sub(position);
   
-      const ray = new THREE.Raycaster(position, directionVector.clone().normalize());
+      const ray = new THREE.Raycaster(position, localVertex);
       const collisionResults = ray.intersectObjects(collidableMeshList);
-      if(collisionResults.length > 0 && collisionResults[0].distance < directionVector.length())
+      if(collisionResults.length > 0)
           return true;
     }
     return false;
@@ -1027,6 +1031,15 @@ class Game {
   }
   update_crash () {
     this.event.dispatch("update_crash", Date.now());
+  }
+  update_paused () {
+    this.event.dispatch("update_paused", Date.now());
+  }
+  update_startAnim () {
+    this.event.dispatch("update_startAnim", Date.now());
+  }
+  update_endAnim () {
+    this.event.dispatch("update_endAnim", Date.now());
   }
 
   /* Helpers(used in _debug) */

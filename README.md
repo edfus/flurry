@@ -50,11 +50,7 @@ naiziguai:
 cloudres: 
 
 - [ ] https://tympanus.net/Development/ClickEffects/
-- [ ] 测试isCollided
-- [ ] pause backToTitle的误触问题
-- [ ] 音质问题
-- [ ] score的暂停问题
-- [ ] TypeError: Cannot read property 'total' of undefined
+- [ ] https://tympanus.net/Development/AnimatedMeshLines/demo4.html
 
 ---
 

@@ -146,6 +146,8 @@ class UserInteraction {
 
     this.HEIGHT = window.innerHeight;
     this.WIDTH = window.innerWidth;
+    this.half_H = this.HEIGHT / 2;
+    this.half_W = this.WIDTH / 2;
 
     this.event.addListener("resize", () => {
       this.HEIGHT = window.innerHeight;
@@ -168,8 +170,7 @@ class UserInteraction {
     const excludedFuncs = []
 
     const tempPtr = this.event;
-    // tempPtr.addListener("newEvent", log)
-
+    
     let _log1 = new ThrottleLog(300),
         _log2 = new ThrottleLog(300),
         _log3 = new ThrottleLog(300);
@@ -514,21 +515,57 @@ class UserInteraction {
                 this[code] = func;
             });
     },
-    pos: new Proxy(this.fingersPos, {
-      set (target, prop, value)  {      
-        // value < 0
-        // ? value < -halfY ? value = -halfY : 0
-        // : value > halfY ? value = halfY : 0
-
-        return Reflect.set(...arguments);
+    pos0: this.fingersPos[0],
+    pos1: this.fingersPos[1],
+    _pos0: {
+      _x: 0,
+      _y: 0,
+      ui: this,
+      set x(value) {
+        value < 0 
+        ? (value = 0)
+        : value > this.ui.WIDTH && (value = this.ui.WIDTH)
+        this._x = value;
       },
-      get (target, property, receiver){
-        if(typeof target[property] === 'function') {
-          return target[property].bind(target);
-        } else return Reflect.get(...arguments)
-      } 
-    }),
+      get x() {
+        return this._x;
+      },
+      set y(value) {
+        value < 0 
+        ? (value = 0)
+        : value > this.ui.HEIGHT && (value = this.ui.HEIGHT)
+        this._x = value;
+      },
+      get y() {
+        return this._x;
+      }
+    },
+    _pos1: {
+      _x: 0,
+      _y: 0,
+      ui: this,
+      set x(value) {
+        value < 0 
+        ? (value = 0)
+        : value > this.ui.WIDTH && (value = this.ui.WIDTH)
+        this._x = value;
+      },
+      get x() {
+        return this._x;
+      },
+      set y(value) {
+        value < 0 
+        ? (value = 0)
+        : value > this.ui.HEIGHT && (value = this.ui.HEIGHT)
+        this._x = value;
+      },
+      get y() {
+        return this._x;
+      }
+    },
     update: this.target.update,
+    normalizeX: this.fingersPos.updateX,
+    normalizeY: this.fingersPos.updateY,
     distance: 20,
     invoke: (ui => {
       return function (func) {
@@ -536,23 +573,31 @@ class UserInteraction {
       }
     })(this),
     ArrowUp (event) {
-      this.pos[0].y += this.distance; 
-      this.pos[1].y += this.distance; 
+      this._pos0.y += this.distance;
+      this._pos1.y += this.distance;
+      this.pos0.y = this.normalizeY(this._pos0.y);
+      this.pos1.y = this.normalizeY(this._pos1.y);
       this.update();
     },
     ArrowDown (event) {
-      this.pos[0].y -= this.distance;
-      this.pos[1].y -= this.distance; 
+      this._pos0.y -= this.distance;
+      this._pos1.y -= this.distance;
+      this.pos0.y = this.normalizeY(this._pos0.y);
+      this.pos1.y = this.normalizeY(this._pos1.y); 
       this.update();
     },
     ArrowLeft (event) {
-      this.pos[0].x += this.distance;
-      this.pos[1].x += this.distance; 
+      this._pos0.x -= this.distance;
+      this._pos1.x -= this.distance;
+      this.pos0.x = this.normalizeX(this._pos0.x);
+      this.pos1.x = this.normalizeX(this._pos1.x);  
       this.update();
     },
     ArrowRight (event) {
-      this.pos[0].x -= this.distance;
-      this.pos[1].x -= this.distance;
+      this._pos0.x += this.distance;
+      this._pos1.x += this.distance;
+      this.pos0.x = this.normalizeX(this._pos0.x);
+      this.pos1.x = this.normalizeX(this._pos1.x);
       this.update();
     }
   }

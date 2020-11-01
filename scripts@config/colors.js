@@ -3,11 +3,11 @@ export default {
   lightBlue: 0x8fe7fd,
   azure: 0xadfadf,
   sceneColors: [
-    [0xd7e607, "#939943", 0xadfadf], 
-    [0x0e9f52, "#3e8660", 0xadfadf], 
-    [0xff8800, "#967652", 0xadfadf],
-    [0xff00dd, "#914f88", 0xadfadf], 
-    [0x02e6e6, "#3f8888", 0xadfadf]
+    [0xd7e607, "#939943", 0x939943], 
+    [0x0e9f52, "#3e8660", 0x3e8660], 
+    [0xff8800, "#967652", 0x967652],
+    [0xff00dd, "#914f88", 0x914f88], 
+    [0x02e6e6, "#3f8888", 0x3f8888]
   ],
   // 以前的： ["d7e607", "0e9f52", "dc0e07", "02e6e6"]
   greenForTest: 0x00ff00,
