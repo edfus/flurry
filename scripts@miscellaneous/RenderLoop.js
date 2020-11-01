@@ -104,7 +104,7 @@ class RenderLoop {
   static _inControl = null;
   static _game = null;
   static _then = [];
-  static _do = [];
+  // static _do = [];
 
   static start () {
     if(this._isTrue()) {
@@ -112,7 +112,7 @@ class RenderLoop {
     } else {
       this._execElse();
     }
-    this._do.forEach(f => f());
+    // this._do.forEach(f => f());
     requestAnimationFrame(() => this.start());
   }
 
@@ -163,10 +163,10 @@ class RenderLoop {
     return this;
   }
 
-  static keepExecuting (f) {
-    this._do.push(f)
-    return this;
-  }
+  // static keepExecuting (f) {
+  //   this._do.push(f)
+  //   return this;
+  // }
 
   static then (func) {
     this._then.push(func)

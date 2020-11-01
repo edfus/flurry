@@ -196,17 +196,17 @@ class Game {
   }
 
   planeCrash () {
-    this.state.canBePaused = false;
-    this.state.now = "crash"
-    this.event.dispatch("crash");
-    this.time.total += Date.now() - this.time.lastStamp;
-    this.time.lastStamp = Date.now();
-    console.log("Dialog.newError")
-    Dialog.newError("crashed!", 3000)
-    setTimeout(() => {
-      this.state.now = "crashed"
-      this.event.dispatch("crashed");
-    }, 3000) //TODO: crash animaiton
+    console.log("crashed")
+    // this.state.canBePaused = false;
+    // this.state.now = "crash"
+    // this.event.dispatch("crash");
+    // this.time.total += Date.now() - this.time.lastStamp;
+    // this.time.lastStamp = Date.now();
+    // Dialog.newError("crashed!", 3000)
+    // setTimeout(() => {
+    //   this.state.now = "crashed"
+    //   this.event.dispatch("crashed");
+    // }, 3000) //TODO: crash animaiton
   }
 
   end () {
@@ -278,7 +278,7 @@ class Game {
                           this.score.pause();
                           this.ui.freeze();
                           this.audio.fadeOut(6);
-                          if(this.time.total > 18) {
+                          if(this.time.total > 80000) {
                             this.audio.scheduleSong("outro", false, 3)
                           }
                           RenderLoop.goto("crash")
@@ -357,7 +357,6 @@ class Game {
                           console.info('RenderLoop: game ended');
                         })
     )
-    .keepExecuting(() => this.update())
     .goto("idle")
     .wheneverGame("pause")
       .then(() => {
@@ -432,9 +431,9 @@ class Game {
     const amountInPool = 2
     this.obstacles = {
       start_z: 4000,
-      end_z: -700,
+      end_z: -500,
       detect_z: {
-        max: 500,
+        max: 300,
         min: -150
       },
       gap: 10 * 1000,
@@ -578,11 +577,16 @@ class Game {
         plane.name = "plane_obj";
         plane.isPlane = true;
         
+        let count = 0;
         this.event.addListener("update_main", () => {
-          if(this.collidableMeshList.length)
-            if(this.isCollided_buffer(plane, this.collidableMeshList))
-              this.planeCrash();
-            else console.log("detecting. not crashed")
+          if(this.collidableMeshList.length) {
+            if(++count === 6) {
+              count = 0;
+              if(this.isCollided_buffer(plane, this.collidableMeshList))
+                this.planeCrash();
+              else console.log("detecting. not crashed")
+            }
+          }
         })
 
         // 减少机翼长度，屁股上移，光泽
@@ -608,11 +612,6 @@ class Game {
         //TODO：像_old一样，镜头/飞机是缓动的（这需要目标值，而不是force
         //TODO：飞机上移的翘尾效果，相机和飞机的关系到底是什么？
         // 在f12中敲下game.ui._debugEvents()即可获取rotate_force、up_force实时值
-        if(!this.ui.isTouchDevice)
-          this.event.addListener("update_main", () => {
-            group.position.y *= .95
-            group.rotation.z *= .95
-          }) // 暂时如此
         this.event.dispatch("planeLoaded", plane, pointlight);
       }
     ]
@@ -682,7 +681,10 @@ class Game {
     propeller.rotation.z = intialRotation;
 
     const rotation = this.deg(32) //TODO 加快
-    this.event.addListener("update", () => {
+    this.event.addListener("update_idle", () => {
+      propeller.rotation.z -= rotation;
+    });
+    this.event.addListener("update_main", () => {
       propeller.rotation.z -= rotation;
     });
     propeller.position.copy(position);
@@ -1006,9 +1008,6 @@ class Game {
   }
 
   /* Unvarying functions */
-  update () {
-    this.event.dispatch("update", Date.now());
-  }
   update_main () {
     this.event.dispatch("update_main", Date.now());
   }
