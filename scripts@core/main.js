@@ -488,7 +488,7 @@ class Game {
               return ;
             }
           }
-        }   
+        }
       })
       if(timeStamp - this.obstacles.prTimeStamp > this.obstacles.gap) {
         this._addObstacle();
