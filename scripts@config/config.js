@@ -66,15 +66,7 @@
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Optional_chaining
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_Coalescing_Operator
     // fallback: window.config && config.loading_timeOut ? config.loading_timeOut : 400
-  },
-
-  RotationSpeed_Sea = .005,
-  RotationSpeed_Sky = .01,
-  NumOfCloudsInSky = 20,
-  RotationSpeed_Propeller = .4,
-  scoreIncreasingSpeed = 150 // m / s (700 km/h ≈ 200m/s)
-
-  ;
+  };
 
   // export default {
   window.config = {
@@ -86,11 +78,6 @@
     getUIContainer:  GetUIContainer,
     getScoreContainer: GetScoreContainer,
     gameLoadedCallback: GameLoadedCallback,
-    speed_sea: RotationSpeed_Sea,
-    speed_sky: RotationSpeed_Sky,
-    speed_propeller: RotationSpeed_Propeller,
-    speed_score: scoreIncreasingSpeed,
-    numOfCloudsInSky: NumOfCloudsInSky
   }
 }
 
