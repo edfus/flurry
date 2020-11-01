@@ -177,7 +177,8 @@ class UserInteraction {
         _log2 = _log2.log.bind(_log2);
         _log3 = _log3.log.bind(_log3);
     const log = console.log.bind(console);
-    // new ThrottleLog(500).autoLog(() => `(rotate: ${this.data.rotate_force}, up: ${this.data.up_force})\n fingersPos now: (${this.fingersPos[0].x_now}, ${this.fingersPos[0].y_now}), (${this.fingersPos[1].x_now}, ${this.fingersPos[1].y_now})`)
+    new ThrottleLog(500).autoLog(() => `target.raw: (x: ${this.target.raw[0].x}, y: ${this.target.raw[0].y})\n(x: ${this.target.raw[1].x}, y: ${this.target.raw[1].y})
+    fingesPos: (x: ${this.fingersPos[0].x}, y: ${this.fingersPos[0].y})\n(x: ${this.fingersPos[1].x}, y: ${this.fingersPos[1].y})`)
     const funcTrap = {
       apply (target, thisArg, argsList) {
         if(!excludedEvents.includes(argsList[0]))
@@ -513,7 +514,7 @@ class UserInteraction {
                 this[code] = func;
             });
     },
-    target: new Proxy(this.target, {
+    pos: new Proxy(this.fingersPos, {
       set (target, prop, value)  {      
         // value < 0
         // ? value < -halfY ? value = -halfY : 0
@@ -527,6 +528,7 @@ class UserInteraction {
         } else return Reflect.get(...arguments)
       } 
     }),
+    update: this.target.update,
     distance: 20,
     invoke: (ui => {
       return function (func) {
@@ -534,24 +536,24 @@ class UserInteraction {
       }
     })(this),
     ArrowUp (event) {
-      this.target.raw[0].y += this.distance;
-      this.target.raw[1].y += this.distance;
-      this.target.update();
+      this.pos[0].y += this.distance; 
+      this.pos[1].y += this.distance; 
+      this.update();
     },
     ArrowDown (event) {
-      this.target.raw[0].y -= this.distance;
-      this.target.raw[1].y -= this.distance;
-      this.target.update();
+      this.pos[0].y -= this.distance;
+      this.pos[1].y -= this.distance; 
+      this.update();
     },
     ArrowLeft (event) {
-      this.target.raw[0].x += this.distance;
-      this.target.raw[1].x += this.distance;
-      this.target.update();
+      this.pos[0].x += this.distance;
+      this.pos[1].x += this.distance; 
+      this.update();
     },
     ArrowRight (event) {
-      this.target.raw[0].x -= this.distance;
-      this.target.raw[1].x -= this.distance;
-      this.target.update();
+      this.pos[0].x -= this.distance;
+      this.pos[1].x -= this.distance;
+      this.update();
     }
   }
   /* callbacks END */
