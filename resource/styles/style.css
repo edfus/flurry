@@ -144,6 +144,7 @@ main > canvas, #ui-canvas {
   border-radius: 50%;
   transition: background-color .2s ease-in-out;
   pointer-events: all;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* full screen button */
