@@ -431,6 +431,10 @@ class Game {
     this.obstacles = {
       start_z: 4000,
       end_z: -700,
+      detect_z: {
+        max: 500,
+        min: -150
+      },
       gap: 10 * 1000,
       pool: new Array(amountInPool),
       running: new Set() // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set
@@ -875,7 +879,7 @@ class Game {
   isCollided_buffer (obj3d, collidableMeshList) {
     if(obj3d.isPlane)
       return obj3d.children.some(child => this.isCollided_buffer(child, collidableMeshList))
-    const vertices = obj3d.geometry.attributes.position;
+    const vertices = obj3d.geometry.attributes.position.array;
     const position = obj3d.position;
     for(let i = 0; i < vertices.length; i += 3) {
       const localVertex = new THREE.Vector3(vertices[i], vertices[i + 1], vertices[i + 2])
@@ -901,7 +905,6 @@ class Game {
       this.addBoxHelper(Object.values(this.objects))
     if(this.lights.spotLight)
       this.addSpotLightHelper(this.lights.spotLight);
-    this.obstacles.gap = 1000;
     this.event.addListener("obstacleRemoved", () => console.log("obstacleRemoved", Date.now()))
     this.event.addListener("obstacleAdded", () => console.log("obstacleAdded", Date.now()))
 
