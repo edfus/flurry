@@ -66,7 +66,9 @@
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Optional_chaining
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_Coalescing_Operator
     // fallback: window.config && config.loading_timeOut ? config.loading_timeOut : 400
-  };
+  },
+
+  scoreIncreasingSpeed = 150; // m / s (700 km/h ≈ 200m/s)
 
   // export default {
   window.config = {
@@ -78,6 +80,7 @@
     getUIContainer:  GetUIContainer,
     getScoreContainer: GetScoreContainer,
     gameLoadedCallback: GameLoadedCallback,
+    speed_score: scoreIncreasingSpeed,
   }
 }
 
