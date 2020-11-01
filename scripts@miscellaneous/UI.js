@@ -412,11 +412,7 @@ class UserInteraction {
     const totalD_y1 = this.fingersPos[1].y_now - this.fingersPos[1].y_initial
 
     const r = (relative_x0 - relative_x1) * (relative_y0 - relative_y1)
-    console.log(relative_x0);
-    console.log(relative_x1);
-    console.log(relative_y0);
-    console.log(relative_y1);
-    this.data.rotate_force = r * Math.abs(totalD_y0 - totalD_y1) * relativeD_y
+    this.data.rotate_force = r * Math.abs(totalD_y0 - totalD_y1) * relativeD_y * 0.02
     this.data.up_force = -(totalD_y0 + totalD_y1) / this.HEIGHT;
 
     return this.data;

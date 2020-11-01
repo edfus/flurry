@@ -44,9 +44,6 @@ class Game {
     this.tunnel = this._createTunnel();
     this.scene.add(this.tunnel.mesh);
 
-    this.cube = this.createobject();
-    this.scene.add(this.cube);
-
     this.lights = this._createLights();
     this.scene.add.apply(this.scene, Object.values(this.lights));
  
