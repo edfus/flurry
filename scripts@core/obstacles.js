@@ -1,19 +1,16 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@v0.121.0/build/three.module.min.js';
 
-const options = {
+let options = {
 
 };
 
-const material = new THREE.MeshPhongMaterial({
-  color: options.color,
-  shininess: options.shininess,
-  specular: options.specular, // 高光色彩
-  emissive: options.color,
-  emissiveIntensity: 0 //
-});
+let material = null;
 
 class Obstacle {
-  constructor(angle, initial_z, randomI) {
+  constructor(initial_z) {
+    const angle = options.randomAngle();
+    const randomI = options.randomI();
+    
     this.x = options.xyDistance * Math.cos(angle);
     this.y = options.xyDistance * Math.sin(angle);
     this.z = initial_z;
@@ -80,9 +77,13 @@ class Obstacle {
 
   static setOptions (opts) {
     options = Object.assign(options, opts);
-  }
-  static setMaterial (newMaterial) {
-    material = newMaterial
+    material = new THREE.MeshPhongMaterial({
+      color: options.color,
+      shininess: options.shininess,
+      specular: options.specular, // 高光色彩
+      emissive: options.color,
+      emissiveIntensity: 0 //
+    });
   }
 }
 

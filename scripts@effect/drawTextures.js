@@ -10,7 +10,7 @@ class Drawer {
 		this.context = this.canvas.getContext("2d");
 		this.svg = new SVG("#adfadf");
   }
-  drawSVG(name) {
+  async drawSVG(name) {
 		this.setRadius(48)
 		const image = new Image();
 		return new Promise(resolve => {
@@ -22,13 +22,13 @@ class Drawer {
 			image.src = this.svg[name]();
 		});
 	}
-	setStyle (rgba, fill, glowIntensity) {
-		this.svg.set(rgba, fill, glow)
+	setStyle (css_color, fillStyle, glowIntensity) {
+		this.svg.set(css_color, fillStyle, glowIntensity)
 	}
-	triangle () {
+	async triangle () {
 		return this.drawSVG("triangle");
 	}
-	rect_hollow (rgba, glowIntensity) {
+	async rect_hollow () {
 		const fillTemp = this.svg.fillStyle;
 		this.svg.fillStyle = "transparent";
 		return this.drawSVG("rectangle").then(result => {
@@ -36,13 +36,13 @@ class Drawer {
 			return result
 		})
 	}
-	rect (rgba, glowIntensity) {
+	async rect () {
 		return this.drawSVG("rectangle")
 	}
-	hexagon () {
+	async hexagon () {
 		return this.drawSVG("hexagon")
 	} 
-	styledLine () {
+	async styledLine () {
 		return this.drawSVG("styledLine")
 	}
   snow (R = 255, G = 255, B = 255) {

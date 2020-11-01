@@ -7,6 +7,7 @@ import RenderLoop from '../scripts@miscellaneous/RenderLoop.js';
 import AudioPlayer from '../scripts@audio/AudioWorker.js';
 import Score from '../scripts@miscellaneous/Score.js';
 import Drawer from '../scripts@effect/drawTextures.js';
+import Obstacle from './obstacles.js';
 /* objects */
 import colors from '../scripts@config/colors.js';
 
@@ -31,8 +32,8 @@ class Game {
     this._load = {
       texture: new THREE.TextureLoader()
     };
-    this.init();
     this.getTexture = new Drawer();
+    this.init();
   }
 
   /* main functions */
@@ -51,9 +52,11 @@ class Game {
       this.event.dispatch("modelsAllLoaded");
       this.scene.add.apply(this.scene, Object.values(this.models));
     });
+
+    this._initObstacles();
     
     this.camera.position.set(0, 80, -500);
-    this.camera.rotation.set(0, 3.14, 0)
+    this.camera.rotation.set(0, Math.PI, 0)
 
     this.constructRenderLoops();
 
@@ -173,6 +176,8 @@ class Game {
         total: 0,
         paused: 0
       }
+      this.obstacles.prTimeStamp = Date.now();
+      this._addObstacle();
     }, 100) //TODO: start animation
   }
 
@@ -399,6 +404,66 @@ class Game {
     tunnel.mesh = new THREE.Mesh(tubeGeometry, tubeMaterial)
     tunnel.mesh.name = "tunnel";
     return tunnel
+  }
+  
+  _initObstacles () {
+    const amountInPool = 2
+    this.obstacles = {
+      start_z: 8000,
+      end_z: -1000,
+      gap: 10 * 1000,
+      pool: new Array(amountInPool),
+      running: new Set() // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set
+    }
+      
+    Obstacle.setOptions({
+      radius: 100,
+      color: 0x111111,
+      shininess: 30,
+      specular: 0xffffff,
+      xyDistance: 220,
+      zDistance: 5000,
+      spacing: 2000,
+      amplitude: 110, // peak
+      xySpeed: 1,
+      zSpeed: 50,
+      rev: 0.004, // 转速
+      randomAngle: () => Math.random() * 7,
+      randomI: () => Math.floor(Math.random() * 4)
+    })
+
+    for(let i = 0; i < amountInPool; i++) {
+      const obstacle = new Obstacle(this.obstacles.start_z);
+      this.obstacles.pool[i] = obstacle;
+    }
+
+    this.event.addListener("update_main", timeStamp => {
+      this.obstacles.running.forEach(obstacle => {
+        obstacle.move();
+        if(obstacle.mesh.position.z <= this.obstacles.end_z) {
+          this.obstacles.running.delete(obstacle);
+          this.scene.remove(obstacle.mesh);
+          this.dispose(obstacle.mesh);
+          this.event.dispatch("obstacleRemoved");
+        }
+      })
+      if(timeStamp - this.obstacles.prTimeStamp > this.obstacles.gap) {
+        this._addObstacle();
+        this.obstacles.prTimeStamp = timeStamp;
+      }
+    })
+  }
+
+  _addObstacle () {
+    const newObstacle = this.obstacles.pool.shift();
+    if(!newObstacle) throw new Error("!newObstacle")
+    this.obstacles.running.add(newObstacle);
+    this.scene.add(newObstacle.mesh);
+    this.event.dispatch("obstacleAdded");
+    setTimeout(() => {
+      const obstacle = new Obstacle(this.obstacles.start_z);
+      this.obstacles.pool.push(obstacle);
+    }, 0)
   }
 
   /* lights */
@@ -753,6 +818,9 @@ class Game {
     if(this.lights.spotLight)
       this.addSpotLightHelper(this.lights.spotLight);
 
+    this.event.addListener("obstacleRemoved", () => console.log("obstacleRemoved", Date.now()))
+    this.event.addListener("obstacleAdded", () => console.log("obstacleAdded", Date.now()))
+
     this.event.addListener("newSceneColor", color => {
       console.log("New color! %c0x" + color.getHexString(), "color: #" + color.getHexString(),);
     });
@@ -828,13 +896,13 @@ class Game {
 
   /* Unvarying functions */
   update () {
-    this.event.dispatch("update", performance.now());
+    this.event.dispatch("update", Date.now());
   }
   update_main () {
-    this.event.dispatch("update_main", performance.now());
+    this.event.dispatch("update_main", Date.now());
   }
   update_idle () {
-    this.event.dispatch("update_idle", performance.now());
+    this.event.dispatch("update_idle", Date.now());
   }
 
   /* Helpers(used in _debug) */
