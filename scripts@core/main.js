@@ -618,9 +618,11 @@ class Game {
         this.ui.target.setOrigin(initialPosition);
 
         this.event.addListener("update_main", () => {
+          // console.log(this.ui.target.average.x);
+          // console.log(this.ui.target.average.y);
           group.position.y += (this.ui.target.average.y - group.position.y) * .1;
           group.position.x += (this.ui.target.average.x - group.position.x) * .1;
-          group.rotation.z = (this.ui.target.average.y - group.position.x) * .1;
+          group.rotation.z = (this.ui.target.average.y - group.position.y) * .1;
         })
 
         this.event.dispatch("planeLoaded", plane, pointlight);
