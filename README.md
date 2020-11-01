@@ -19,11 +19,11 @@
 
 - [x] 基础文档撰写，Github库配置，统一开发环境，统一代码、commit规范
 - [x] 收集文献资料，收集参考，寻找效果图，寻找竞品
-- [ ] 完成Three.js基础场景搭建（scene、perspective camera、static objects、hemisphereLight、shadowLight）
+- [x] 完成Three.js基础场景搭建（scene、perspective camera、static objects、hemisphereLight、shadowLight）
 - [ ] 完成user control
-- [ ] 完成dynamic objects
-- [ ] 完成generate obstacles
-- [ ] 阶段测试，痛点分析，代码梳理，结构重整
+- [x] 完成dynamic objects
+- [x] 完成generate obstacles
+- [x] 阶段测试，痛点分析，代码梳理，结构重整
 - [ ] 完成:checkered_flag:
 
 

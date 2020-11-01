@@ -91,38 +91,6 @@ class Game {
     this.state.now = "loaded"
   }
 
-  newSceneColor () {
-    let colorArray = this.colors.sceneColors[parseInt(Math.random() * this.colors.sceneColors.length)];
-    colorArray = [
-      new THREE.Color(colorArray[0]),
-      colorArray[1],
-      new THREE.Color(colorArray[2])
-    ];
-    this.event.dispatch("newSceneColor", colorArray);
-    return colorArray
-  }
-  
-  setSceneColor (colorArray) {
-    const color_obj = colorArray[0]
-    const themeColor = colorArray[1]
-
-    const colorHexValue = color_obj.getHex();
-    const rgb = color_obj.getStyle();
-    const darkenRGBColor_10 = this.colors.RGB_Linear_Shade(-.1, rgb);
-    const darkenRGBColor_20 = this.colors.RGB_Linear_Shade(-.2, rgb);
-
-    this.lights.spotLight.color.setHex(colorHexValue);
-
-    this.lights.sphereLight.material.color.set(darkenRGBColor_10);
-    this.lights.sphereLight.material.emissive.set(darkenRGBColor_10);
-
-    if(!this.scene.fog)
-      this.scene.fog = new THREE.Fog(darkenRGBColor_20, this.tunnel.farEndOfTunnel - 4 * this.tunnel.radius, this.tunnel.farEndOfTunnel);
-    else this.scene.fog.color.set(darkenRGBColor_20);
-
-    document.documentElement.style.setProperty('--theme-color', themeColor);
-  }
-
   idle_begin () {
     this.state.canBePaused = false;
     this.state.now = "idle";
@@ -237,9 +205,9 @@ class Game {
                       this.idle_begin();
                     })
                     .execute(() => {
+                        this.update_idle();
                         this.renderer.render(this.scene, this.camera);
                         this.ui.canvas2D.paint();
-                        this.update_idle();
                       })
                     .untilGameStateBecomes("start")
                       .then(() => {
@@ -258,8 +226,8 @@ class Game {
                         this.audio.playNext(true);
                       })
                     .execute(() => {
-                        this.renderer.render(this.scene, this.camera);
                         this.update_startAnim();
+                        this.renderer.render(this.scene, this.camera);
                       })
                     .untilGameStateBecomes("started")
                       .then(() => {
@@ -270,8 +238,8 @@ class Game {
                         }),
       new RenderLoop("main")
                     .execute(() => {
-                        this.renderer.render(this.scene, this.camera);
                         this.update_main();
+                        this.renderer.render(this.scene, this.camera);
                       })
                     .untilGameStateBecomes("crash")
                       .then(() => {
@@ -287,8 +255,8 @@ class Game {
                         }),
       new RenderLoop("crash")
                     .execute(() => {
-                        this.renderer.render(this.scene, this.camera);
                         this.update_crash();
+                        this.renderer.render(this.scene, this.camera);
                       })
                     .untilGameStateBecomes("crashed")
                       .then(() => {
@@ -374,6 +342,38 @@ class Game {
      * pause, resume. (用户交互)
      * end -> ended     
      */
+  }
+
+  newSceneColor () {
+    let colorArray = this.colors.sceneColors[parseInt(Math.random() * this.colors.sceneColors.length)];
+    colorArray = [
+      new THREE.Color(colorArray[0]),
+      colorArray[1],
+      new THREE.Color(colorArray[2])
+    ];
+    this.event.dispatch("newSceneColor", colorArray);
+    return colorArray
+  }
+  
+  setSceneColor (colorArray) {
+    const color_obj = colorArray[0];
+    const themeColor = colorArray[1];
+
+    const colorHexValue = color_obj.getHex();
+    const rgb = color_obj.getStyle();
+    const darkenRGBColor_10 = this.colors.RGB_Linear_Shade(-.1, rgb);
+    const darkenRGBColor_20 = this.colors.RGB_Linear_Shade(-.2, rgb);
+
+    this.lights.spotLight.color.setHex(colorHexValue);
+
+    this.lights.sphereLight.material.color.set(darkenRGBColor_10);
+    this.lights.sphereLight.material.emissive.set(darkenRGBColor_10);
+
+    if(!this.scene.fog)
+      this.scene.fog = new THREE.Fog(darkenRGBColor_20, this.tunnel.farEndOfTunnel - 4 * this.tunnel.radius, this.tunnel.farEndOfTunnel);
+    else this.scene.fog.color.set(darkenRGBColor_20);
+
+    document.documentElement.style.setProperty('--theme-color', themeColor);
   }
 
   /* scene and camera */
@@ -639,7 +639,6 @@ class Game {
           length = 1 / Math.tan(angle) * this.tunnel.radius;
           
     const spotLight = new THREE.SpotLight(color, .3, length, angle, 0, 2);
-    // https://threejs.org/docs/#api/en/lights/SpotLight
 
     spotLight.castShadow = false; //NOTE
 
@@ -954,7 +953,7 @@ class Game {
 
     this.event.addListener("crashed", () => console.log("%ccrashed", "color: red; background: aqua"))
     this.event.addListener("planeLoaded", (plane, light) => {
-      // this.addPointLightHelper(light, 100);
+      this.addPointLightHelper(light, 100);
       this.addBoxHelper(plane)
     }, {once: true});
 

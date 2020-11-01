@@ -506,8 +506,6 @@ class GlobalAudioPlayer {
       return protoF()
     }
     if(this._fade.isFading) {
-      console.log(arguments)
-      console.log(this._fade.isFading, this._fade._hasSchedule)
       if("_hasSchedule" in this._fade) {
         const prDelay = this._fade._hasSchedule;
         await new Promise(resolve => {
