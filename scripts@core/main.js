@@ -828,7 +828,7 @@ class Game {
       this.addBoxHelper(Object.values(this.objects))
     if(this.lights.spotLight)
       this.addSpotLightHelper(this.lights.spotLight);
-
+    this.obstacles.gap = 1000;
     this.event.addListener("obstacleRemoved", () => console.log("obstacleRemoved", Date.now()))
     this.event.addListener("obstacleAdded", () => console.log("obstacleAdded", Date.now()))
 
