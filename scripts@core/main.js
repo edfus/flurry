@@ -95,7 +95,8 @@ class Game {
     let colorArray = this.colors.sceneColors[parseInt(Math.random() * this.colors.sceneColors.length)];
     colorArray = [
       new THREE.Color(colorArray[0]),
-      colorArray[1]
+      colorArray[1],
+      new THREE.Color(colorArray[2])
     ];
     this.event.dispatch("newSceneColor", colorArray);
     return colorArray
@@ -106,7 +107,7 @@ class Game {
     const themeColor = colorArray[1]
 
     const colorHexValue = color_obj.getHex();
-    const rgb = color_obj.getStyle()
+    const rgb = color_obj.getStyle();
     const darkenRGBColor_10 = this.colors.RGB_Linear_Shade(-.1, rgb);
     const darkenRGBColor_20 = this.colors.RGB_Linear_Shade(-.2, rgb);
 
@@ -128,7 +129,7 @@ class Game {
     this.event.dispatch("idle");
     const colorArray = this.newSceneColor();
     this.setSceneColor(colorArray);
-    const color = colorArray[0];
+    const color = colorArray[2];
     const hsl = this.colors.complementaryOf(color).getHSL({});
     this._idle = {}
     
