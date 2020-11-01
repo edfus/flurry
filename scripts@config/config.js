@@ -66,7 +66,7 @@
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Optional_chaining
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_Coalescing_Operator
     // fallback: window.config && config.loading_timeOut ? config.loading_timeOut : 400
-  };
+  },
 
   // export default {
   window.config = {
