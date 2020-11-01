@@ -429,12 +429,8 @@ class Game {
   _initObstacles () {
     const amountInPool = 2
     this.obstacles = {
-      start_z: 8000,
-      end_z: -1000,
-      detect_z: {
-        max: 500,
-        min: -150
-      }, 
+      start_z: 4000,
+      end_z: -700,
       gap: 10 * 1000,
       pool: new Array(amountInPool),
       running: new Set() // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set
@@ -442,16 +438,16 @@ class Game {
       
     Obstacle.setOptions({
       radius: 100,
-      color: 0x111111,
-      shininess: 30,
+      color: 0x808a87,
+      shininess: 0,
       specular: 0xffffff,
       xyDistance: 80,
       zDistance: 5000,
       spacing: 2000,
       amplitude: 180, // peak
-      xySpeed: 1,
-      zSpeed: 7,
-      rev: 0.004, // 转速
+      xySpeed: 0.8,
+      zSpeed: 6,
+      rev: 0.006, // 转速
       randomAngle: () => Math.random() * 7,
       randomI: () => Math.floor(Math.random() * 5)
     })

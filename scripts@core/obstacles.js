@@ -42,7 +42,7 @@ class Obstacle {
         break;
       case 4:
         this.mesh = this.mesh = new THREE.Mesh(
-            new THREE.IcosahedronBufferGeometry(options.radius, 2), 
+            new THREE.IcosahedronBufferGeometry(options.radius, 3), 
             material
         );
         break;
