@@ -159,7 +159,7 @@ class RenderLoop {
   }
 
   static wheneverGame (stateName) {
-    this._game.event.addListener(stateName, () => this._execThen());
+    this._game.event.addListener(stateName, () => this._then.forEach(f => f()));
     return this;
   }
 
