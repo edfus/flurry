@@ -369,10 +369,10 @@ class UserInteraction {
       this[index].y = this.updateX(pageY)
     },
     updateX: x => {
-      return -1 + x / this.half_W;
+      return 1 - x / this.half_W;
     },
     updateY: y => {
-      return 1 - y / this.half_H;
+      return -1 + y / this.half_H;
     },
     update (ptr, x, y) {
       ptr.x = this.updateX(x)
@@ -584,29 +584,29 @@ class UserInteraction {
       }
     })(this),
     ArrowUp (event) {
-      this._pos0.y -= this.distance;
-      this._pos1.y -= this.distance;
+      this._pos0.y += this.distance;
+      this._pos1.y += this.distance;
       this.pos0.y = this.normalizeY(this._pos0.y);
       this.pos1.y = this.normalizeY(this._pos1.y);
       this.update();
     },
     ArrowDown (event) {
-      this._pos0.y += this.distance;
-      this._pos1.y += this.distance;
+      this._pos0.y -= this.distance;
+      this._pos1.y -= this.distance;
       this.pos0.y = this.normalizeY(this._pos0.y);
       this.pos1.y = this.normalizeY(this._pos1.y); 
       this.update();
     },
     ArrowLeft (event) {
-      this._pos0.x += this.distance;
-      this._pos1.x += this.distance;
+      this._pos0.x -= this.distance;
+      this._pos1.x -= this.distance;
       this.pos0.x = this.normalizeX(this._pos0.x);
       this.pos1.x = this.normalizeX(this._pos1.x);  
       this.update();
     },
     ArrowRight (event) {
-      this._pos0.x -= this.distance;
-      this._pos1.x -= this.distance;
+      this._pos0.x += this.distance;
+      this._pos1.x += this.distance;
       this.pos0.x = this.normalizeX(this._pos0.x);
       this.pos1.x = this.normalizeX(this._pos1.x);
       this.update();
