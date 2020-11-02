@@ -435,7 +435,7 @@ class Game {
     const amountInPool = 2
     this.obstacles = {
       start_z: 4000,
-      end_z: -500,
+      end_z: -600,
       detect_z: {
         max: 300,
         min: -150
@@ -620,12 +620,14 @@ class Game {
 
         this.ui.target.setOrigin(initialPosition);
 
+        const delta = .1
         this.event.addListener("update_main", () => {
-          // console.log(this.ui.target.average.x);
-          // console.log(this.ui.target.average.y);
-          group.position.y += (this.ui.target.average.y - group.position.y) * .1;
-          group.position.x += (this.ui.target.average.x - group.position.x) * .1;
-          group.rotation.x = (this.ui.target.average.y - group.position.y) * .01;
+          const minusY = (this.ui.target.average.y - group.position.y) * delta
+          const minusX = (this.ui.target.average.x - group.position.x) * delta
+          group.position.y += minusY;
+          group.position.x += minusX;
+          group.rotation.x = (group.rotation.x -minusY) * .05;
+          group.rotation.z = (group.rotation.z -minusX) * .08;
         })
 
         this.event.dispatch("planeLoaded", plane, pointlight);

@@ -401,9 +401,9 @@ class UserInteraction {
       if(this.#frozen)
       return this.target;
       this.target.raw[0].x = this.target.normalize(this.fingersPos[0].x, -1, 1, -150, 150);
-      this.target.raw[0].y = this.target.normalize(this.fingersPos[0].y, -.75, .75, -150, 150);
+      this.target.raw[0].y = this.target.normalize(this.fingersPos[0].y, -1, 1, -150, 200);
       this.target.raw[1].x = this.target.normalize(this.fingersPos[1].x, -1, 1, -150, 150);
-      this.target.raw[1].y = this.target.normalize(this.fingersPos[1].y, -.75, .75, -150, 150);
+      this.target.raw[1].y = this.target.normalize(this.fingersPos[1].y, -1, 1, -150, 200);
       this.target.sum.x = this.target.raw[0].x + this.target.raw[1].x;
       this.target.sum.y = this.target.raw[0].y + this.target.raw[1].y;
       this.target.average.x = this.target.sum.x / 2;
@@ -569,10 +569,10 @@ class UserInteraction {
     },
     init () {
       const ui = this._pos0.ui;
-      this._pos0._x = ui.half_W
-      this._pos1._x = ui.half_W
-      this._pos0._y = ui.half_H
-      this._pos1._y = ui.half_H
+      this._pos0._x = ui.half_W; //TODO: calculate origin
+      this._pos1._x = ui.half_W;
+      this._pos0._y = ui.half_H;
+      this._pos1._y = ui.half_H;
     },
     update: this.target.update,
     normalizeX: this.fingersPos.updateX,
@@ -584,15 +584,15 @@ class UserInteraction {
       }
     })(this),
     ArrowUp (event) {
-      this._pos0.y += this.distance;
-      this._pos1.y += this.distance;
+      this._pos0.y -= this.distance;
+      this._pos1.y -= this.distance;
       this.pos0.y = this.normalizeY(this._pos0.y);
       this.pos1.y = this.normalizeY(this._pos1.y);
       this.update();
     },
     ArrowDown (event) {
-      this._pos0.y -= this.distance;
-      this._pos1.y -= this.distance;
+      this._pos0.y += this.distance;
+      this._pos1.y += this.distance;
       this.pos0.y = this.normalizeY(this._pos0.y);
       this.pos1.y = this.normalizeY(this._pos1.y); 
       this.update();
