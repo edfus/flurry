@@ -306,6 +306,10 @@ class UserInteraction {
       this._addListeners("mouse", ['move', 'leave'])
       if(!this.codeHandler.hasOwnProperty("mapAdded")){
         this.codeHandler.addMapping(this.codeMap);
+        this.codeHandler.init();
+        this.event.addListener("resize", () => {
+          this.codeHandler.init();
+        })
       }
       this._addListeners("key", ['down'])
     }
@@ -534,10 +538,10 @@ class UserInteraction {
         value < 0 
         ? (value = 0)
         : value > this.ui.HEIGHT && (value = this.ui.HEIGHT)
-        this._x = value;
+        this._y = value;
       },
       get y() {
-        return this._x;
+        return this._y;
       }
     },
     _pos1: {
@@ -557,11 +561,18 @@ class UserInteraction {
         value < 0 
         ? (value = 0)
         : value > this.ui.HEIGHT && (value = this.ui.HEIGHT)
-        this._x = value;
+        this._y = value;
       },
       get y() {
-        return this._x;
+        return this._y;
       }
+    },
+    init () {
+      const ui = this._pos0.ui;
+      this._pos0._x = ui.half_W
+      this._pos1._x = ui.half_W
+      this._pos0._y = ui.half_H
+      this._pos1._y = ui.half_H
     },
     update: this.target.update,
     normalizeX: this.fingersPos.updateX,
@@ -587,15 +598,15 @@ class UserInteraction {
       this.update();
     },
     ArrowLeft (event) {
-      this._pos0.x -= this.distance;
-      this._pos1.x -= this.distance;
+      this._pos0.x += this.distance;
+      this._pos1.x += this.distance;
       this.pos0.x = this.normalizeX(this._pos0.x);
       this.pos1.x = this.normalizeX(this._pos1.x);  
       this.update();
     },
     ArrowRight (event) {
-      this._pos0.x += this.distance;
-      this._pos1.x += this.distance;
+      this._pos0.x -= this.distance;
+      this._pos1.x -= this.distance;
       this.pos0.x = this.normalizeX(this._pos0.x);
       this.pos1.x = this.normalizeX(this._pos1.x);
       this.update();
