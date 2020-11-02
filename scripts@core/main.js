@@ -742,6 +742,15 @@ class Game {
     ["update_startAnim", "update_main"].forEach(name => {
       this.event.addListener(name, rotation_fast);
     });
+
+    let crashedSpeed = this.deg(20);
+    this.event.addListener("start", () => {
+      crashedSpeed = this.deg(20);
+    });
+    this.event.addListener("update_crash", () => {
+      propeller.rotation.z -= crashedSpeed;
+      crashedSpeed *= .95
+    });
  
     propeller.position.copy(position);
     propeller.name = "plane_propeller";
