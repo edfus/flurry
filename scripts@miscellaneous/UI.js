@@ -346,6 +346,7 @@ class UserInteraction {
   }
 
   fingersPos = {
+    ui: this,
     0: {
       x: 0, y: 0,
     },
@@ -353,7 +354,8 @@ class UserInteraction {
       x: 0, y: 0
     },
     clear () {
-      this[0].x = this[0].y = this[1].x = this[1].y = 0;
+      this[0].y = this[1].y = (this[0].y + this[1].y) / 2;
+      this.ui.target.update();
       this._identifierMap = {};
     },
     _identifierMap: {},
@@ -399,7 +401,7 @@ class UserInteraction {
     },
     update: () => {
       if(this.#frozen)
-      return this.target;
+      return this.target; //TODO 把position_min, position_max改为与屏幕宽高相关
       this.target.raw[0].x = this.target.normalize(this.fingersPos[0].x, -1, 1, -150, 150);
       this.target.raw[0].y = this.target.normalize(this.fingersPos[0].y, -1, 1, -150, 200);
       this.target.raw[1].x = this.target.normalize(this.fingersPos[1].x, -1, 1, -150, 150);

@@ -188,10 +188,6 @@ class Game {
     Dialog.newError("crashed!", 3000)
     setTimeout(() => {
       this.event.removeListener("update_crash", func)
-      this.plane.position.copy(this.plane.initialPosition)
-      this.plane.rotation.x = this.plane.initialRotation.x;
-      this.plane.rotation.y = this.plane.initialRotation.y;
-      this.plane.rotation.z = this.plane.initialRotation.z;
       this.state.now = "crashed"
       this.event.dispatch("crashed");
     }, 3000) //TODO: crash animaiton
@@ -203,6 +199,10 @@ class Game {
     this.event.dispatch("end");
     this.state.started = false;
     setTimeout(() => {
+      this.plane.position.copy(this.plane.initialPosition);
+      this.plane.rotation.x = this.plane.initialRotation.x;
+      this.plane.rotation.y = this.plane.initialRotation.y;
+      this.plane.rotation.z = this.plane.initialRotation.z;
       this.obstacles.running.forEach(obstacle => this.dispose(obstacle.mesh));
       this.obstacles.running.clear();
       this.state.now = "ended";
@@ -607,7 +607,7 @@ class Game {
         const planeList = [plane]
         this.event.addListener("update_main", () => {
           if(this.collidableMeshList.length) {
-            if(++count === 6) {
+            if(++count === 5) {
               count = 0;
               if(this.collidableMeshList.some(mesh => this.isCollided_buffer_recursive(mesh, planeList))) {
                 for(const e of this.collidableMeshList) {
@@ -646,15 +646,34 @@ class Game {
         group.rotation.z = group.initialRotation.z;
         this.ui.target.setOrigin(group.initialPosition);
 
-        const delta = .1;
-        this.event.addListener("update_main", () => {
-          const minusY = (this.ui.target.average.y - group.position.y) * delta
-          const minusX = (this.ui.target.average.x - group.position.x) * delta
-          group.position.y += minusY;
-          group.position.x += minusX;
-          group.rotation.x = (group.rotation.x -minusY) * .05;
-          group.rotation.z = (group.rotation.z -minusX) * .08;
-        })
+        
+        if(this.ui.isTouchDevice) {
+          const delta = .06;
+          this.event.addListener("update_main", () => {
+            const minusY = (this.ui.target.average.y - group.position.y) * delta;
+            const minusX = (this.ui.target.average.x - group.position.x) * delta;     
+            const abs_x = Math.abs(this.ui.target.raw[0].x - this.ui.target.raw[1].x);
+            if(abs_x > 1e-4) {
+              let dif_y = this.ui.target.raw[0].y - this.ui.target.raw[1].y;
+              if(this.ui.target.raw[0].x < this.ui.target.raw[1].x)
+                dif_y = -dif_y
+              group.rotation.z += (Math.atan(dif_y / abs_x) - group.rotation.z) * delta;
+            }
+            group.position.y += minusY;
+            group.position.x += minusX;
+            group.rotation.x = (group.rotation.x - minusY) * .05;
+          })
+        } else {
+          const delta = .1;
+          this.event.addListener("update_main", () => {
+            const minusY = (this.ui.target.average.y - group.position.y) * delta
+            const minusX = (this.ui.target.average.x - group.position.x) * delta
+            group.position.y += minusY;
+            group.position.x += minusX;
+            group.rotation.x = (group.rotation.x - minusY) * .05;
+            group.rotation.z = (group.rotation.z - minusX) * .08;
+          })
+        }
 
         this.event.dispatch("planeLoaded", plane, pointlight);
       }
