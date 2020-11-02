@@ -56,18 +56,17 @@ class Drawer {
     return this._render();
 	}
 	
-  headLight (R = 255, G = 255, B = 255) {
+  headLight () {
 		this.setRadius(256)
     const r = this.radius / 2;
     this.context.beginPath();
-    this.context.arc(this.radius, this.radius, r * .8, 0, 2 * Math.PI);
-    this.context.fillStyle = `rgba(${R}, ${G}, ${B}, .4)`;
-    this.context.fill();
-    const gradient = this.context.createRadialGradient(this.radius, this.radius, r * .8, this.radius, this.radius, r);
-      gradient.addColorStop(0, `rgba(${R}, ${G}, ${B}, .1)`);
-      gradient.addColorStop(1, `rgba(${R}, ${G}, ${B}, 0)`);
+		this.context.arc(this.radius, this.radius, r * .8, 0, 2 * Math.PI);
+		this.context.closePath();
+		const gradient = this.context.createRadialGradient(this.radius, this.radius, r * .6, this.radius, this.radius, r);
+      gradient.addColorStop(0, `rgba(255, 255, 255, .3)`);
+      gradient.addColorStop(1, `rgba(255, 255, 255, .2)`);
     this.context.fillStyle = gradient;
-    this.context.fillRect(0, 0, this.width, this.height);
+    this.context.fill();
     this._blur(40, 3);
     return this._render();
   }
@@ -90,8 +89,7 @@ class Drawer {
     boxBlurCanvasRGBA( this.canvas, 0, 0, this.width, this.height, radius, iterations );
   }
   _glow () {
-    this.context.shadowBlur = 20;
-    this.context.shadowColor = "white";
+
     // if they are drawn on the screen with canvas drawing functions, then how about redrawing the circle 25 times, each circle getting one pixel thicker in width?
   }
 }

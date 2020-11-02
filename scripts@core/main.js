@@ -164,16 +164,34 @@ class Game {
     this.time.lastStamp = Date.now();
   }
 
-  planeCrash () {
+  planeCrash (collidedObj) {
     this.state.canBePaused = false;
     this.state.now = "crash"
     this.event.dispatch("crash");
     this.collidableMeshList = [];
     this.time.total += Date.now() - this.time.lastStamp;
     this.time.lastStamp = Date.now();
+
+    // let rotateVector = new THREE.Vector3()
+    let delta = .01
+    let rotationdelta = .0001
+    const func = () => {
+      collidedObj.translateOnAxis(collidedObj._collisionResult.directionVector, -delta);
+      this.plane.translateOnAxis(collidedObj._collisionResult.directionVector, delta);
+
+      collidedObj.rotateOnWorldAxis(collidedObj._collisionResult.directionVector, -rotationdelta);
+      this.plane.rotateOnWorldAxis(collidedObj._collisionResult.directionVector, rotationdelta);
+      delta *= .95;
+      rotationdelta *= .95;
+    }
+    this.event.addListener("update_crash", func)
     Dialog.newError("crashed!", 3000)
     setTimeout(() => {
-      this.models.plane.position.copy(this.models.plane.initialPosition)
+      this.event.removeListener("update_crash", func)
+      this.plane.position.copy(this.plane.initialPosition)
+      this.plane.rotation.x = this.plane.initialRotation.x;
+      this.plane.rotation.y = this.plane.initialRotation.y;
+      this.plane.rotation.z = this.plane.initialRotation.z;
       this.state.now = "crashed"
       this.event.dispatch("crashed");
     }, 3000) //TODO: crash animaiton
@@ -352,6 +370,7 @@ class Game {
       colorArray[1],
       new THREE.Color(colorArray[2])
     ];
+    this.state.scene_color = colorArray;
     this.event.dispatch("newSceneColor", colorArray);
     return colorArray
   }
@@ -579,8 +598,8 @@ class Game {
             child.material = material
           }
         });
-        plane.scale.multiplyScalar(0.05);
         plane.rotation.x = this.deg(12);
+        plane.scale.multiplyScalar(0.05);
         plane.name = "plane_obj";
         plane.isPlane = true;
         
@@ -590,8 +609,14 @@ class Game {
           if(this.collidableMeshList.length) {
             if(++count === 6) {
               count = 0;
-              if(this.collidableMeshList.some(mesh => this.isCollided_buffer_recursive(mesh, planeList)))
-                this.planeCrash();
+              if(this.collidableMeshList.some(mesh => this.isCollided_buffer_recursive(mesh, planeList))) {
+                for(const e of this.collidableMeshList) {
+                  if(e._collisionResult) {
+                    this.planeCrash(e);
+                    return ;
+                  }
+                }
+              }
               else console.log("detecting. not crashed")
             }
           }
@@ -608,12 +633,17 @@ class Game {
         group.add(plane);
         group.add(pointlight);
         group.add(this._createPropeller(0, position_propeller));
-        group.add(this._createHeadLight(this.colors.lightBlue, position_headLight, position_propeller));
+        group.add(this._createHeadLight(this.state.scene_color[0], position_headLight, position_propeller));
         group.name = "plane";
+        this.plane = group;
         this.models.plane = group;
 
         group.initialPosition = new THREE.Vector3(9, 39, 0);
+        group.initialRotation = new THREE.Vector3(0, 0, 0);
         group.position.copy(group.initialPosition);
+        group.rotation.x = group.initialRotation.x;
+        group.rotation.y = group.initialRotation.y;
+        group.rotation.z = group.initialRotation.z;
         this.ui.target.setOrigin(group.initialPosition);
 
         const delta = .1;
@@ -643,14 +673,12 @@ class Game {
     spotLight.position.copy(positionOfLight);
 
     const lensFlareGeo = new THREE.PlaneBufferGeometry(256, 256);
-    const lensFlareMaterial = new THREE.MeshLambertMaterial({ //TODO
+    const lensFlareMaterial = new THREE.MeshBasicMaterial({ //TODO
       map: this.getTexture.headLight(),
       transparent: true,
-      opacity: 1,
+      opacity: .8,
       side: THREE.DoubleSide,
-      color: 0xffffff,
-      emissive: 0xffffff,
-      emissiveIntensity: .6
+      color: color
     });
     const lensFlare = new THREE.Mesh(lensFlareGeo, lensFlareMaterial);
     lensFlare.position.copy(positionOfFog)
@@ -658,6 +686,11 @@ class Game {
     const group = new THREE.Group();
     group.add(spotLight);
     group.add(lensFlare);
+
+    this.event.addListener("newSceneColor", ([color_obj]) => {
+      spotLight.color = color_obj;
+      lensFlare.material.color = color_obj;
+    })
 
     group.name = "plane_headLight"
     return group
@@ -881,6 +914,8 @@ class Game {
     return waste
   }
 
+  _addCrash
+
   isCollided_buffer_recursive (obj3d, collidableMeshList) {
     const vertices = obj3d.geometry.attributes.position.array;
     const position = obj3d.position;
@@ -891,8 +926,14 @@ class Game {
   
       const ray = new THREE.Raycaster(position, directionVector.clone().normalize());
       const collisionResults = ray.intersectObjects(collidableMeshList, true);
-      if(collisionResults.length > 0 && collisionResults[0].distance < directionVector.length())
-          return true;
+      if(collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) {
+        obj3d._collisionResult = {
+          position: globalVertex,
+          directionVector,
+          // length: directionVector.length()
+        };
+        return true;
+      }
     }
     return false;
   }
