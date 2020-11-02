@@ -165,17 +165,18 @@ class Game {
   }
 
   planeCrash () {
-    console.log("crashed")
-    // this.state.canBePaused = false;
-    // this.state.now = "crash"
-    // this.event.dispatch("crash");
-    // this.time.total += Date.now() - this.time.lastStamp;
-    // this.time.lastStamp = Date.now();
-    // Dialog.newError("crashed!", 3000)
-    // setTimeout(() => {
-    //   this.state.now = "crashed"
-    //   this.event.dispatch("crashed");
-    // }, 3000) //TODO: crash animaiton
+    this.state.canBePaused = false;
+    this.state.now = "crash"
+    this.event.dispatch("crash");
+    this.collidableMeshList = [];
+    this.time.total += Date.now() - this.time.lastStamp;
+    this.time.lastStamp = Date.now();
+    Dialog.newError("crashed!", 3000)
+    setTimeout(() => {
+      this.models.plane.position.copy(this.models.plane.initialPosition)
+      this.state.now = "crashed"
+      this.event.dispatch("crashed");
+    }, 3000) //TODO: crash animaiton
   }
 
   end () {
@@ -584,11 +585,12 @@ class Game {
         plane.isPlane = true;
         
         let count = 0;
+        const planeList = [plane]
         this.event.addListener("update_main", () => {
           if(this.collidableMeshList.length) {
             if(++count === 6) {
               count = 0;
-              if(this.isCollided_buffer(plane, this.collidableMeshList))
+              if(this.collidableMeshList.some(mesh => this.isCollided_buffer_recursive(mesh, planeList)))
                 this.planeCrash();
               else console.log("detecting. not crashed")
             }
@@ -608,19 +610,13 @@ class Game {
         group.add(this._createPropeller(0, position_propeller));
         group.add(this._createHeadLight(this.colors.lightBlue, position_headLight, position_propeller));
         group.name = "plane";
-        const initialPosition = {
-          x: 9,
-          y: 39,
-          z: 0
-        }
-        
-        group.position.set(initialPosition.x, initialPosition.y, initialPosition.z);
-        
         this.models.plane = group;
 
-        this.ui.target.setOrigin(initialPosition);
+        group.initialPosition = new THREE.Vector3(9, 39, 0);
+        group.position.copy(group.initialPosition);
+        this.ui.target.setOrigin(group.initialPosition);
 
-        const delta = .1
+        const delta = .1;
         this.event.addListener("update_main", () => {
           const minusY = (this.ui.target.average.y - group.position.y) * delta
           const minusX = (this.ui.target.average.x - group.position.x) * delta
@@ -697,14 +693,23 @@ class Game {
     const propeller = new THREE.Mesh(geomPropeller, material);
     propeller.rotation.z = intialRotation;
 
-    const rotation = this.deg(65) //TODO 加快
-    const func = () => {
+    const rotation = this.deg(65)
+    const speedUp = this.deg(32) // 
+    const rotation_slow = () => {
       propeller.rotation.z -= rotation;
     }
-    ["update_idle", "update_main", "update_startAnim", "update_endAnim"].forEach(name => {
-      this.event.addListener(name, func);
-    })
+    const rotation_fast = () => {
+      propeller.rotation.z -= speedUp;
+    }
 
+    ["update_idle", "update_endAnim", "update_paused"].forEach(name => {
+      this.event.addListener(name, rotation_slow);
+    });
+
+    ["update_startAnim", "update_main"].forEach(name => {
+      this.event.addListener(name, rotation_fast);
+    });
+ 
     propeller.position.copy(position);
     propeller.name = "plane_propeller";
     return propeller
@@ -876,35 +881,17 @@ class Game {
     return waste
   }
 
-  isCollided (obj3d, collidableMeshList) {
-    const vertices = obj3d.geometry.vertices;
-    const position = obj3d.position;
-    for(let i = vertices.length - 1; i >= 0; i--) {
-      const localVertex = vertices[i].clone();
-      const globalVertex = localVertex.applyMatrix4(obj3d.matrix);
-      const directionVector = globalVertex.sub(position);
-  
-      const ray = new THREE.Raycaster(position, directionVector.clone().normalize());
-      const collisionResults = ray.intersectObjects(collidableMeshList);
-      if(collisionResults.length > 0 && collisionResults[0].distance < directionVector.length())
-          return true;
-    }
-    return false;
-  }
-
-  isCollided_buffer (obj3d, collidableMeshList) {
-    if(obj3d.isPlane)
-      return obj3d.children.some(child => this.isCollided_buffer(child, collidableMeshList))
+  isCollided_buffer_recursive (obj3d, collidableMeshList) {
     const vertices = obj3d.geometry.attributes.position.array;
     const position = obj3d.position;
     for(let i = 0; i < vertices.length; i += 3) {
       const localVertex = new THREE.Vector3(vertices[i], vertices[i + 1], vertices[i + 2])
-      // const globalVertex = localVertex.applyMatrix4(obj3d.matrix);
-      // const directionVector = globalVertex.sub(position);
+      const globalVertex = localVertex.applyMatrix4(obj3d.matrix);
+      const directionVector = globalVertex.sub(position);
   
-      const ray = new THREE.Raycaster(position, localVertex);
-      const collisionResults = ray.intersectObjects(collidableMeshList);
-      if(collisionResults.length > 0)
+      const ray = new THREE.Raycaster(position, directionVector.clone().normalize());
+      const collisionResults = ray.intersectObjects(collidableMeshList, true);
+      if(collisionResults.length > 0 && collisionResults[0].distance < directionVector.length())
           return true;
     }
     return false;
