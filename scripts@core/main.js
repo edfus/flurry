@@ -648,7 +648,9 @@ class Game {
         group.rotation.z = group.initialRotation.z;
         this.ui.target.setOrigin(group.initialPosition);
 
-        
+        const halfLengthOfWing = 163 / 2;
+        const zOfWing = 55;
+        const max = this.tunnel.radius * this.tunnel.radius;
         if(this.ui.isTouchDevice) {
           const delta = .06;
           this.event.addListener("update_main", () => {
@@ -664,6 +666,26 @@ class Game {
             group.position.y += minusY;
             group.position.x += minusX;
             group.rotation.x = (group.rotation.x - minusY) * .05;
+            //TODO
+            // const x_offset = halfLengthOfWing * Math.sin(group.rotation.x);
+            // const y_offset = halfLengthOfWing * Math.cos(group.rotation.x);
+            // const x0 = group.position.x + x_offset;
+            // const y0 = group.position.y + y_offset; // 正负
+            // const x1 = group.position.x - x_offset;
+            // const y1 = group.position.y - y_offset; // 正负
+            // if(x0 * x0 + y0 * y0 >= max) {
+            //   const position = new THREE.Vector3(x0, yo, zOfWing);
+            //   this.planeCrash({
+            //     position: position,
+            //     directionVector: position.normalize()
+            //   })
+            // } else if (x1 * x1 + y1 * y1 >= max) {
+            //   const position = new THREE.Vector3(x1, y1, zOfWing);
+            //   this.planeCrash({
+            //     position: position,
+            //     directionVector: position.normalize()
+            //   })
+            // }
           })
         } else {
           const delta = .1;
