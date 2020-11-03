@@ -343,6 +343,8 @@ class Game {
                           this.ui.titleMenuButtons.show().then(() => {
                             this.ui.startButton.show();
                           });
+                          this.ui.fingersPos.reset();
+                          this.ui.codeHandler.reset();
                           this.audio.scheduleSong("intro", true, 8)
                           RenderLoop.goto("idle")
                           console.info('RenderLoop: game ended');
@@ -657,7 +659,7 @@ class Game {
               let dif_y = this.ui.target.raw[0].y - this.ui.target.raw[1].y;
               if(this.ui.target.raw[0].x < this.ui.target.raw[1].x)
                 dif_y = -dif_y
-              group.rotation.z += (Math.atan(dif_y / abs_x) - group.rotation.z) * delta;
+              group.rotation.z += (Math.atan(dif_y / abs_x) - group.rotation.z) * .1;
             }
             group.position.y += minusY;
             group.position.x += minusX;

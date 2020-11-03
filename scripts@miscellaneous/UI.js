@@ -148,12 +148,14 @@ class UserInteraction {
     this.WIDTH = window.innerWidth;
     this.half_H = this.HEIGHT / 2;
     this.half_W = this.WIDTH / 2;
+    this.target.init();
 
     this.event.addListener("resize", () => {
       this.HEIGHT = window.innerHeight;
       this.WIDTH = window.innerWidth;
       this.half_H = this.HEIGHT / 2;
       this.half_W = this.WIDTH / 2;
+      this.target.init();
     })
 
     if(this.isTouchDevice) {
@@ -353,6 +355,9 @@ class UserInteraction {
     1: {
       x: 0, y: 0
     },
+    reset () {
+      this[0].x = this[1].x = this[0].y = this[1].y = 0;
+    },
     clear () {
       this[0].y = this[1].y = (this[0].y + this[1].y) / 2;
       this.ui.target.update();
@@ -383,6 +388,7 @@ class UserInteraction {
   }
 
   target = {
+    ui: this,
     raw: [
       {x: 0, y: 0},
       {x: 0, y: 0}
@@ -399,17 +405,17 @@ class UserInteraction {
       x: 0,
       y: 0
     },
-    update: () => {
-      if(this.#frozen)
-      return this.target; //TODO 把position_min, position_max改为与屏幕宽高相关
-      this.target.raw[0].x = this.target.normalize(this.fingersPos[0].x, -1, 1, -150, 150);
-      this.target.raw[0].y = this.target.normalize(this.fingersPos[0].y, -1, 1, -150, 200);
-      this.target.raw[1].x = this.target.normalize(this.fingersPos[1].x, -1, 1, -150, 150);
-      this.target.raw[1].y = this.target.normalize(this.fingersPos[1].y, -1, 1, -150, 200);
-      this.target.sum.x = this.target.raw[0].x + this.target.raw[1].x;
-      this.target.sum.y = this.target.raw[0].y + this.target.raw[1].y;
-      this.target.average.x = this.target.sum.x / 2;
-      this.target.average.y = this.target.sum.y / 2;
+    update () {
+      if(this.ui.#frozen)
+       return ; //TODO 把position_min, position_max改为与屏幕宽高相关
+      this.raw[0].x = this.normalize(this.ui.fingersPos[0].x, -1, 1, this.X_MIN, this.X_MAX);
+      this.raw[0].y = this.normalize(this.ui.fingersPos[0].y, -1, 1, this.Y_MIN, this.Y_MAX);
+      this.raw[1].x = this.normalize(this.ui.fingersPos[1].x, -1, 1, this.X_MIN, this.X_MAX);
+      this.raw[1].y = this.normalize(this.ui.fingersPos[1].y, -1, 1, this.Y_MIN, this.Y_MAX);
+      this.sum.x = this.raw[0].x + this.raw[1].x;
+      this.sum.y = this.raw[0].y + this.raw[1].y;
+      this.average.x = this.sum.x / 2;
+      this.average.y = this.sum.y / 2;
     },
     normalize (mouseRP, mouseRP_min, mouseRP_max, position_min, position_max) {
       let mouseRPinBox = Math.max(Math.min(mouseRP, mouseRP_max), mouseRP_min);
@@ -428,6 +434,19 @@ class UserInteraction {
       this.average.y = this.raw[0].y = this.raw[1].y = this.raw[0].y = this.raw[1].y = this.origin.y;
       this.sum.x = this.average.x * 2;
       this.sum.y = this.average.y * 2;
+    },
+    init () {
+      if(Math.min(this.ui.HEIGHT, this.ui.WIDTH) < 450) {
+        this.Y_MIN = -this.ui.HEIGHT
+        this.Y_MAX = this.ui.HEIGHT / 2
+        this.X_MAX = this.ui.WIDTH / 2
+        this.X_MIN = -this.ui.WIDTH / 2
+      } else {
+        this.Y_MIN = -this.ui.HEIGHT / 5
+        this.Y_MAX = this.ui.HEIGHT / 4
+        this.X_MAX = this.ui.WIDTH / 6
+        this.X_MIN = -this.ui.WIDTH / 6
+      }
     }
   }
   
@@ -569,6 +588,9 @@ class UserInteraction {
         return this._y;
       }
     },
+    reset () {
+      this.init();
+    },
     init () {
       const ui = this._pos0.ui;
       this._pos0._x = ui.half_W; //TODO: calculate origin
@@ -576,7 +598,7 @@ class UserInteraction {
       this._pos0._y = ui.half_H;
       this._pos1._y = ui.half_H;
     },
-    update: this.target.update,
+    update: this.target.update.bind(this.target),
     normalizeX: this.fingersPos.updateX,
     normalizeY: this.fingersPos.updateY,
     distance: 20,
