@@ -52,9 +52,6 @@ class Event {
 
   addListener (eventName, callback, options = {}) {
     const callbackMaps = weakMap.get(this).maps;
-    if(callbackMaps === undefined) {
-      console.log(eventName, ...params, weakMap)
-    }
     eventName in callbackMaps ? void 0 : callbackMaps[eventName] = new Map;
 
     options = Options.from(options);

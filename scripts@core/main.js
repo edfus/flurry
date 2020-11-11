@@ -800,10 +800,6 @@ class Game {
     return propeller
   }
 
-  deg(num) {
-    return THREE.MathUtils.degToRad(num)
-  }
-
   _addMeteor () {
 
   }
@@ -966,7 +962,9 @@ class Game {
     return waste
   }
 
-  _addCrash
+  _newCrashEffect () {
+
+  }
 
   isCollided_buffer_recursive (obj3d, collidableMeshList) {
     const vertices = obj3d.geometry.attributes.position.array;
@@ -1014,6 +1012,10 @@ class Game {
       else throw "dispose: has obj._update_function, but !obj._update_period";
     }
   }
+
+  deg(num) {
+    return THREE.MathUtils.degToRad(num)
+  }
   
   /* debugger */
   _debug () {
@@ -1057,7 +1059,7 @@ class Game {
     })
   }
 
-  /* load obj files using main thread */
+  /* load glTF files using main thread */
   async _loadglTFs (path_callback_Array) {
     if(!this._load.glTF) {
       const temp = new (await import('../scripts@loader/GLTFLoader.js')).GLTFLoader;
