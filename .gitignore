@@ -1,0 +1,8 @@
+*.code-workspace
+*.psd
+.vscode
+test
+*.lnk
+*.c4d
+package-lock.json
+node_modules
