@@ -1,0 +1,33 @@
+{
+  "name": "flurry",
+  "version": "2.0.1",
+  "description": "---",
+  "main": "scripts@core/main.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {},
+  "author": "edfus",
+  "license": "ISC",
+  "repository": {
+    "url": "https://github.com/edfus/flurry",
+    "type": "git"
+  },
+  "type": "module",
+  "optionalDependencies": {
+    "chokidar": "^3.4.0",
+    "node-notifier": "^5.4.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.10",
+    "@babel/preset-env": "^7.12.11",
+    "clean-css": "^4.2.3",
+    "rollup": "^2.35.1",
+    "rollup-plugin-babel": "^4.4.0",
+    "rw-stream": "^0.3.3",
+    "stylus": "^0.54.8",
+    "terser": "^5.5.1",
+    "three": "^0.124.0"
+  },
+  "dependencies": {}
+}
