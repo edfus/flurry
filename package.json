@@ -1,6 +1,6 @@
 {
   "name": "flurry",
-  "version": "2.0.1",
+  "version": "1.1.2",
   "description": "A Three.js based web game imitating mobile game 'Loner'.🎮",
   "main": "scripts@core/main.js",
   "directories": {
@@ -8,10 +8,10 @@
     "dist": "dist"
   },
   "scripts": {
-    "clean": "rm -rf $npm_package_directories_dist",
-    "watch": "node $npm_package_directories_tools/watch.js",
-    "pack": "node $npm_package_directories_tools/pack.js",
-    "build": "node $npm_package_directories_tools/pack.js --build-only"
+    "clean": "rm -rf %npm_package_directories_dist%",
+    "watch": "node %npm_package_directories_tools%/watch.js",
+    "pack": "node %npm_package_directories_tools%/pack.js",
+    "build": "node %npm_package_directories_tools%/pack.js --build-only"
   },
   "author": "edfus",
   "license": "ISC",
