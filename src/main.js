@@ -1041,7 +1041,7 @@ class Game {
     }, {once: true});
 
     /* dynamic import */
-    import("../lib/OrbitControls.js").then(({OrbitControls}) => {
+    import("../lib/orbit-controls").then(({OrbitControls}) => {
       this.event.addListener("started", () => {
         this._controls = new OrbitControls(this.camera, this.renderer.domElement);
         this._controls.enableKeys = false;
@@ -1061,43 +1061,11 @@ class Game {
   /* load glTF files using main thread */
   async _loadglTFs (path_callback_Array) {
     if(!this._load.glTF) {
-      const temp = new (await import('../scripts@loader/GLTFLoader.js')).GLTFLoader;
+      const temp = new (await import("../lib/gltf-loader")).GLTFLoader;
       this._load.glTF = temp.load.bind(temp);
     }
     return Promise.allSettled(
       path_callback_Array.map(([path, callback]) => new Promise(resolve => this._load.glTF(path, result => resolve(callback(result))))))
-       .then(results => {
-        for (const result of results) {
-          if (result.status !== "fulfilled")
-            return Promise.reject(result.reason);
-        }
-      })
-  }
-
-  /* load obj files using main thread */
-  async _loadObjs (path_callback_Array) {
-    if(!this._load.obj) {
-      const temp = new (await import('../scripts@loader/OBJLoader2.js')).OBJLoader2;
-      this._load.obj = temp.load.bind(temp);
-    }
-    return Promise.allSettled(
-      path_callback_Array.map(([path, callback]) => new Promise(resolve => this._load.obj(path, result => resolve(callback(result))))))
-       .then(results => {
-        for (const result of results) {
-          if (result.status !== "fulfilled")
-            return Promise.reject(result.reason);
-        }
-      })
-  }
-
-  /* load obj files by worker */
-  async _loadObjsByWorker (path_callback_Array) {
-    if(!this._load.obj_worker) {
-      const temp = new (await import('../scripts@loader/OBJLoader2Parallel.js')).OBJLoader2Parallel;
-      this._load.obj_worker = temp.load.bind(temp);
-    }
-    return Promise.allSettled(
-      path_callback_Array.map(([path, callback]) => new Promise(resolve => this._load.obj_worker(path, result => resolve(callback(result))))))
        .then(results => {
         for (const result of results) {
           if (result.status !== "fulfilled")
