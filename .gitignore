@@ -1,6 +1,11 @@
+# folders
+node_modules
+.vscode
+
+# files
+package-lock.json
 *.code-workspace
 *.psd
-.vscode
-test
 *.lnk
 *.c4d
+
