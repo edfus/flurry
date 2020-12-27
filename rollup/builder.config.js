@@ -47,7 +47,7 @@ const config = [
     output: join(root_dir, "./"),
     config: {
       format: "iife",
-      fileName: "sw.min.js",
+      fileName: "sw.js",
       compact: true,
       moduleID: "sw"
     }

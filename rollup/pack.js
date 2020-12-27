@@ -27,13 +27,14 @@ const toReplace = "three",
                 toReplace,
                 replacer
             );
-        }
-
-        if(extractArg(/--build(?!-only)|-b/i)) {
+        } else {
             await resolveNodeDependencies(
                 replacer,
                 toReplace
             );
+        }
+
+        if(extractArg(/--build(?!-only)|-b/i)) {
             await buildAll();
         }
         

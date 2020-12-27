@@ -8,7 +8,7 @@
     "dist": "dist"
   },
   "scripts": {
-    "clean": "rm -rf %npm_package_directories_dist%",
+    "clean": "rm -rf %npm_package_directories_dist% sw.js",
     "watch": "node %npm_package_directories_tools%/watch.js",
     "pack": "node %npm_package_directories_tools%/pack.js",
     "build": "node %npm_package_directories_tools%/pack.js --build-only"

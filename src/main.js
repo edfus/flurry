@@ -1,15 +1,15 @@
 /* constructors */
 import * as THREE from "three";
-import { GLTFLoader } from "../lib/gltf-loader";
-import UserInteraction from "./modules/ui";
-import Event from "./utils/event-dispatcher";
-import RenderLoop from "./utils/render-loop";
-import AudioPlayer from "./audio/audio-worker";
-import Score from "./modules/score";
-import Drawer from "./modules/texture/draw-textures";
-import Obstacle from "./modules/obstacles";
+import { GLTFLoader } from "../lib/gltf-loader.js";
+import UserInteraction from "./modules/ui.js";
+import Event from "./utils/event-dispatcher.js";
+import RenderLoop from "./utils/render-loop.js";
+import AudioPlayer from "./audio/audio-worker.js";
+import Score from "./modules/score.js";
+import Drawer from "./modules/texture/draw-textures.js";
+import Obstacle from "./modules/obstacles.js";
 /* objects */
-import colors from "./config/colors";
+import colors from "./config/colors.js";
 
 /* class Game */
 class Game {
@@ -581,7 +581,7 @@ class Game {
   }
 
   modelsToLoad = [
-    ['/asset/obj/biplane0.glb', 
+    ['/asset/models/biplane.glb', 
       result => {
         const plane = result.scene.children[0];
         result.scenes = null;

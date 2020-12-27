@@ -1,4 +1,4 @@
-import { Event , CallbackHandler } from '../utils/event-dispatcher';
+import { Event , CallbackHandler } from "../utils/event-dispatcher.js";
 
 class ButtonHandler {
   constructor(keyCode, domElement) {
