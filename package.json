@@ -33,6 +33,7 @@
     "clean-css": "^4.2.3",
     "rollup": "^2.35.1",
     "rollup-plugin-babel": "^4.4.0",
+    "rollup-plugin-terser": "^7.0.2",
     "rw-stream": "^0.3.3",
     "stylus": "^0.54.8",
     "terser": "^5.5.1",

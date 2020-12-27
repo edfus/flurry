@@ -1,5 +1,6 @@
 /* constructors */
-import * as THREE from "three"; //TODO: replace * for tree shaking concern
+import * as THREE from "three";
+import { GLTFLoader } from "../lib/gltf-loader";
 import UserInteraction from "./modules/ui";
 import Event from "./utils/event-dispatcher";
 import RenderLoop from "./utils/render-loop";
@@ -47,7 +48,7 @@ class Game {
     this.scene.add.apply(this.scene, Object.values(this.lights));
  
     this.models = {};
-    this._loadglTFs(this.path_callback_Array).then(() => {
+    this._loadglTFs(this.modelsToLoad).then(() => {
       this.event.dispatch("modelsAllLoaded");
       this.scene.add.apply(this.scene, Object.values(this.models));
     });
@@ -579,8 +580,8 @@ class Game {
     // https://threejs.org/docs/#manual/en/introduction/How-to-use-post-processing
   }
 
-  path_callback_Array = [
-    ['/resource/obj/biplane0.glb', 
+  modelsToLoad = [
+    ['/asset/obj/biplane0.glb', 
       result => {
         const plane = result.scene.children[0];
         result.scenes = null;
@@ -928,7 +929,7 @@ class Game {
 
   _addSolidWaste () {
     // https://threejs.org/docs/#api/en/loaders/TextureLoader
-    const texture =this._load.texture.load("./resource/textures/smoke.png");
+    const texture =this._load.texture.load("/asset/textures/smoke.png");
     const wasteGeo = new THREE.PlaneBufferGeometry(40, 40);
     const wasteMaterial = new THREE.MeshLambertMaterial({
       map: texture,
@@ -1059,13 +1060,9 @@ class Game {
   }
 
   /* load glTF files using main thread */
-  async _loadglTFs (path_callback_Array) {
-    if(!this._load.glTF) {
-      const temp = new (await import("../lib/gltf-loader")).GLTFLoader;
-      this._load.glTF = temp.load.bind(temp);
-    }
+  async _loadglTFs (modelsToLoad) {
     return Promise.allSettled(
-      path_callback_Array.map(([path, callback]) => new Promise(resolve => this._load.glTF(path, result => resolve(callback(result))))))
+      modelsToLoad.map(([path, callback]) => new Promise(resolve => GLTFLoader(path, result => resolve(callback(result))))))
        .then(results => {
         for (const result of results) {
           if (result.status !== "fulfilled")

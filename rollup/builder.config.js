@@ -17,10 +17,25 @@ const config = [
     config: {
       chunks: true,
       format: "esm",
-      chunkFileNames: `[name].js`,
-      entryFileNames: `[name]@${version}.js`,
+      chunkFileNames: `[name].min.js`,
+      entryFileNames: `[name]@${version}.min.js`,
       compact: true,
-      preserveEntrySignatures: false
+      preserveEntrySignatures: false,
+      moduleID: "flurry"
+    }
+  },
+  {
+    match (fileName) {
+      return /(config\/config\.js)$/.test(fileName)
+    },
+    action: buildJS,
+    entry: join(root_dir, "./src/config/config.js"),
+    output: join(root_dir, "./dist"),
+    config: {
+      format: "iife",
+      fileName: "config.js",
+      compact: true,
+      moduleID: "config"
     }
   },
   {
@@ -33,7 +48,8 @@ const config = [
     config: {
       format: "iife",
       fileName: "sw.js",
-      compact: true
+      compact: true,
+      moduleID: "sw"
     }
   },
   {
