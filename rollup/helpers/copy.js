@@ -65,4 +65,13 @@ async function touchItems_in (directory, { folder: dir_cb, file: file_cb}) {
   )
 }
 
-export default copy;
+async function processFiles (directory, callback) {
+    const handler = {
+        folder: dirPath => touchItems_in(dirPath, handler),
+        file: file => callback(file)
+    }
+
+    return touchItems_in(directory, handler)
+}
+
+export { copy, processFiles };

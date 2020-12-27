@@ -28,6 +28,7 @@ async function jsCompiler(io, config) {
             plugins: [
                 babel({
                     comments: false,
+                    compact: true,
                     presets: [
                         ['@babel/preset-env', {
                             modules: false, // https://babeljs.io/docs/en/babel-preset-env#modules
@@ -38,7 +39,7 @@ async function jsCompiler(io, config) {
                     ]
                 }),
                 nodeResolve(),
-                terser()
+                config.compact && terser()
             ],
             preserveEntrySignatures: preserveEntrySignatures
         }).then(async bundle => {
