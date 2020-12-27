@@ -1,15 +1,14 @@
 /* constructors */
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@v0.121.0/build/three.module.min.js';
-//TODO: replace * for tree shaking concern
-import UserInteraction from '../scripts@miscellaneous/UI.js';
-import Event from '../scripts@miscellaneous/EventDispatcher.js';
-import RenderLoop from '../scripts@miscellaneous/RenderLoop.js';
-import AudioPlayer from '../scripts@audio/AudioWorker.js';
-import Score from '../scripts@miscellaneous/Score.js';
-import Drawer from '../scripts@effect/drawTextures.js';
-import Obstacle from './modules/obstacles.js';
+import * as THREE from "three"; //TODO: replace * for tree shaking concern
+import UserInteraction from "./modules/ui";
+import Event from "./utils/event-dispatcher";
+import RenderLoop from "./utils/render-loop";
+import AudioPlayer from "./audio/audio-worker";
+import Score from "./modules/score";
+import Drawer from "./modules/texture/draw-textures";
+import Obstacle from "./modules/obstacles";
 /* objects */
-import colors from '../scripts@config/colors.js';
+import colors from "./config/colors";
 
 /* class Game */
 class Game {

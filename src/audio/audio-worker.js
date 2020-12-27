@@ -1,4 +1,4 @@
-import { themes , songs } from './songsList.js'
+import { themes , songs } from '../config/songs-list'
 // AudioBuffer are designed to hold small audio snippets, typically less than 45 s
 // created from an audio file using the AudioContext.decodeAudioData()
 function work() {
