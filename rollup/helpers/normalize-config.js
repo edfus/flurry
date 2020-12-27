@@ -1,4 +1,4 @@
-import { basename, extname, join, isAbsolute } from 'path';
+import { basename, extname, join, isAbsolute, dirname } from 'path';
 
 class IsIn {
   constructor (obj) {
@@ -42,13 +42,20 @@ class FileIO {
       path = src
       base = basename(this.path)
       ext = extname(this.base)
-      without_ext = this.base.replace(this.ext, '')
+      without_ext = this.path.replace(this.ext, '')
+      dir = dirname(this.path)
     }
 
-    if ('fileName' in config) {
-      this.output = join(dst, config.fileName.replace('{name}', this.input.without_ext));
-    } else {
-      this.output = dst;
+    const input_base_without_ext = this.input.base.replace(this.input.ext, '');
+
+    this.output = new class {
+      path = 'fileName' in config
+                ? join(dst, config.fileName.replace('[name]', input_base_without_ext))
+                : dst
+      base = basename(this.path)
+      ext = extname(this.base)
+      without_ext = this.path.replace(this.ext, '')
+      dir = dirname(this.path)
     }
   }
 }

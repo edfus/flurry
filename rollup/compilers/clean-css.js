@@ -31,20 +31,20 @@ async function cssMinifier (something, possibleConfig) {
   }).minify(css);
 
   const promises = [
-    fsp.writeFile(file.output, minified.styles)
+    fsp.writeFile(file.output.path, minified.styles)
   ];
 
   if (config.map || config.sourcemap) {
     promises.push(
       fsp.writeFile(
-        file.output.concat('.map'), 
+        file.output.path.concat('.map'), 
         minified.map
       )
     )
   }
 
   return Promise.all(promises)
-              .then(() => file.output)
+              .then(() => file.output.path)
 }
 
 export default cssMinifier;

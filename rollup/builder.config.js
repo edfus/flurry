@@ -4,6 +4,8 @@ import { buildJS, buildCSS } from "./builder.js";
 
 const root_dir = join(__dirname, "../");
 
+const version = "1.1.3";
+
 const config = [
   {
     match (fileName) {
@@ -14,7 +16,11 @@ const config = [
     output: join(root_dir, "./dist"),
     config: {
       chunks: true,
-      format: "esm"
+      format: "esm",
+      chunkFileNames: `[name].js`,
+      entryFileNames: `[name]@${version}.js`,
+      compact: true,
+      preserveEntrySignatures: false
     }
   },
   {
@@ -25,7 +31,9 @@ const config = [
     entry: join(root_dir, "./src/service-worker.js"),
     output: join(root_dir, "./www"),
     config: {
-      format: "iife"
+      format: "iife",
+      fileName: "sw.js",
+      compact: true
     }
   },
   {
@@ -38,8 +46,6 @@ const config = [
   }
 ];
 
-const version = "1.1.3"; //NOTE
-
 async function buildAll () {
   return (
       Promise.all(
@@ -50,4 +56,4 @@ async function buildAll () {
   );
 }
 
-export { config, version, buildAll }
+export { config, buildAll }

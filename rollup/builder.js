@@ -8,21 +8,20 @@ import stylusCompiler from './compilers/stylus.js';
  * rollup, babel, minify.
  */
 async function buildJS(file, dest, config = {}) {
-  const defaultOptions = {
+  const fileName = config.fileName ? config.fileName : `[name].js`;
+
+  delete config.fileName;
+
+  const outputFile = await jsCompiler({
       src: resolve(file),
       dest: resolve(dest),
-      fileName: `{name}.js`,
-      format: "umd", // amd, cjs, es, iife, umd, system, esm.
-      sourcemap: false,
-      moduleID: ''
-  }
-
-  const outputFile = await jsCompiler({...defaultOptions, ...config});
+      fileName: fileName
+  }, config);
 
   await jsMinifier({
       file: outputFile,
       path_o: resolve(dest),
-      fileName: `{name}.min.js`
+      fileName: config.compact ? `[name].js` : `[name].min.js`
   })
 
   console.info(`Built, Compiled and Minified ${basename(file)}`)
@@ -36,7 +35,7 @@ async function buildCSS(file, dest, config = {}) {
   const defaultOptions = {
       file: resolve(file),
       dest: resolve(dest),
-      fileName: `{name}.min.css`,
+      fileName: `[name].css`,
       minify: true,
       sourcemap: false
   }

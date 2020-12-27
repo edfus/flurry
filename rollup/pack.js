@@ -1,6 +1,6 @@
 import path from 'path';
 
-import { build } from "./builder.config.js";
+import { buildAll } from "./builder.config.js";
 import notify from './helpers/notify.js';
 import __dirname from "./helpers/__dirname.js";
 import rw_stream from "./helpers/rw_stream.js";
@@ -10,12 +10,12 @@ const root_directory = path.join(__dirname, '/..');
 
 (async () => {
     if(extractArg(/--build-only/i)) {
-        return build();
+        return buildAll();
     } else {
         await adoptVersion();
 
         if(extractArg(/--build(?!-only)|-b/i)) {
-            await build();
+            await buildAll();
         }
 
         console.info("\nDone.\n");
