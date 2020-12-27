@@ -1,6 +1,6 @@
 import path from 'path';
 
-import { build } from "./builder.js";
+import { build } from "./builder.config.js";
 import notify from './helpers/notify.js';
 import __dirname from "./helpers/__dirname.js";
 import rw_stream from "./helpers/rw_stream.js";
@@ -55,8 +55,8 @@ async function adoptVersion () {
     });
 
     await updateFileVersion({
-        file: path.join(root_directory, 'rollup/version.js'),
-        search: /export\s+default\s+"(.*)";?/,
+        file: path.join(root_directory, 'rollup/builder.config.js'),
+        search: /const\s+version\s*=\s*"(.*)";?/,
         replace: newVersion
     });
 

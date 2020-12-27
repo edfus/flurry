@@ -29,9 +29,9 @@ class FileIO {
   constructor (config) {
     const _config = new IsIn(config);
 
-    const src = _config("file", "src", "source",  "path", "path_i", "path_input")
+    const src = _config("file", "src", "source",  "path", "path_i", "path_input", "input")
                       .orDefault("");
-    const dst = _config("dest", "destination", "path_o", "path_output", "outputPath", "output_path")
+    const dst = _config("dest", "destination", "path_o", "path_output", "outputPath", "output_path", "output")
                       .orDefault("");
     if(!isAbsolute(src) || !isAbsolute(dst))
       throw new Error(config); // isAbsolute will return false with default value ""
