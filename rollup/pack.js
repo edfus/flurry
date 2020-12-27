@@ -9,17 +9,31 @@ import rw_stream from "./helpers/rw_stream.js";
 const args = process.argv.slice(2);
 const root_directory = join(__dirname, '/..');
 
+const toReplace = "three",
+      replacer = "/node_modules/three/build/three.module.js";
+
 (async () => {
     if(extractArg(/--build-only/i)) {
+        await resolveNodeDependencies(
+            replacer,
+            toReplace
+        );
         return buildAll();
     } else {
         await adoptVersion();
 
         if(extractArg(/--test|-t/i)) {
-            await resolveNodeDependencies();
+            await resolveNodeDependencies(
+                toReplace,
+                replacer
+            );
         }
 
         if(extractArg(/--build(?!-only)|-b/i)) {
+            await resolveNodeDependencies(
+                replacer,
+                toReplace
+            );
             await buildAll();
         }
         
@@ -31,11 +45,18 @@ const root_directory = join(__dirname, '/..');
     throw error;
 });
 
-async function resolveNodeDependencies () {
+
+
+async function resolveNodeDependencies (from, to) {
+    const str = regex => {
+        const string = regex.toString();
+        return string.slice(1, string.length - 1)
+    } 
+
     const handler = file => updateFileContent({
         file,
-        search: /import\s*.*from\s*"(three)";?/,
-        replace: "/node_modules/three/build/three.module.js"
+        search: new RegExp(str(/\s*from\s*['"]/) + `(${from})` + str(/['"]/)),
+        replace: to
     });
 
     await processFiles(join(root_directory, "./src/"), handler);
