@@ -21,6 +21,16 @@ class IsIn {
   }
 }
 
+class FilePath {
+  constructor (path) {
+    this.path = path;
+    this.base = basename(this.path);
+    this.ext = extname(this.base);
+    this.without_ext = this.path.replace(this.ext, '');
+    this.dir = dirname(this.path);
+  }
+}
+
 class FileIO {
   /*NOTE
    * a tired and loose config handler
@@ -36,27 +46,15 @@ class FileIO {
     if(!isAbsolute(src) || !isAbsolute(dst))
       throw new Error(config); // isAbsolute will return false with default value ""
 
-    this._isInConfig = _config;
-
-    this.input = new class {
-      path = src
-      base = basename(this.path)
-      ext = extname(this.base)
-      without_ext = this.path.replace(this.ext, '')
-      dir = dirname(this.path)
-    }
+    this.input = new FilePath(src)
 
     const input_base_without_ext = this.input.base.replace(this.input.ext, '');
 
-    this.output = new class {
-      path = 'fileName' in config
-                ? join(dst, config.fileName.replace('[name]', input_base_without_ext))
-                : dst
-      base = basename(this.path)
-      ext = extname(this.base)
-      without_ext = this.path.replace(this.ext, '')
-      dir = dirname(this.path)
-    }
+    this.output = new FilePath(
+            'fileName' in config
+              ? join(dst, config.fileName.replace('[name]', input_base_without_ext))
+              : dst
+    );
   }
 }
 

@@ -5,18 +5,18 @@
     "scope": "/",
     "icons": [
         {
-            "src": "/resource/favicons/maskable-192.png",
+            "src": "/asset/favicons/maskable-192.png",
             "sizes": "192x192",
             "type": "image/png",
             "purpose":"maskable"
         },
         {
-            "src": "/resource/favicons/favicon-192.jpg",
+            "src": "/asset/favicons/favicon-192.jpg",
             "sizes": "192x192",
             "type": "image/png"
         },
         {
-            "src": "/resource/favicons/favicon-512.jpg",
+            "src": "/asset/favicons/favicon-512.jpg",
             "sizes": "512x512",
             "type": "image/png"
         }
@@ -30,7 +30,7 @@
             "name": "new voyage.",
             "url": "/?app=1",
             "icons": [
-                {"src": "/resource/favicons/start.png", "sizes": "192x192"}
+                {"src": "/asset/favicons/start.png", "sizes": "192x192"}
             ]
         }
     ]     

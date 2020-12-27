@@ -1,9 +1,8 @@
 import { writeFile, readFile } from 'fs';
 import { minify } from 'terser';
 import { FileIO } from "../helpers/normalize-config.js";
-/**
- * @param { Object } options path: input file path, path_output: output file path
- */
+
+
 async function jsMinifier (options) {
   const file = new FileIO(options);
 

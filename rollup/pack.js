@@ -49,20 +49,26 @@ async function adoptVersion () {
     console.info("Version:", newVersion);
 
     await updateFileVersion({
-        file: path.join(root_directory, 'package.json'),
+        file: path.join(root_directory, './package.json'),
         search: /"version":\s*"(.*)",?/,
         replace: newVersion
     });
 
     await updateFileVersion({
-        file: path.join(root_directory, 'rollup/builder.config.js'),
+        file: path.join(root_directory, './rollup/builder.config.js'),
         search: /const\s+version\s*=\s*"(.*)";?/,
         replace: newVersion
     });
 
     await updateFileVersion({
-        file: path.join(root_directory, 'src/config/config.js'),
+        file: path.join(root_directory, './src/config/config.js'),
         search: /Version\s*=\s*"(.*)",?/,
+        replace: newVersion
+    });
+
+    await updateFileVersion({
+        file: path.join(root_directory, './www/index.html'),
+        search: /href="\/dist\/main@(.*)\.min\.js"/,
         replace: newVersion
     });
 

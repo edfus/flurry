@@ -1,5 +1,6 @@
 import { rollup } from 'rollup';
 import babel from 'rollup-plugin-babel';
+import { terser } from "rollup-plugin-terser"
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import { FileIO } from "../helpers/normalize-config.js";
 
@@ -36,7 +37,8 @@ async function jsCompiler(io, config) {
                         }]
                     ]
                 }),
-                nodeResolve()
+                nodeResolve(),
+                terser()
             ],
             preserveEntrySignatures: preserveEntrySignatures
         }).then(async bundle => {
@@ -56,6 +58,7 @@ async function jsCompiler(io, config) {
             } else options.file = file.output.path;
 
             delete options.chunks;
+            delete options.moduleID;
             
             await bundle.write(options);
             await bundle.close();
