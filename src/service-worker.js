@@ -1,9 +1,9 @@
 const mode = ["network-first", "offline-first"][0];
-const version = "8.2.6--dev";
+const version = "8.2.6";
 const cacheName = "cache-" + version;
 const cacheResources = [
   `/`, 
-  `https://cdn.jsdelivr.net/npm/three@v0.121.0/build/three.module.min.js`
+  `three`
 ];
 const DLC = [
 
