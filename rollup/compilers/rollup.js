@@ -1,3 +1,5 @@
+import { dirname } from "path"
+
 import { rollup } from 'rollup';
 import babel from 'rollup-plugin-babel';
 import { FileIO } from "../helpers/normalize-config.js";
@@ -36,14 +38,19 @@ async function jsCompiler(config) {
             ]
         }).then(async bundle => {
             global.rollupCache[file.input.base] = bundle.cache;
-            await bundle.write({
-                file: file.output,
+            const options = {
                 format: _config("format").orDefault("iife"),
                 strict: _config("strict").orDefault(true),
                 sourcemap: _config("sourcemap").orDefault(false),
                 name: _config("moduleID", "name")
                         .orDefault(toCamelCase(file.input.without_ext))
-            });
+            }
+
+            if("chunks" in config)
+                options.dir = dirname(file.output);
+            else options.file = file.output;
+            
+            await bundle.write(options);
             await bundle.close();
             return file.output;
         })
