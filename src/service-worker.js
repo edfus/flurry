@@ -1,10 +1,12 @@
 import fetchHandler from "./service-worker/network-first";
 
-const version = "1.1.3";
+const version = "1.2.4";
 const cacheName = "cache-" + version;
 const cacheResources = [
-  `/`, 
-  `three`
+  `/`,
+  "/dist/config.js",
+  `/dist/main@${version}.js`,
+  "/dist/style.css"
 ];
 const DLC = [
 

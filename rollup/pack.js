@@ -1,12 +1,13 @@
-import path from 'path';
+import { join } from 'path';
 
 import { buildAll } from "./builder.config.js";
+import { processFiles } from "./helpers/copy.js";
 import notify from './helpers/notify.js';
 import __dirname from "./helpers/__dirname.js";
 import rw_stream from "./helpers/rw_stream.js";
 
 const args = process.argv.slice(2);
-const root_directory = path.join(__dirname, '/..');
+const root_directory = join(__dirname, '/..');
 
 (async () => {
     if(extractArg(/--build-only/i)) {
@@ -14,10 +15,14 @@ const root_directory = path.join(__dirname, '/..');
     } else {
         await adoptVersion();
 
+        if(extractArg(/--test|-t/i)) {
+            await resolveNodeDependencies();
+        }
+
         if(extractArg(/--build(?!-only)|-b/i)) {
             await buildAll();
         }
-
+        
         console.info("\nDone.\n");
         return process.exit(0);
     }
@@ -26,7 +31,16 @@ const root_directory = path.join(__dirname, '/..');
     throw error;
 });
 
+async function resolveNodeDependencies () {
+    const handler = file => updateFileContent({
+        file,
+        search: /import\s*.*from\s*"(three)";?/,
+        replace: "/node_modules/three/build/three.module.js"
+    });
 
+    await processFiles(join(root_directory, "./src/"), handler);
+    await processFiles(join(root_directory, "./lib/"), handler);
+}
 
 async function adoptVersion () {
     let newVersion;
@@ -48,32 +62,32 @@ async function adoptVersion () {
 
     console.info("Version:", newVersion);
 
-    await updateFileVersion({
-        file: path.join(root_directory, './package.json'),
+    await updateFileContent({
+        file: join(root_directory, './package.json'),
         search: /"version":\s*"(.*)",?/,
         replace: newVersion
     });
 
-    await updateFileVersion({
-        file: path.join(root_directory, './rollup/builder.config.js'),
+    await updateFileContent({
+        file: join(root_directory, './rollup/builder.config.js'),
         search: /const\s+version\s*=\s*"(.*)";?/,
         replace: newVersion
     });
 
-    await updateFileVersion({
-        file: path.join(root_directory, './src/config/config.js'),
+    await updateFileContent({
+        file: join(root_directory, './src/config/config.js'),
         search: /Version\s*=\s*"(.*)",?/,
         replace: newVersion
     });
 
-    await updateFileVersion({
-        file: path.join(root_directory, './www/index.html'),
+    await updateFileContent({
+        file: join(root_directory, './www/index.html'),
         search: /href="\/dist\/main@(.*)\.min\.js"/,
         replace: newVersion
     });
 
-    await updateFileVersion({
-        file: path.join(root_directory, 'src/service-worker.js'),
+    await updateFileContent({
+        file: join(root_directory, 'src/service-worker.js'),
         search: /const\s+version\s*=\s*"(.*)";?/,
         replace: newVersion
     });
@@ -83,7 +97,7 @@ async function adoptVersion () {
     return newVersion;
 }
 
-async function updateFileVersion(data) {
+async function updateFileContent(data) {
     // set the global flag to ensure search pattern is "stateful"
     const pattern = new RegExp(data.search, 'g'); 
     let matches = null;

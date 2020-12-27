@@ -1,8 +1,9 @@
-import { watch } from 'chokidar';
+import { join } from "path"
+import chokidar from 'chokidar';
 import __dirname from "./helpers/__dirname.js";
 import debounce from "./helpers/debounce.js";
 
-const root_directory = path.join(__dirname, '/..');
+const root_directory = join(__dirname, '/..');
 
 import { config } from "./builder.config.js";
 
@@ -10,7 +11,7 @@ import { config } from "./builder.config.js";
  * Watcher for js and css files
  */
 function filesWatcher() {
-    const watcher = watch([`${root_directory}/src`], {
+    const watcher = chokidar.watch([`${root_directory}/src`], {
         ignored: [".babelrc.json"],
         persistent: true,
         depth: 3,
@@ -27,7 +28,7 @@ function filesWatcher() {
                     return suit.action(suit.entry, suit.output, suit.config); // async
                 }
             }
-        }, 10000);
+        }, 1000);
     })
     watcher.on('ready', () => console.info('Now watching files, up for changes.'))
 }

@@ -4,7 +4,7 @@ import { buildJS, buildCSS } from "./builder.js";
 
 const root_dir = join(__dirname, "../");
 
-const version = "1.1.3";
+const version = "1.2.4";
 
 const config = [
   {
@@ -33,7 +33,7 @@ const config = [
     output: join(root_dir, "./dist"),
     config: {
       format: "iife",
-      fileName: "config.js",
+      fileName: "config.min.js",
       compact: true,
       moduleID: "config"
     }
@@ -44,10 +44,10 @@ const config = [
     },
     action: buildJS,
     entry: join(root_dir, "./src/service-worker.js"),
-    output: join(root_dir, "./www"),
+    output: join(root_dir, "./"),
     config: {
       format: "iife",
-      fileName: "sw.js",
+      fileName: "sw.min.js",
       compact: true,
       moduleID: "sw"
     }

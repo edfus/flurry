@@ -10,13 +10,13 @@
 		<meta name="google" content="notranslate">
 		<meta name="format-detection" content="telphone=no, email=no">
 		<!-- Preload -->
-		<link rel="modulepreloadpreload" href="/dist/main@1.2.4.min.js">
+		<link rel="modulepreloadpreload" href="/dist/main@1.2.4.js">
 		<link rel="preload" href="https://www.googletagmanager.com/gtag/js?id=UA-179239422-1" as="script">		
 		<!-- scripts -->
 		<script type="module" async>
 			if("caches" in window && "serviceWorker" in navigator){
 				window.addEventListener("load", ()=>{
-					navigator.serviceWorker.register('/sw.min.js', { scope: '/' }).then(reg => {
+					navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(reg => {
 						if(reg.installing){
 							console.info('[ServiceWorker] installing');
 						}
@@ -26,8 +26,8 @@
 				}, {passive: true, once: true});
 			}
 		</script>
-		<script src="/dist/config.min.js"></script>
-		<script async type="module" src="/dist/main@1.2.4.min.js"></script>
+		<script src="/dist/config.js"></script>
+		<script async type="module" src="/dist/main@1.2.4.js"></script>
 		<!-- Google Analytics -->
 		<script async src="https://www.googletagmanager.com/gtag/js?id=UA-179239422-1"></script>
 		<script>

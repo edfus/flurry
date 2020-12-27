@@ -13,7 +13,7 @@
   BackgroundColor = '#f7d9aa', // used in index.html/meta-themeColor, style-background
 
 
-  Version = "1.1.3", 
+  Version = "1.2.4", 
 
   PerspectiveCameraSetting = {
       fieldOfView: 60, 
