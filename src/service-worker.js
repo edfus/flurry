@@ -1,4 +1,4 @@
-import fetchHandler from "./service-worker/network-first";
+import fetchHandler from "./service-worker/network-first.js";
 
 const version = "1.2.4";
 const cacheName = "cache-" + version;
