@@ -12,8 +12,8 @@ async function jsMinifier (options) {
           if(err)
               return reject(err);
           
-          writeFile(file.output, (await minify(data)).code, err => 
-              err ? reject(err) : resolve(file.output) 
+          writeFile(file.output.path, (await minify(data)).code, err => 
+              err ? reject(err) : resolve(file.output.path) 
           );
       })
   })

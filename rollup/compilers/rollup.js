@@ -1,7 +1,6 @@
-import { dirname } from "path"
-
 import { rollup } from 'rollup';
 import babel from 'rollup-plugin-babel';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
 import { FileIO } from "../helpers/normalize-config.js";
 
 global.rollupCache = global.rollupCache || {};
@@ -12,13 +11,15 @@ function toCamelCase(str) {
     }).replace(/\s+/g, '').replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '');
 }
 
-async function jsCompiler(config) {
-    const file = new FileIO(config);
-    const _config = file._isInConfig;
+async function jsCompiler(io, config) {
+    const file = new FileIO(io);
 
     const cache = global.rollupCache[file.input.base] 
                     ? global.rollupCache[file.input.base] 
                     : null;
+
+    const preserveEntrySignatures = config.preserveEntrySignatures;
+    delete config.preserveEntrySignatures;
     return ( // UMD and IIFE output formats are not supported for code-splitting builds.
         rollup({ // https://rollupjs.org/guide/en/#rolluprollup
             input: file.input.path,
@@ -35,24 +36,33 @@ async function jsCompiler(config) {
                         }]
                     ]
                 }),
-            ]
+                nodeResolve()
+            ],
+            preserveEntrySignatures: preserveEntrySignatures
         }).then(async bundle => {
             global.rollupCache[file.input.base] = bundle.cache;
             const options = {
-                format: _config("format").orDefault("iife"),
-                strict: _config("strict").orDefault(true),
-                sourcemap: _config("sourcemap").orDefault(false),
-                name: _config("moduleID", "name")
-                        .orDefault(toCamelCase(file.input.without_ext))
-            }
+                ...{
+                    format: "iife",
+                    strict: true,
+                    sourcemap: false,
+                    name: config.name || config.moduleID || toCamelCase(file.input.without_ext)
+                },
+                ...config
+            };
+            
+            if("chunks" in config) {
+                options.dir = file.output.dir;
+            } else options.file = file.output.path;
 
-            if("chunks" in config)
-                options.dir = dirname(file.output);
-            else options.file = file.output;
+            delete options.chunks;
             
             await bundle.write(options);
             await bundle.close();
-            return file.output;
+            return config.entryFileNames 
+                    ? config.entryFileNames.replace("[name]", file.output.without_ext)
+                    : file.output.path
+                ;
         })
     );
 }

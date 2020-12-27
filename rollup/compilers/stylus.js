@@ -29,8 +29,8 @@ async function stylusCompiler(config) {
                   );
                 } else {
                   return writeFile(
-                    file.output, css,
-                    err => err ? reject(err) : resolve(file.output)
+                    file.output.path, css,
+                    err => err ? reject(err) : resolve(file.output.path)
                   )
                 }
             })
