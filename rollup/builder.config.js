@@ -9,7 +9,7 @@ const version = "1.2.4";
 const config = [
   {
     match (fileName) {
-      return /((?<!service-worker)\.js)$/.test(fileName)
+      return false && /((?<!service-worker)\.js)$/.test(fileName)
     },
     action: buildJS,
     entry: join(root_dir, "./src/main.js"),
@@ -40,7 +40,7 @@ const config = [
   },
   {
     match (fileName) {
-      return /(service-worker\.js)$/.test(fileName)
+      return /(service-worker)/.test(fileName)
     },
     action: buildJS,
     entry: join(root_dir, "./src/service-worker.js"),

@@ -1,5 +1,5 @@
-const host = config.testMode ? `http://${location.host}/` : `https://flurry.ml/`;
-// type: "audio/mpeg",
+const host = config.testMode ? `http://${location.host}/` : `https://${location.host}/`;
+//NOTE
 const themes = [
   {
     name: "Intro",

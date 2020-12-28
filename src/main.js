@@ -1042,7 +1042,7 @@ class Game {
     }, {once: true});
 
     /* dynamic import */
-    import("../lib/orbit-controls").then(({OrbitControls}) => {
+    import("../lib/orbit-controls.js").then(({OrbitControls}) => {
       this.event.addListener("started", () => {
         this._controls = new OrbitControls(this.camera, this.renderer.domElement);
         this._controls.enableKeys = false;
