@@ -28,13 +28,18 @@ async function jsCompiler(io, config) {
             plugins: [
                 babel({
                     comments: false,
-                    compact: true,
+                    compact: config.compact,
+                    babelrc: true,
                     presets: [
                         ['@babel/preset-env', {
                             modules: false, // https://babeljs.io/docs/en/babel-preset-env#modules
-                            targets: {
-                                esmodules: true
-                            }
+                            "targets": {
+                                "browsers": [
+                                  "Chrome >= 60",
+                                  "Firefox >= 56",
+                                  "Safari >= 11.1"
+                                ] // async, destructuring Rest in objects
+                            } // for inlined web worker functioning normally
                         }]
                     ]
                 }),
