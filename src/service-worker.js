@@ -1,4 +1,4 @@
-import fetchHandler from "./service-worker/network-first.js";
+import FetchHandler from "./service-worker/network-first.js";
 
 const version = "1.2.4";
 const cacheName = "cache-" + version;
@@ -12,9 +12,9 @@ const DLC = [
 
 ];
 
-self.addEventListener('install', e =>{
+self.addEventListener('install', e => {
   self.skipWaiting();
-  e.waitUntil(
+  return e.waitUntil(
     caches.open(cacheName).then(cache =>
       cache.addAll(cacheResources)
         .then(() => {
@@ -41,4 +41,4 @@ self.addEventListener('activate', e => {
   return self.clients.claim();
 });
 
-self.addEventListener('fetch', fetchHandler);
+self.addEventListener('fetch', new FetchHandler(cacheName));
