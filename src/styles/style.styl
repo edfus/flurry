@@ -1,4 +1,4 @@
-:root {
+:root
   --main-bg-gradient-color: #000;
   --loader-width: 6.25rem;
   --google-style-loader-green: #008744;
@@ -11,76 +11,47 @@
   --light-sky-blue: #b3e5fc;
   --color: #fff;
   --theme-color: #adf;
-}
 
-@font-face {
+@font-face
   font-family: 'Electrolize';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
   src: local('Electrolize'), local('Electrolize-Regular'), url(https://fonts.gstatic.com/s/electrolize/v9/cIf5Ma1dtE0zSiGSiED7AXEBuI8.woff2) format('woff2'), url(/asset/Electrolize.woff2) format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; /* latin */
-} 
 
-html, body {
+html, body
   height: 100%;
   font-size: 16px; /* rem */
-}
 
-.blur {
-  position: relative;
-}
-
-.blur::after {
-  content: '';
-  position: absolute;
-  top: -25%;
-  left: 20%;
-  width: 60%;
-  height: 150%;
-  background-color: var(--theme-color);
-  opacity: .5;
-  filter: blur(20px);
-}
-.blur svg {
-  filter: url(#glow);
-}
-
-@media screen and (min-width: 450px) and (max-width: 824px) {  /* iphone X width: 812px, pixel XL: 823px */
-  html, body {
+  /* iphone X width: 812px, pixel XL: 823px */
+  @media screen and (min-width: 450px) and (max-width: 824px)
     font-size: 14px; /* rem */
-  }
-}
-
-@media screen and (min-width: 375px) and (max-width: 449px) { /* iphone 6/7/8 375px */
-  html, body {
+  
+  /* iphone 6/7/8 375px */
+  @media screen and (min-width: 375px) and (max-width: 449px)
     font-size: 12px; /* rem */
-  }
-}
 
-@media screen and (min-width: 320px) and (max-width: 374px) { /* iphone 6/7/8 375px */
-  html, body {
+  /* iphone 5/SE: 320px */
+  @media screen and (min-width: 320px) and (max-width: 374px)
     font-size: 11px; /* rem */
-  }
-}
 
-@media screen and (max-width: 319px) { /* iphone 5/SE: 320px */
-  .dialog {
+.dialog
+  @media screen and (max-width: 319px)
     display: none;
-  }
-}
 
 /* in mobile browser 100vh will overflow (as there exists the navigation UI) */
-body {
+body
   margin: 0;
   overflow: hidden;
   background: var(--main-bg-gradient-color);
   font-family: Electrolize, 'Lucida Grande', 'Helvetica Neue', sans-serif;
-} 
+
+
 /* stick the entire page in a 100vw/vh block will disable Chrome's pull-to-refresh effect */
 /* https://developers.google.com/web/updates/2017/11/overscroll-behavior */
 
-main, #ui {
+main, #ui
   position: absolute;
   z-index: 2;
   height: 100%;
@@ -89,180 +60,280 @@ main, #ui {
   bottom: 0; 
   user-select: none;
   /* fix the unintended 4px more height compared with window.innerHeight */
-}
-main > canvas, #ui-canvas {
+
+#ui
+  pointer-events: none;
+
+main > canvas, #ui-canvas
   position: absolute;
   top: 0;
   bottom: 0; 
   z-index: 1;
   background: none;
-}
 
-.left {
+
+/* buttons */
+.left 
   left: 0;
-}
-.right {
+.right
   right: 0;
-}
-.top {
+.top
   top: 0;
-}
-.bottom {
+.bottom
   bottom: 0;
-}
 
-#ui {
-  pointer-events: none;
-}
-
-.ui-buttons {
+.ui-buttons
   position: absolute;
   z-index: 2;
   display: flex;
-	justify-content: center;
+  justify-content: center;
   align-items: center;
   flex-direction: row;
   margin: 1.25rem;
-}
 
-.ui-score {
+.ui-button
+  width: 3.125rem;
+  height: 3.125rem;
+  border: none;
+  outline: none;
+  background: none;
+  padding: 0;
+  margin-left: 0.625rem;
+  border-radius: 50%;
+  cursor: pointer;
+  pointer-events: all;
+  -webkit-tap-highlight-color: transparent;
+
+  fill: var(--theme-color);
+  transition: filter .2s ease-in-out;
+
+  &:hover, &:focus
+    filter: brightness(120%);
+
+/* score */
+.ui-score
   position: absolute;
   color: var(--theme-color);
   padding: 1.25rem;
   margin-left: .5rem;
-}
 
-.ui-button {
-	width: 3.125rem;
-	height: 3.125rem;
-	border: none;
-  outline: none;
+.ui-button
+  /* full screen button */
+  &.fullscreen 
+    > .row
+      display: flex;
+    .box
+      position: relative;
+      width: 1.25rem;
+      height: 1.25rem;
+      overflow: hidden;
+      &::before, &::after
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        transition: transform 200ms ease;
+        border: 0.1563rem solid transparent;
+      &::before
+        border: 0.3125rem solid var(--theme-color);
+
+      &._1 
+        &::before
+          left: 0;
+          top: 0;
+        &::after
+          right: 0;
+          bottom: 0;
+
+      &._2 
+        &::before
+          right: 0;
+          top: 0;
+        &::after
+          left: 0;
+          bottom: 0;
+
+      &._3 
+        &::before
+          left: 0;
+          bottom: 0;
+        &::after
+          right: 0;
+          top: 0;
+
+      &._4 
+        &::before
+          right: 0;
+          bottom: 0;
+        &::after
+          left: 0;
+          top: 0;
+
+    &.hover
+      .box._1::before
+        transform: translate(5%, 5%);
+      .box._2::before
+        transform: translate(-5%, 5%);
+      .box._3:before
+        transform: translate(5%, -5%);
+      .box._4:before
+        transform: translate(-5%, -5%);
+
+    &.active
+      .box._1:before
+        transform: translate(-35%, -35%);
+      .box._2:before
+        transform: translate(35%, -35%);
+      .box._3:before
+        transform: translate(-35%, 35%);
+      .box._4:before
+        transform: translate(35%, 35%);
+
+  /* home button */
+  &.home
+    stroke: var(--theme-color);
+    stroke-width: 4;
+    stroke-linejoin: round;
+    position: absolute;
+    margin-left: calc(0.625rem + 1.5px);
+    margin-bottom: 3.5px;
+
+  /* refresh button */
+  &.refresh
+    position: relative; 
+    > .simo
+      position: absolute;
+      top: -20%;
+      left: -20%;
+      width: 140%;
+      height: 140%;
+      opacity: 0;
+      pointer-events: none;
+
+      > .simo--ring
+        position: absolute;
+        z-index: 1;
+        stroke: #666666af;
+        stroke-width: .5rem;
+
+      > .simo--slider
+        position: absolute;
+        z-index: 2;
+        top: 0;
+        left: 0;
+        stroke: #eeeeeeaf;
+        stroke-width: .5rem;
+        transform-origin: center center;
+        stroke-dasharray: 15, 300;
+        stroke-dashoffset: 0;
+        stroke-linecap: round;
+        opacity: 0;
+      
+      &.show
+        animation: simo--ring 3s 1 ease forwards;
+        > .simo--slider
+          animation: simo--slider-opacity 3s 1 ease forwards, simo--slider-rotate .8s infinite linear; 
+  
+  /* blur effect */
+  &.blur
+    position: relative;
+    &::after
+      content: '';
+      position: absolute;
+      top: -25%;
+      left: 20%;
+      width: 60%;
+      height: 150%;
+      background-color: var(--theme-color);
+      opacity: .5;
+      filter: blur(20px);
+    svg
+      filter: url(#glow);
+
+  /* buttons that only have in game visibility */
+  &.game-bar
+    display: none;
+
+@keyframes simo--ring
+  0%, 100%
+    transform: scale3d(0, 0, 1);
+    opacity: 0;
+  5%, 95%
+    opacity: 1;
+    transform: scale3d(1, 1, 1);
+
+@keyframes simo--slider-opacity
+  0%, 5%, 95%, 100%
+    opacity: 0;
+  10%, 90%
+    opacity: 1;
+
+@keyframes simo--slider-rotate
+  100%
+    transform: rotate(360deg);
+
+
+/* Start button */
+#start-button
+  position: fixed;
+  width: 8rem;
+  height: 8rem;
+  bottom: 8rem;
+  left: calc(50% - 4rem);
   padding: 0;
-  cursor: pointer;
+  outline: 0;
+  border: 0;
   background: none;
-  margin-left: 0.625rem;
-  border-radius: 50%;
-  transition: background-color .2s ease-in-out;
   pointer-events: all;
   -webkit-tap-highlight-color: transparent;
-}
+  @media screen and (max-height: 824px)
+      bottom: 30px;
 
-/* full screen button */
-.fullscreen > .row {
-	display: flex;
-}
+#start-button--ring
+  stroke-width: .12rem;
+  animation: start-button--ring 4s infinite ease;
+  transform: translate(-8%, -8%) scale(1.16);
+  fill: #fff;
+  cursor: pointer;
+  /* stroke-opacity: .8; */
 
-.fullscreen .box {
-	position: relative;
-	width: 1.25rem;
-  height: 1.25rem;
-	overflow: hidden;
-}
+#start-button--fog
+  animation: start-button--fog 4s infinite ease;
+  opacity: .1;
 
-.fullscreen .box:before, .fullscreen .box:after {
-	content: '';
-	position: absolute;
-	width: 100%;
-	height: 100%;
-  transition: transform 200ms ease;
-  border: 0.1563rem solid transparent;
-} 
 
-.fullscreen .box:before {
-	border: 0.3125rem solid var(--theme-color);
-}
+@keyframes start-button--fog
+  0%
+    filter: url(#blur2);
+    transform: translate(0, 0) scale(1);
+    opacity: .08;
 
-.fullscreen.hover .box._1:before {
-	transform: translate(5%, 5%);
-}
+  36%
+    filter: url(#blur6);
+    opacity: .25;
+    transform: translate(-80%, -80%) scale(2.6);
 
-.fullscreen.hover .box._2:before {
-	transform: translate(-5%, 5%);
-}
+  100%
+    filter: url(#blur6);
+    transform: translate(-80%, -80%) scale(2.6);
+    opacity: 0;
 
-.fullscreen.hover .box._3:before {
-	transform: translate(5%, -5%);
-}
+@keyframes start-button--ring
+  0%
+    transform: translate(-8%, -8%) scale(1.16);
+    fill-opacity: .16;
 
-.fullscreen.hover .box._4:before {
-	transform: translate(-5%, -5%);
-}
+  36%
+    transform: translate(0, 0) scale(1);
+    fill-opacity: .2;
 
-.fullscreen.active .box._1:before {
-	transform: translate(-35%, -35%);
-}
+  100%
+    transform: translate(-8%, -8%) scale(1.16);
+    fill-opacity: .16;
 
-.fullscreen.active .box._2:before {
-	transform: translate(35%, -35%);
-}
-
-.fullscreen.active .box._3:before {
-	transform: translate(-35%, 35%);
-}
-
-.fullscreen.active .box._4:before {
-	transform: translate(35%, 35%);
-}
-
-.fullscreen .box._1:before {
-	left: 0;
-	top: 0;
-}
-
-.fullscreen .box._1:after {
-	right: 0;
-	bottom: 0;
-}
-
-.fullscreen .box._2:before {
-	right: 0;
-	top: 0;
-}
-
-.fullscreen .box._2:after {
-	left: 0;
-	bottom: 0;
-}
-
-.fullscreen .box._3:before {
-	left: 0;
-	bottom: 0;
-}
-
-.fullscreen .box._3:after {
-	right: 0;
-	top: 0;
-}
-
-.fullscreen .box._4:before {
-	right: 0;
-	bottom: 0;
-}
-
-.fullscreen .box._4:after {
-	left: 0;
-	top: 0;
-}
-
-.ui-button{
-  fill: var(--theme-color);
-  transition: filter .2s ease-in-out;
-}
-.ui-button:hover, .ui-button:focus{
-  filter: brightness(120%);
-}
-
-.ui-button.home {
-  stroke: var(--theme-color);
-  stroke-width: 4;
-  stroke-linejoin: round;
-  position: absolute;
-  margin-left: calc(0.625rem + 1.5px);
-  margin-bottom: 3.5px;
-}
 
 /* Dialog */
-.dialog {
+.dialog
   position: fixed;
   z-index: 5;
   width: 30rem;
@@ -275,23 +346,16 @@ main > canvas, #ui-canvas {
   opacity: 0;
   top: 1.25rem;
   transition: opacity .4s ease-out;
-}
+  &.active
+    animation: fade-in .4s ease-out 1;
+    opacity: 1;
+    &::part(button)
+      cursor: pointer;
+  &.hide
+    animation: fade-out .4s ease-out 1;
+    opacity: 0;
 
-.dialog.active {
-  animation: dialog-show .4s ease-out 1;
-  opacity: 1;
-}
-
-.dialog.hide {
-  animation: dialog-hide .4s ease-out 1;
-  opacity: 0;
-}
-
-.dialog.active::part(button) {
-  cursor: pointer;
-}
-
-::part(button) {
+::part(button)
   display: inline-block;
   margin-right: 0.625rem;
   min-width: 6.6875rem;
@@ -300,42 +364,49 @@ main > canvas, #ui-canvas {
   border: none;
   outline: none; 
   color: var(--color);
-}
+  &:hover
+    box-shadow: 0px 1px 1px rgba(0,0,0,.1);
+  &:active, &:focus
+    /* touch device has native focus style */
+    @media (pointer: fine) and (hover: hover)
+      box-shadow: none;
+      background-color: var(--light-sky-blue);
+      color: var(--confirm-color);
 
-
-::part(button):hover {
-	box-shadow: 0px 1px 1px rgba(0,0,0,.1);
-}
-
-@media (pointer: fine) and (hover: hover) {
-  ::part(button):active, ::part(button):focus {
-    box-shadow: none;
-    background-color: var(--light-sky-blue);
-    color: var(--confirm-color);
-  } 
-  /* touch device has native focus style */
-}
-
-::part(error-button) {
+::part(error-button)
   background-color: var(--error-color);
-	text-shadow: 0 1px rgba(0, 0, 0, 0.1);
-}
+  text-shadow: 0 1px rgba(0, 0, 0, 0.1);
 
-::part(confirm-button) {
+::part(confirm-button)
   background-color: var(--confirm-color);
-}
 
-::part(reject-button) {
+::part(reject-button)
   background-color: var(--color);
   color:var(--confirm-color);
-}
+  &:active, &:focus, &:hover
+    box-shadow: none;
 
-::part(reject-button):active, ::part(reject-button):focus, ::part(reject-button):hover {
-  box-shadow: none;
-}
+
+/* Fade effect of buttons and dialogs */
+.fade-out
+  animation: fade-out .3s ease 1;
+
+.fade-in
+  animation: fade-in .3s ease 1;
+
+@keyframes fade-out
+  100%
+    opacity: 0;
+
+@keyframes fade-in
+  0%
+    opacity: 0;
+  100%
+    opacity: 1;
+
 
 /* Loader */
-#loading-section {
+#loading-section
   position: absolute;
   z-index: 3;
   width: 100vw;
@@ -343,251 +414,50 @@ main > canvas, #ui-canvas {
   background: var(--main-bg-gradient-color);
   opacity: 1;
   pointer-events: none;
-}
 
-#loader {
+#loader
   position: relative;
   height: var(--loader-width);
   width: var(--loader-width);
   margin: 40vh calc(50vw - var(--loader-width) / 2);
-}
 
-#loader--circular {
-  animation: rotate 2s linear infinite;
+#loader--circular
+  animation: loader--rotate 2s linear infinite;
   height: 100%;
   transform-origin: center center;
   width: 100%;
   position: absolute;
   top: 0;
   left: 0;
-}
 
-#loader--path {
+#loader--path
   stroke-dasharray: 1, 200;
   stroke-dashoffset: 0;
-  animation: dash 1.5s ease-in-out infinite, color 6s ease-in-out infinite;
+  animation: loader--dash 1.5s ease-in-out infinite, loader--color 6s ease-in-out infinite;
   stroke-linecap: round;
-}
 
-#start-button {
-  position: fixed;
-  width: 8rem;
-  height: 8rem;
-  bottom: 8rem;
-  left: calc(50% - 4rem);
-  padding: 0;
-  outline: 0;
-  border: 0;
-  background: none;
-  pointer-events: all;
-  -webkit-tap-highlight-color: transparent;
-}
 
-@media screen and (max-height: 824px) {
-  #start-button {
-    bottom: 30px;
-  }
-}
-
-#start-button--ring {
-  stroke-width: .12rem;
-  animation: start-button--ring 4s infinite ease;
-  transform: translate(-8%, -8%) scale(1.16);
-  fill: #fff;
-  cursor: pointer;
-  /* stroke-opacity: .8; */
-}
-
-#start-button--fog {
-  animation: start-button--fog 4s infinite ease;
-  opacity: .1;
-}
-
-.ui-button.refresh {
-  position: relative;
-}
-
-.simo, .simo--ring, .simo--slider {
-  position: absolute;
-}
-
-.simo {
-  top: -20%;
-	left: -20%;
-	width: 140%;
-  height: 140%;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.simo--ring {
-  z-index: 1;
-  stroke: #666666af;
-  stroke-width: .5rem;
-}
-
-.simo--slider {
-  z-index: 2;
-  top: 0;
-  left: 0;
-  stroke: #eeeeeeaf;
-  stroke-width: .5rem;
-  transform-origin: center center;
-  stroke-dasharray: 15, 300;
-  stroke-dashoffset: 0;
-  stroke-linecap: round;
-  opacity: 0;
-}
-
-.simo.show {
-  animation: simo--ring 3s 1 ease forwards;
-}
-
-.simo.show > .simo--slider {
-  animation: simo--slider-opacity 3s 1 ease forwards, simo--slider-rotate .8s infinite linear; 
-}
-
-@keyframes simo--ring {
-	0%, 100% {
-		transform: scale3d(0, 0, 1);
-		opacity: 0;
-	}
-	5%, 95% {
-		opacity: 1;
-		transform: scale3d(1, 1, 1);
-	}
-}
-
-@keyframes simo--slider-opacity {
-	0%, 5%, 95%, 100% {
-		opacity: 0;
-	}
-	10%, 90% {
-		opacity: 1;
-	}
-}
-
-@keyframes simo--slider-rotate {
-	100% {
-		transform: rotate(360deg);
-	}
-}
-
-.game-bar {
-  display: none;
-}
-
-.fade-out {
-  animation: fade-out .3s ease 1;
-}
-
-.fade-in {
-  animation: fade-in .3s ease 1;
-}
-
-/* Keyframes */
-@keyframes fade-out {
-  100% {
-    opacity: 0;
-  }
-}
-
-@keyframes fade-in {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes start-button--fog {
-  0% {
-    filter: url(#blur2);
-    transform: translate(0, 0) scale(1);
-    opacity: .08;
-  }
-
-  36% {
-    filter: url(#blur6);
-    opacity: .25;
-    transform: translate(-80%, -80%) scale(2.6);
-  }
-
-  100% {
-    filter: url(#blur6);
-    transform: translate(-80%, -80%) scale(2.6);
-    opacity: 0;
-  }
-}
-
-@keyframes start-button--ring {
-  0% {
-    transform: translate(-8%, -8%) scale(1.16);
-    fill-opacity: .16;
-  }
-
-  36% {
-    transform: translate(0, 0) scale(1);
-    fill-opacity: .2;
-  }
-
-  100% {
-    transform: translate(-8%, -8%) scale(1.16);
-    fill-opacity: .16;
-  }
-}
-
-@keyframes dialog-show {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes dialog-hide {
-  0% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-@keyframes rotate {
-  100% {
+@keyframes loader--rotate
+  100%
     transform: rotate(360deg);
-  }
-}
 
-@keyframes dash {
-  0% {
+@keyframes loader--dash
+  0%
     stroke-dasharray: 1, 200;
     stroke-dashoffset: 0;
-  }
-  50% {
+  50%
     stroke-dasharray: 89, 200;
     stroke-dashoffset: -35;
-  }
-  100% {
+  100%
     stroke-dasharray: 89, 200;
     stroke-dashoffset: -124;
-  }
-}
 
-@keyframes color {
-  100%, 0% {
+@keyframes loader--color
+  100%, 0%
     stroke: var(--google-style-loader-red);
-  }
-  40% {
+  40%
     stroke: var(--google-style-loader-blue);
-  }
-  66% {
+  66%
     stroke: var(--google-style-loader-green);
-  }
-  80%, 90% {
+  80%, 90%
     stroke: var(--google-style-loader-yellow);
-  }
-}
