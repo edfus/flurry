@@ -1,20 +1,26 @@
 import { themes , songs } from "../config/songs-list.js";
 import work from "./audio-worker.js";
 
-class GlobalAudioPlayer {
-  preloadLength = 2
+class AudioPlayer {
+  preloadLength = 2 // preload the next two songs waiting to be played
   songs = {
-    nextsToPlay: new Array(this.preloadLength), // for next two songs to play, reserve their array buffer 
+    nextsToPlay: [], // items with array buffer 
     currentIndex: 0,
     shuffle: true
+    // theme songs are stored as keys of "songs" obj. (e.g. this.songs.intro)
   };
-  sequenceArr = [];
-  songPlaying = {name: '', source: null, listener: []};
-  
+  sequenceArr = [];  // non-theme songs that are available
 
+  songPlaying = {name: '', source: null, destination: null, listener: []};
+  /**
+   * songPlaying will only be set by _play method
+   * be emptied by stop method or source.onended event,
+   */
   context = null;
   #worker = null;
+
   constructor () {
+    /* call audio-loader */
     this.#worker = this.#newWorker(work);
     this.#worker.onmessage = this.#onmessage.bind(this);
 
@@ -24,10 +30,10 @@ class GlobalAudioPlayer {
       preloadIndex = {
         min: min,
         max: min + this.preloadLength
-      }
+      } // the initial songs to be played are based on the min and max index
     } else {
       preloadIndex = {
-        min: 0,
+        min: 0,  // non-shuffle mode, starts from 0
         max: this.preloadLength
       }
     }
@@ -37,6 +43,8 @@ class GlobalAudioPlayer {
       songs: [...songs, ...themes],
       preloadIndex: preloadIndex
     })
+
+    /* context & gain */
     this.context = new AudioContext();
     this.nodes = {
       destination: this.context.destination,
@@ -47,77 +55,45 @@ class GlobalAudioPlayer {
     this.nodes.songsGain.connect(this.nodes.masterGain);
 
     Object.defineProperty(this.songPlaying, 'empty', {
-      value() {
+      value () {
         this.name = '';
         this.source = null;
       }
     })
 
+    /* fade */
     this._fade = new this.constructor._Fade();
-  }
-
-  autoPlay () {
-    if(this.playTriggered)
-      return;
-
-    const playF = () => {
-      this.playSong(this.songs.intro, true).catch(() => void 0);
-      this.playTriggered = true;
-    }
-    const callback = () => {
-      this.context.resume();
-      if(!this.playTriggered)
-        playF();
-      ["click", "mousemove", "touchstart", "keydown"].forEach(name => 
-          document.removeEventListener(name, callback, {once: true})
-        )
-    }
-
-    if(config.inApp){
-      playF();
-    } else {
-      if(localStorage.allowAutoPlay === 'true') {
-        if (this.context.state === 'suspended') {
-          ["click", "mousemove", "touchstart", "keydown"].forEach(name => 
-            document.addEventListener(name, callback, {passive: true, once: true})
-          )
-        } else playF();
-      } else if(!localStorage.hasOwnProperty('allowAutoPlay'))
-        Dialog.newConfirm('Hello!', ["can we autoplay audio once you arrived at this site?", "you can change this in setting whenever you want"], "Sure", "no.")
-          .then(result => {
-            if(result === true) {
-              callback();
-              localStorage.allowAutoPlay = 'true';
-            } else {
-              localStorage.allowAutoPlay = 'false';
-              //TODO: allowAutoPlay button
-            }
-          })
-      else ; // localStorage.allowAutoPlay = false;
-    }
-    /**
-    * https://developers.google.com/web/updates/2018/11/web-audio-autoplay
-    * We detect when users regularly let audio play for more than 7 seconds during most of their visits to a website, 
-    * and enable autoplay for that website.
-    * chrome://media-engagement/
-    */
   }
 
   #newWorker (workerFunction) {
     return new Worker(URL.createObjectURL(new Blob([`(${workerFunction})()`], {type: 'application/javascript'})), { /* type: 'module' */ });
   }
 
-  async #onmessage ({data}) {
-    if(data.isError){
-      switch(data.name){
+  /**
+   * @param {Object} param0 the message.
+   * Read the data part of the message from audio-worker,
+   * which must have either isError or isEvent flag set.
+   * If it is an error, data.name & data.message is taken.
+   * If it is an event, according actions will be done based on data.eventName.
+   */
+  async #onmessage ({ data }) {
+    if (data.isError) {
+      switch (data.name) {
         case 'saveDataModeOn':
-          // using default confirm method blocks script execution but setTimeout continues (^^;)
-          !existsCookie('rejectedForceLoad=true') && 
-            Dialog.newConfirm("Your device is on lite mode", ["Downloading audio is paused to prevent data charges."], "Download anyway", "cancel").then(result => 
-              result === true
+          if(existsCookie('rejectedForceLoad=true')) {
+            console.info('Cookie: rejectedForceLoad=true')
+          } else {
+            Dialog.newConfirm(
+              "Your device is on lite mode",
+              ["Downloading audio is paused to prevent data charges."],
+              "Download anyway",
+              "cancel"
+            ).then(downloadAnyWay => 
+              downloadAnyWay
               ? (this.#assignWork("enableForceLoad"), this.#assignWork("loadAll"))
               : setCookie("rejectedForceLoad=true", 1)
-            ) || console.info('Cookie: rejectedForceLoad=true')
+            )
+          }
           return ;
         case 'responseNotOk':
           return Dialog.newError('📶 Network Error', data.message, 15000);
@@ -126,44 +102,53 @@ class GlobalAudioPlayer {
         default:
           return Dialog.newError(data.name, data.message, 15000);
       }
-    } else if(data.isEvent){
+    } else if(data.isEvent) {
       switch(data.eventName){
         case 'newSongLoaded': 
           if(data.reserve === true) {
+             // store reserved one's arrayBuffer in memory
             this.songs[data.role] = {
               audioBuffer: await this.context.decodeAudioData(data.arrayBuffer),
               name: data.name
-            } // 直接在song中保留
-            if(data.role === 'intro') //
-              this.autoPlay()
-          }
-          else {
-            // preload的非themes
-            if(data.arrayBuffer) 
-              this.songs.nextsToPlay[data.index] = {
+            }
+            if(data.role === 'intro')
+              this.autoPlay() // intro is loaded, it's time to play!
+          } else {
+            if(data.arrayBuffer) {
+              // initial preload (e.g. that song to be played when game starts) 
+              this.songs.nextsToPlay.nextsToPlay[data.index] = {
                 audioBuffer: await this.context.decodeAudioData(data.arrayBuffer),
                 name: data.name,
                 index: data.index
-              }
+              } 
+              /**
+               * In shuffle mode,
+               * this may cause many empty items in nextsToPlay array
+               * But we will splice them in playNext functoin
+               */
+            }
+
             this.sequenceArr[data.index] = {
               name: data.name,
               index: data.index
-            } // indexedDB以name作为非重复的index索引，而此时data已添加入indexedDB，无需保留url。
+            } // store it in sequenceArr to mark it as available
           }
           return ;
-        case 'requestFulfilled': 
-          this.songs.nextsToPlay.push({
-            audioBuffer: await this.context.decodeAudioData(data.arrayBuffer), // only takes arrayBuffer as input param
-            name: data.name,
-            index: data.index
-          })
-          return ; 
         case 'allLoaded': 
           localStorage.songsAllLoaded = true;
           return this.allLoaded = true; 
-        default:  Dialog.newError(data.eventName, data);
+        case 'requestFulfilled':
+          // when game started, songs to be preloaded would be "requested" explicitly.
+          // and here comes the result.
+          this.songs.nextsToPlay.push({
+            audioBuffer: await this.context.decodeAudioData(data.arrayBuffer),
+            name: data.name,
+            index: data.index
+          })
+          return ;
+        default:  Dialog.newError(data.eventName, data);  // should never be reached
       }
-    } else {
+    } else { // should never be reached
       Dialog.newError(data.name, data);
     }
   }
@@ -174,20 +159,81 @@ class GlobalAudioPlayer {
       ...vars
     ])
   }
+  
+  /**
+   * Handle auto play policy.
+   * Will trigger a prompt asking for user's permission of auto play.
+   * Will set & get localStorage.allowAutoPlay.
+   * Note that the _play will try this.context.resume() if suspended (autop play rejected)
+   * 
+   * TODO: handle the circumstance when localStorage.allowAutoPlay is false;
+   * TODO: add a toggle AutoPlay button in the setting page.
+   * @return {void}
+   */
+  autoPlay () {
+    if(this.playTriggered)
+      return;
+
+    const playIntro = () => {
+      this.playSong(this.songs.intro, true).catch(() => void 0);
+      this.playTriggered = true;
+    }
+
+    const callback = () => {
+      this.context.resume();
+      if(!this.playTriggered)
+        playIntro();
+      ["click", "mousemove", "touchstart", "keydown"].forEach(name => 
+          document.removeEventListener(name, callback, {once: true})
+        )
+    }
+
+    if(config.inApp){
+      playIntro();
+    } else {
+      if(localStorage.allowAutoPlay === 'true') {
+        if (this.context.state === 'suspended') {
+          ["click", "mousemove", "touchstart", "keydown"].forEach(name => 
+            document.addEventListener(name, callback, {passive: true, once: true})
+          )
+        } else playIntro();
+      } else if(!localStorage.hasOwnProperty('allowAutoPlay'))
+        Dialog.newConfirm('Hello!', ["can we autoplay audio once you arrived at this site?", "you can change this in setting whenever you want"], "Sure", "no.")
+          .then(result => {
+            if(result === true) {
+              callback();
+              localStorage.allowAutoPlay = 'true';
+            } else {
+              localStorage.allowAutoPlay = 'false';
+            }
+          })
+      else ;
+    }
+  }
 
   /**
-   * 播放歌曲。
-   * @param {string | Object} param 要播放歌曲的role或包含其信息的对象
-   * @param {boolean} loop 是否循环
+   * playSong
+   * @param {string | Object} param If a string is passed in, it's the role of the song.
+   * Otherwise, it should be an object containing necessary info of the song to play
+   * @param {boolean} loop false by default
+   * @return {Promise<void>}
    */
   async playSong (param, loop = false) {
     if(typeof param === "string")
-      param = this.songs[param]
+      param = this.songs[param];
     if(!param)
       return Promise.reject('not found');
     return this._play(param.name, param.audioBuffer, this.nodes.songsGain, loop)
   }
 
+  /**
+   * will cancelFadeOut & stop songPlaying.source & resume context & set volume
+   * @param {string} name 
+   * @param {AudioBuffer} audioBuffer 
+   * @param {GainNode} destination 
+   * @param {Boolean} loop
+   * @return {Promise<void>}
+   */
   async _play(name, audioBuffer, destination, loop) {
     if(this._fade.isFading) {
       this.cancelFadeOut()
@@ -200,18 +246,23 @@ class GlobalAudioPlayer {
     }
     this.volume = this._user_preferred_volume;
 
-    const source =  this.context.createBufferSource();
+    const source = this.context.createBufferSource();
     source.buffer = audioBuffer;
     source.loop = loop; 
     source.start(0);
-    // source.start( this._startedAt, this._progress + this.offset, this.duration );
     source.connect(destination);
 
-    this.songPlaying.source = source
+    this.songPlaying.source = source;
     this.songPlaying.name = name;
-    this.songPlaying.listener.forEach(f => f());
+    this.songPlaying.destination = destination;
+
+    for (const func of this.songPlaying.listener) {
+      await func();
+    } // not first come, first served now. LOL.
+
     this.songPlaying.listener = [];
-    console.info("AudioPlayer: Playing: " + this.songPlaying.name)
+    console.info("AudioPlayer: Playing: " + this.songPlaying.name);
+
     return new Promise((resolve, reject) => {
       source.onended = isScheduled => {
         console.info("AudioPlayer: Ended: " + this.songPlaying.name)
@@ -221,60 +272,98 @@ class GlobalAudioPlayer {
         else resolve();
       }
       source.beforeForceStopped = () => {
-        this.songPlaying.source.onended = null; // in case async error
+        this.songPlaying.source.onended = null;
         reject('AudioPlayer: Force stopped: ' + this.songPlaying.name);
       }
     })
   }
-  /**
-   * 播放按顺序的下一首歌
-   * 注意，当autoPlay为true时，playNext会不断递归执行
-   * 即playNext(true).then中的语句永远不会被执行。
-   * audioPlayer.stop()可终止其自动顺序循环播放。终止后playNext(true)返回reject的promise，注意catch。
-   * @param {undefined | boolean} autoPlay 默认false。若为true，则自动顺序循环播放
-   * @return {Promise} 
-   */
-  async playNext (autoPlay = false) {
-    let nextSong;
 
+  /**
+   * Get the first available song in this.songs.nextsToPlay
+   * will splice the emptys as well as the song gotten.
+   */
+  getNextSong () {
     for(let i = 0; i < this.songs.nextsToPlay.length; i++) {
       if(this.songs.nextsToPlay[i]) {
-        nextSong = this.songs.nextsToPlay[i];
-        this.songs.nextsToPlay.splice(0, i + 1)
+        return this.songs.nextsToPlay.splice(0, i + 1)[i];
       }
     }
-
-    if(!nextSong) {
-      if(this.songPlaying.source) {
-        console.warn("AudioPlayer: new song is not available, running fallback")
-        this.songPlaying.source.loop = true;
-        return new Promise(resolve => {
-          setTimeout(() => resolve(this.playNext(autoPlay)), this.songPlaying.source.buffer.duration * 999.9)
-        })
-      } else {
-        return new Promise(resolve => {
-          console.warn("AudioPlayer: songs not available")
-          setTimeout(() => resolve(this.playNext(autoPlay)), 1000)
-        })
-      }
-    }
-
-    this.songs.currentIndex = nextSong.index;
-    this.request(nextSong.index + this.preloadLength)
-    if(autoPlay)
-      return this._play(nextSong.name, nextSong.audioBuffer, this.nodes.songsGain, false).then(() => this.playNext(true));
-    else 
-      return this._play(nextSong.name, nextSong.audioBuffer, this.nodes.songsGain, false);
+    return false;
   }
 
-    /**
-   * 加载对应音乐到内存
-   * @param {number | string | Object | Array<Object>} param 播放的index（会求余），或包含信息的对象（对象数组），或要播放的role名
+  /**
+   * Play the next song in sequence
+   * Note that when you set the autoPlay flag to true,
+   * this functon will execute a recursion
+   * — that means, if you chained this function like playNext(true).then,
+   * the "then" part will never be reached.
+   * Calling AudioPlayer.prototype.stop() can stop the autoPlay of this function
+   * and result in a rejected promise.
+   * @param {undefined | boolean} autoPlay false by default
+   * @return {Promise<void>} 
+   */
+  async playNext (autoPlay = false) {
+    let songToPlay = this.getNextSong();
+
+    if(!songToPlay.audioBuffer) {
+      if(this.songPlaying.source) {
+        console.warn("AudioPlayer: new song is yet not available, executing fallback.");
+
+        this.songPlaying.listener.push(() => this.playNext(autoPlay));
+        // this.songPlaying.source.loop = true;
+        // return new Promise(resolve => {
+        //   setTimeout(() => resolve(this.playNext(autoPlay)), this.songPlaying.source.buffer.duration * 999.9);
+        // });
+      } else {
+        return new Promise(resolve => {
+          console.warn("AudioPlayer: no song available .");
+          resolve();
+          // setTimeout(() => resolve(this.playNext(autoPlay)), 1000); // retry after one second.
+        });
+      }
+    }
+
+    let pr_nextSong = songToPlay;
+
+    while (this.songs.currentIndex === songToPlay.index) { // in case duplication
+      songToPlay = getNextSong();
+      this.request(this.songs.currentIndex); // request new as we have spliced one.
+
+      if(songToPlay === false) { // no other songs available
+        songToPlay = pr_nextSong;
+        break;
+      } else {
+        pr_nextSong = songToPlay;
+        continue;
+      }
+    }
+    this.songs.currentIndex = songToPlay.index;
+    this.request(this.songs.currentIndex);
+
+    if(autoPlay)
+      return this._play(songToPlay.name, songToPlay.audioBuffer, this.nodes.songsGain, false).then(() => this.playNext(true));
+    else 
+      return this._play(songToPlay.name, songToPlay.audioBuffer, this.nodes.songsGain, false);
+  }
+
+  /**
+   * request songs to preload.
+   * @param {number | string | Object | Array<Object>} param 
+   * number: the index.
+   * string: the role.
+   * Object: the object containing song-info
+   * Array<Object>: an array of objects containing song-info
+   * @return {void}
    */
   request(param) {
     switch(typeof param) {
-      case 'number': 
-        this.#assignWork('loadSongs', [this.sequenceArr[param % this.sequenceArr.length]]) // mod
+      case 'number':
+        if(this.songs.shuffle) {
+          param = Math.floor(param * 3 * Math.random());
+        } else {
+          param = param + this.preloadLength;
+        }
+        this.#assignWork('loadSongs', [this.sequenceArr[param % this.sequenceArr.length]]) // modulus
         break;
       case 'string':
         const arr = [...songs, ...themes];
@@ -290,7 +379,7 @@ class GlobalAudioPlayer {
           this.#assignWork('loadSongs', param)
         else this.#assignWork('loadSongs', [param])
         break;
-      default: console.warn("GlobalAudioPlayer: in function request: wrong parameter. ", param);
+      default: console.warn("AudioPlayer: in function request: wrong parameter. ", param);
     }
   }
 
@@ -302,6 +391,12 @@ class GlobalAudioPlayer {
     }
   };
 
+
+  /**
+   * @param {Function} func
+   * @param {number} delay play after delay
+   * @return {Promise<any>} resolves with whatever func returned
+   */
   async scheduleFunc (func, delay) {
     const protoF = async () => {
       await new Promise(resolve => setTimeout(resolve, delay * 1000))
@@ -313,12 +408,15 @@ class GlobalAudioPlayer {
         return Promise.reject("AudioPlayer: Schedule cancelled")
       }
     }
+
     const digestHex = await this._digestText(func.toString())
-    this._schedule[digestHex] = {}
+    this._schedule[digestHex] = {};
     this._schedule[digestHex].in = true;
+
     if(!this.songPlaying.source) {
       return protoF()
     }
+
     if(this._fade.isFading) {
       if("_hasSchedule" in this._fade) {
         const prDelay = this._fade._hasSchedule;
@@ -328,9 +426,9 @@ class GlobalAudioPlayer {
         await new Promise(resolve => setTimeout(resolve, prDelay * 1001))
         
         return new Promise(resolve => {
-          this.songPlaying.listener.push(() => {
+          this.songPlaying.listener.push(() => 
             resolve(this.scheduleFunc(...arguments))
-          })
+          )
         }) 
       } else {
         this._fade._hasSchedule = delay;
@@ -353,6 +451,9 @@ class GlobalAudioPlayer {
     })
   }
 
+  /**
+   * @return {Promise<boolean>} successful or not
+   */
   async cancelScheduledFunc (func) {
     const digestHex = await this._digestText(func.toString());
     if(this._schedule[digestHex] && this._schedule[digestHex].in)
@@ -362,13 +463,23 @@ class GlobalAudioPlayer {
 
   /**
    * 
-   * @param {string | Object} param 要播放歌曲的role或包含其信息的对象
-   * @param {boolean} loop 是否循环
+   * @param {string | Object} param If a string is passed in, it's the role of the song.
+   * Otherwise, it should be an object containing necessary info of the song to play
+   * @param {boolean} loop false by default
+   * @param {number} delay play after delay
+   * @return {Promise<void>} 
    */
   async scheduleSong (param, loop, delay = 0) {
     return this.scheduleFunc(this._schedule._getSongFunc(param, loop), delay);
   }
 
+  /**
+   * 
+   * @param {string | Object} param If a string is passed in, it's the role of the song.
+   * Otherwise, it should be an object containing necessary info of the song to play
+   * @param {boolean} loop false by default
+   * @return {Promise<boolean>} successful or not
+   */
   async cancelScheduledSong (param, loop) {
     return this.cancelScheduledFunc(this._schedule._getSongFunc(param, loop));
   }
@@ -385,6 +496,9 @@ class GlobalAudioPlayer {
     this.context.suspend();
   }
 
+  /**
+   * @return {Promise} resolves when context resumed.
+   */
   async resume () {
     if (this.context.state === 'suspended') {
       return this.context.resume().then(() => 
@@ -393,25 +507,30 @@ class GlobalAudioPlayer {
     }
   }
 
+  /**
+   * @param {number} delay in seconds
+   * @return {Promise} resolves after delay seconds
+   */
   async stop (delay = 0) {
     if(this.songPlaying.source) {
-      const handleFunc = this.songPlaying.source.beforeForceStopped
       // this.songPlaying.source._promisePtr.catch(reason => console.info(reason))
-      //NOTE: console.infoed but still throws an uncaught error, I am comfused.
-      if(handleFunc && typeof handleFunc === "function")
-        handleFunc();
+      // console.infoed but still throws an uncaught error, I am comfused.
+      if(typeof this.songPlaying.source.beforeForceStopped === "function")
+        this.songPlaying.source.beforeForceStopped();
+      
       this.songPlaying.source.stop(delay);
       this.songPlaying.empty();
       return new Promise((resolve, reject) => {
         setTimeout(() => {
           if(this.songPlaying.source)
-            reject("AudioPlayer: incomplete stop after delay " + delay)
+            ; // reject("AudioPlayer: incomplete stop after delay " + delay)
           else resolve()
         }, delay * 1000);
       })
     }
     // An AudioBufferSourceNode can only be played once;
   }
+
   _user_preferred_volume = 1;
   static _Fade = class {
     isFading = false;
@@ -483,8 +602,9 @@ class GlobalAudioPlayer {
     new ThrottleLog(500).autoLog(() => [this.volume, this.context.currentTime]);
   }
   /**
-   * pause the audio, not stop.
+   * pause the audio, not stopping it.
    * @param {number} fadeTime seconds to fade
+   * @return {Promise<void>}
    */
   async fadeOut (fadeTime = 10) {
     const currTime = this.context.currentTime;
@@ -510,25 +630,33 @@ class GlobalAudioPlayer {
   }
 
   /**
-   * resume the last paused audio
+   * fade in the last paused audio
    * @param {number} fadeTime seconds to fade
+   * @return {Promise<void>}
    */
   async fadeIn (fadeTime = 10) {
     const currTime = this.context.currentTime;
+
     if(!this.songPlaying.source)
       return Promise.reject(new Error("!this.songPlaying.source"));
+
     if(this._fade.isFading) {
       this._fade.dump('Dumped. fadeIn now');
       this.nodes.songsGain.gain.cancelScheduledValues(currTime);
+      
       fadeTime = (this._user_preferred_volume - this.volume) * fadeTime;
+      
       this.nodes.songsGain.gain.linearRampToValueAtTime(this.volume, currTime + .001);
       this.nodes.songsGain.gain.linearRampToValueAtTime(this._user_preferred_volume, currTime + .001 + fadeTime);
+      
       return this._fade.newPromise(void 0, fadeTime * 1000);
     } else {
       this.resume().then(() => {
         fadeTime = this._user_preferred_volume * fadeTime;
+        
         this.nodes.songsGain.gain.linearRampToValueAtTime(0, currTime);
         this.nodes.songsGain.gain.linearRampToValueAtTime(this._user_preferred_volume, currTime + fadeTime);
+        
         return this._fade.newPromise(void 0, fadeTime * 1000);
       })
     }
@@ -538,11 +666,15 @@ class GlobalAudioPlayer {
     return this.nodes.songsGain.gain.value;
   }
 
+  /**
+   * I forgot why I had chosen setTargetAtTime instead of setValueAtTime. 😂
+   * TODO: volume button
+   */
   set volume( value ) {
     this.nodes.songsGain.gain.setTargetAtTime( value, this.context.currentTime, 0.01 );
+    // setTargetAtTime -- value: target, startTime: currentTime, timeConstant: 0.01
     this._user_preferred_volume = value;
-    //TODO: volume button
   }
 }
 
-export default GlobalAudioPlayer;
+export default AudioPlayer;
