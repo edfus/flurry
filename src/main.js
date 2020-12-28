@@ -635,7 +635,7 @@ class Game {
         group.add(plane);
         group.add(pointlight);
         group.add(this._createPropeller(0, position_propeller));
-        // group.add(this._createHeadLight(this.state.scene_color[0], position_headLight, position_propeller));
+        group.add(this._createHeadLight(this.state.scene_color[0], position_headLight, position_propeller));
         group.name = "plane";
         this.plane = group;
         this.models.plane = group;
@@ -1209,8 +1209,14 @@ game.event.addListener("loaded", () => {
   game.renderLoop.start();
 }, {once: true});
 
-window.addEventListener("DOMContentLoaded", () => {
+if(document.readyState !== "loading") {
   game.state.inited 
   ? game.load()
   : game.event.addListener("inited", () => game.load(), {once: true});
-}, {passive: true, once: true})
+} else {
+  window.addEventListener("DOMContentLoaded", () => {
+    game.state.inited 
+    ? game.load()
+    : game.event.addListener("inited", () => game.load(), {once: true});
+  }, {passive: true, once: true})
+}
