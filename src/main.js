@@ -4,7 +4,7 @@ import { GLTFLoader } from "../lib/gltf-loader.js";
 import UserInteraction from "./modules/ui.js";
 import Event from "./utils/event-dispatcher.js";
 import RenderLoop from "./utils/render-loop.js";
-import AudioPlayer from "./audio/audio-worker.js";
+import AudioPlayer from "./audio/audio-player.js";
 import Score from "./modules/score.js";
 import Drawer from "./modules/texture/draw-textures.js";
 import Obstacle from "./modules/obstacles.js";
