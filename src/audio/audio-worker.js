@@ -4,11 +4,11 @@ import { themes , songs } from "../config/songs-list.js";
 function work() {
   /* class AudioLoader - BEGIN */
   class AudioLoader {
-    maxRetryTimes = 3;
-    retryGap = 3000; // ms
-    forceLoad = false;
     constructor({ songs, preloadIndex }) {
-      //NO\TE: this game has no sound effect
+      this.maxRetryTimes = 3;
+      this.retryGap = 3000; // ms
+      this.forceLoad = false;
+      
       this.songs = songs;
       this.preloadIndex = preloadIndex;
       this.loadAll();
