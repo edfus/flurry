@@ -16,7 +16,7 @@
 		<script type="module" async>
 			if("caches" in window && "serviceWorker" in navigator){
 				window.addEventListener("load", ()=>{
-					navigator.serviceWorker.register('/sw.min.js', { scope: '/' }).then(reg => {
+					navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(reg => {
 						if(reg.installing){
 							console.info('[ServiceWorker] installing');
 						}
