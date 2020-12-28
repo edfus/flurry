@@ -4,8 +4,8 @@ const version = "1.2.4";
 const cacheName = "cache-" + version;
 const cacheResources = [
   `/`,
-  "/dist/config.js",
-  `/dist/main@${version}.js`,
+  "/dist/config.min.js",
+  `/dist/main@${version}.min.js`,
   "/dist/style.css"
 ];
 const DLC = [

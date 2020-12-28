@@ -635,7 +635,7 @@ class Game {
         group.add(plane);
         group.add(pointlight);
         group.add(this._createPropeller(0, position_propeller));
-        group.add(this._createHeadLight(this.state.scene_color[0], position_headLight, position_propeller));
+        // group.add(this._createHeadLight(this.state.scene_color[0], position_headLight, position_propeller));
         group.name = "plane";
         this.plane = group;
         this.models.plane = group;
@@ -1061,8 +1061,12 @@ class Game {
 
   /* load glTF files using main thread */
   async _loadglTFs (modelsToLoad) {
+    if(!this._load.gltf) {
+      const temp = new GLTFLoader();
+      this._load.gltf = temp.load.bind(temp);
+    }
     return Promise.allSettled(
-      modelsToLoad.map(([path, callback]) => new Promise(resolve => GLTFLoader(path, result => resolve(callback(result))))))
+      modelsToLoad.map(([path, callback]) => new Promise(resolve => this._load.gltf(path, result => resolve(callback(result))))))
        .then(results => {
         for (const result of results) {
           if (result.status !== "fulfilled")
