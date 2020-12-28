@@ -10,12 +10,12 @@ const args = process.argv.slice(2);
 const root_directory = join(__dirname, '/..');
 
 const toReplace = "three",
-      replacer = "/node_modules/three/build/three.module.js";
+      replacement = "/node_modules/three/build/three.module.js";
 
 (async () => {
     if(extractArg(/--build-only/i)) {
         await resolveNodeDependencies(
-            replacer,
+            replacement,
             toReplace
         );
         return buildAll();
@@ -25,11 +25,11 @@ const toReplace = "three",
         if(extractArg(/--test|-t/i)) {
             await resolveNodeDependencies(
                 toReplace,
-                replacer
+                replacement
             );
         } else {
             await resolveNodeDependencies(
-                replacer,
+                replacement,
                 toReplace
             );
         }
