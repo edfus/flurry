@@ -1,14 +1,17 @@
 import { basename, resolve } from 'path';
 
 import jsCompiler from './compilers/rollup.js';
-import jsMinifier from "./compilers/terser.js";
 import stylusCompiler from './compilers/stylus.js';
 
 /**
- * rollup, babel, minify.
+ * Rollup & babel the js files
+ * @param {string} file the relative path from where you ran the node command or the abs path
+ * of the entry file (of a whole module) to be built
+ * @param {string} dest the destination **folder**
+ * @param {Object} config {fileName: `[name].min.js`, compact: true, format: "esm", moduleID: "", ...}
  */
 async function buildJS(file, dest, config = {}) {
-  const fileName = config.fileName ? config.fileName : `[name].min.js`;
+  const fileName = config.fileName || `[name].min.js`;
 
   delete config.fileName;
 
@@ -23,8 +26,11 @@ async function buildJS(file, dest, config = {}) {
 
 
 /**
-* Handle Postcss files
-*/
+ * Build stylus files.
+ * @param {string} file the relative path from where you ran the node command or the abs path
+ * @param {string} dest the destination **folder**
+ * @param {Object} config {fileName: `[name].css`, minify: true ...s}
+ */
 async function buildCSS(file, dest, config = {}) {
   const defaultOptions = {
       file: resolve(file),
