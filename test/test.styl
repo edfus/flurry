@@ -1,0 +1,12 @@
+v(ident, value)
+  ident value
+LR = right left
+TB = top bottom
+for i in (1..4)
+  .box._{i} 
+    &::before
+      v(LR[i % 2], i % 2)
+      v(TB[floor(i / 3)], floor(i / 3))
+    &::after
+      v(LR[(i + 1) % 2], (i + 1) % 2)
+      v(TB[(floor(i / 3) + 1) % 2], (floor(i / 3) + 1) % 2)
