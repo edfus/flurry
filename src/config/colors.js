@@ -9,7 +9,7 @@ export default {
     [0xff00dd, "#914f88", 0x914f88], 
     [0x02e6e6, "#3f8888", 0x3f8888]
   ],
-  // 以前的： ["d7e607", "0e9f52", "dc0e07", "02e6e6"]
+  // previous: ["d7e607", "0e9f52", "dc0e07", "02e6e6"]
   greenForTest: 0x00ff00,
   hslStarColor: {
     h: .583,

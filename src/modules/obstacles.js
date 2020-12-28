@@ -86,7 +86,7 @@ class Obstacle {
     material = new THREE.MeshPhongMaterial({
       color: options.color,
       shininess: options.shininess,
-      specular: options.specular, // 高光色彩
+      specular: options.specular, // 高光
       emissive: options.emissive,
       emissiveIntensity: options.emissiveIntensity,
       //metalness: options.metalness

@@ -1,4 +1,4 @@
-const map = new Array(1, 9, 5, 0, 3, 7, 2 ,8); // 2的n次方
+const map = new Array(1, 9, 5, 0, 3, 7, 2, 8); // length should be powers of 2
 const identifier = 'o';
 let value = 0
 class Score { 
@@ -13,7 +13,6 @@ class Score {
       initialScore = 0;
     value = Number(initialScore); // in case
   }
-  // set speed (newSpeed) {}
   
   bind (domElement) {
     this.dom = domElement;
@@ -86,14 +85,15 @@ class Score {
     return decrypt(localStorage.score)
   }
 }
-//TODO： SubtleCrypto.sign()
-function _algorithm(value) { // 简单地散列useragent，以之异或为校验和转换为16进制到value末尾
+
+//TODO: SubtleCrypto.sign()
+function _algorithm(value) {
   let str = '';
   let i = 0;
   const maxLength = value.length / 2;
   for(const ch of navigator.userAgent) {
     i = map[ch.codePointAt(0) & (map.length - 1)];
-    str += value[i] ^ i; // undefined will just be i
+    str += value[i] ^ i; // undefined will just yield i
     if(str.length >= maxLength)
       break;
   }
