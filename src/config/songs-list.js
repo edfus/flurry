@@ -1,5 +1,11 @@
+/**
+ * We are using worker to fetch song assets, 
+ * so instead of relative uris, absolute urls must be used.
+ */
+
 const host = config.testMode ? `http://${location.host}/` : `https://${location.host}/`;
-//NOTE
+//NOTE: host needs to be configured
+
 const themes = [
   {
     name: "Intro",
@@ -13,8 +19,16 @@ const themes = [
     url: `${host}asset/audio/C418%20-%20Moog%20City%202_cutted.mp3`,
     role: 'outro'
   }
-]; // 无index属性
-themes.forEach(e => e.reserve = true);
+]; // the index property can be omitted for themes.
+
+/**
+ * themes are always reserved 
+ * (always got their arrayBuffer stored in memory)
+ * for we can't predict when will they be called
+ */
+
+themes.forEach(e => e.reserve = true); 
+
 const songs = [
   {
     name: "Void",
@@ -49,5 +63,7 @@ const songs = [
     url: `${host}asset/audio/Loner%20Soundtrack/8_Rainyday.mp3`
   },
 ];
+
 songs.forEach((e, i) => {e.index = i; e.author = "Inner Peace Studio"});
-export { themes , songs }
+
+export { themes , songs };

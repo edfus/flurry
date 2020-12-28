@@ -17,11 +17,9 @@
 
   PerspectiveCameraSetting = {
       fieldOfView: 60, 
-      // Unity中Camera的FOV（默认的垂直方向）设置为多少比较合理呢，怎样做产生的透视失真更小？ - zd304的回答 - 知乎
-      // https://www.zhihu.com/question/395044805/answer/1233585414
       aspectRatio: window.innerWidth / window.innerHeight,
-      nearPlane: 1, // 可以看作近端裁剪
-      farPlane: 10000 // 可以看作远端裁剪
+      nearPlane: 1,
+      farPlane: 10000
   },
 
   GetContainer = () => {
@@ -36,13 +34,13 @@
     return document.getElementById('score')
   },
 
-  GameLoadedCallback = async () => { // asynchronous 异步的，非同时的
+  GameLoadedCallback = async () => {
     /**
-     * 渐隐目标对象
-     * @param {*} currentOpacity 初始透明度
-     * @param {*} reduction_num 每次执行改变的幅度
-     * @param {*} per_ms 每隔多少毫秒执行一次。单位：毫秒
-     * @param {*} reference 指向的对象
+     * fadeOut
+     * @param {*} currentOpacity 
+     * @param {*} reduction_num the extent of reduction each time
+     * @param {*} per_ms the execution gap 
+     * @param {*} reference the HTMLElement reference
      */
     const fadeOut = (currentOpacity, reduction_num, reference) => () => { 
       (reference.style.opacity = currentOpacity) < 0
@@ -353,10 +351,9 @@
 
   window.existsCookie = value => document.cookie.includes(value)
   /**
-   * 设置cookie
-   * @param {string} value no semicolon
+   * set the cookie
+   * @param {string} value value without the trailing semicolon
    * @param {number} expireDays
-   * @return {undefined} 
    */
   window.setCookie = (value, expireDays) => {
     const date = new Date();

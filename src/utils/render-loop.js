@@ -1,6 +1,3 @@
-/**
- * 原则：game.state控制renderLoop，renderLoop中禁止修改game.state
- */
 class RenderLoop {
   #reverseNextThen = false;
   #promisifyNextThen = false;

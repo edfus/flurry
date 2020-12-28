@@ -408,7 +408,7 @@ class UserInteraction {
     },
     update () {
       if(this.ui.#frozen)
-       return ; //TODO 把position_min, position_max改为与屏幕宽高相关
+       return ;
       this.raw[0].x = this.normalize(this.ui.fingersPos[0].x, -1, 1, this.X_MIN, this.X_MAX);
       this.raw[0].y = this.normalize(this.ui.fingersPos[0].y, -1, 1, this.Y_MIN, this.Y_MAX);
       this.raw[1].x = this.normalize(this.ui.fingersPos[1].x, -1, 1, this.X_MIN, this.X_MAX);
@@ -803,8 +803,8 @@ class Canvas2D {
   setSize (width, height) {
     this.#canvas.width = width;
     this.#canvas.height = height;
-  } // 高宽改变时，画布内容会被清空，需要重新绘制
-
+  }
+  
   clear () {
     this.#context.clearRect(0, 0, this.#canvas.width, this.#canvas.height); // fillRect
     // Another elegant option is to set the 'globalCompositeOperation' to 'xor' and paint you line again....so it will be removed
