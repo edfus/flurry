@@ -3,15 +3,13 @@
   "version": "1.2.4",
   "description": "A Three.js based web game imitating mobile game 'Loner'.🎮",
   "main": "scripts@core/main.js",
-  "directories": {
-    "tools": "rollup",
-    "dist": "dist"
-  },
   "scripts": {
-    "clean": "rm -rf %npm_package_directories_dist% sw.js",
-    "watch": "node %npm_package_directories_tools%/watch.js",
-    "pack": "node %npm_package_directories_tools%/pack.js",
-    "build": "node %npm_package_directories_tools%/pack.js --build-only"
+    "clean": "rm -rf dist/**/* sw.js",
+    "watch": "node rollup/watch.js",
+    "test":  "node rollup/pack.js v0.0 --test",
+    "anti-test":  "node rollup/pack.js v0.0",
+    "pack": "node rollup/pack.js",
+    "build": "node rollup/pack.js --build-only"
   },
   "author": "edfus",
   "license": "ISC",
