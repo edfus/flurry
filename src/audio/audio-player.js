@@ -116,7 +116,7 @@ class AudioPlayer {
           } else {
             if(data.arrayBuffer) {
               // initial preload (e.g. that song to be played when game starts) 
-              this.songs.nextsToPlay.nextsToPlay[data.index] = {
+              this.songs.nextsToPlay[data.index] = {
                 audioBuffer: await this.context.decodeAudioData(data.arrayBuffer),
                 name: data.name,
                 index: data.index

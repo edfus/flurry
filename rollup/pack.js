@@ -20,6 +20,11 @@ const toReplace = "three",
         );
         return buildAll();
     } else {
+        if(extractArg(/--(update-)?cache|-c/i)) {
+            await updateCacheResources();
+            await updateDLC();
+        }
+
         await adoptVersion();
 
         if(extractArg(/--test|-t/i)) {
@@ -46,17 +51,51 @@ const toReplace = "three",
     throw error;
 });
 
+async function updateCacheResources () {
+    const ignore = /orbit-controls(\.min)?\.js/;
+    const replacement = [];
 
+    replacement.push("\"/\""); // root
+
+    await processFiles(join(root_directory, "./dist/"), filename => {
+        if(ignore.test(filename))
+            return ;
+        else replacement.push(`"${decode(filename)}"`);
+    });
+
+    return _updateCache("cache-resources.js", `\n  ${replacement.join(",\n  ")}\n`);
+}
+  
+async function updateDLC () {
+    const ignore = /favicons|audio/;
+    const replacement = [];
+
+    await processFiles(join(root_directory, "./assets/"), filename => {
+        if(ignore.test(filename))
+            return ;
+        else replacement.push(`"${decode(filename)}"`);
+    });
+
+    return _updateCache("downloadable.js", `\n  ${replacement.join(",\n  ")}\n`);
+}
+
+function decode (filename) {
+    return filename.replace(root_directory, "").replace(/\\/g, "/");
+}
+  
+async function _updateCache(filename, replacement) {
+    return updateFileContent({
+        file: join(root_directory, "./src/service-worker/", filename),
+        search: /export\s+default\s+\[((.|\n)*?)\];/,
+        replace: replacement,
+        separator: null
+    });
+}
 
 async function resolveNodeDependencies (from, to) {
-    const str = regex => {
-        const string = regex.toString();
-        return string.slice(1, string.length - 1)
-    } 
-
     const handler = file => updateFileContent({
         file,
-        search: new RegExp(str(/\s*from\s*['"]/) + `(${from})` + str(/['"]/)),
+        search: new RegExp(`${/\s*from\s*['"]/.source}(${from})${/['"]/.source}`),
         replace: to
     });
 
@@ -86,31 +125,31 @@ async function adoptVersion () {
 
     await updateFileContent({
         file: join(root_directory, './package.json'),
-        search: /"version":\s*"(.*)",?/,
+        search: /"version":\s*"(.*?)",?/,
         replace: newVersion
     });
 
     await updateFileContent({
         file: join(root_directory, './rollup/builder.config.js'),
-        search: /const\s+version\s*=\s*"(.*)";?/,
+        search: /const\s+version\s*=\s*"(.*?)";?/,
         replace: newVersion
     });
 
     await updateFileContent({
         file: join(root_directory, './src/config/config.js'),
-        search: /Version\s*=\s*"(.*)",?/,
+        search: /Version\s*=\s*"(.*?)",?/,
         replace: newVersion
     });
 
     await updateFileContent({
         file: join(root_directory, './www/index.html'),
-        search: /href="\/dist\/main@(.*)\.min\.js"/,
+        search: /href="\/dist\/main@(.*?)\.min\.js"/,
         replace: newVersion
     });
 
     await updateFileContent({
         file: join(root_directory, 'src/service-worker.js'),
-        search: /const\s+version\s*=\s*"(.*)";?/,
+        search: /const\s+version\s*=\s*"(.*?)";?/,
         replace: newVersion
     });
 
@@ -119,21 +158,42 @@ async function adoptVersion () {
     return newVersion;
 }
 
+/**
+ * Replace the 1st parenthesized substring match with data.replace.
+ * Can handle large files well with the magic of rw_stream.
+ * @param {Object} data 
+ */
 async function updateFileContent(data) {
-    // set the global flag to ensure search pattern is "stateful"
-    const pattern = new RegExp(data.search, 'g'); 
-    let matches = null;
-
-    return rw_stream(data.file, /\r?\n/, (line, EOF) => {
-        while ((matches = pattern.exec(line)) !== null) {
-            let foundLine = matches[0];
-            let newLine = foundLine.replace(matches[1], data.replace)
-            line = line.replace(foundLine, newLine);
-        }
-
-        return EOF ? line : line.concat("\n"); // LF
+    /**
+     * Set the global flag to ensure the search pattern is "stateful",
+     * while preserving flags the original search pattern.
+     */
+    let flags = data.search.flags;
+  
+    if(!flags.includes("g"))
+        flags = "g".concat(flags);
+  
+    const pattern = new RegExp(
+        data.search.source // add parentheses for matching substrings exactly,
+            .replace(/(.*?)\((.*)\)(.*)/, "($1)($2)$3"),
+        flags
+    );
+  
+    const separator = "separator" in data ? data.separator : /(?=\r?\n)/;
+  
+    return rw_stream(data.file, separator, (part, EOF) => {
+        part = part.replace(
+                  pattern, 
+                  (match_whole, prefix, match_substr) => 
+                      match_whole.replace (
+                              prefix.concat(match_substr),
+                              prefix.concat(data.replace)
+                          ) // using prefix as a hook
+            );
+  
+        return EOF ? part : part.concat(data.join || "");
     });
-}
+  }
 
 function extractArg(matchPattern) {
     for (let i = 0; i < args.length; i++) {

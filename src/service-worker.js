@@ -1,16 +1,9 @@
 import FetchHandler from "./service-worker/network-first.js";
+import cacheResources from "./service-worker/cache-resources.js";
+import DLC from "./service-worker/downloadable.js";
 
 const version = "1.2.4";
 const cacheName = "cache-" + version;
-const cacheResources = [
-  `/`,
-  "/dist/config.min.js",
-  `/dist/main@${version}.min.js`,
-  "/dist/style.css"
-];
-const DLC = [
-
-];
 
 self.addEventListener('install', e => {
   self.skipWaiting();
