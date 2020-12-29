@@ -581,7 +581,7 @@ class Game {
   }
 
   modelsToLoad = [
-    ['/asset/models/biplane.glb', 
+    ['/assets/models/biplane.glb', 
       result => {
         const plane = result.scene.children[0];
         result.scenes = null;
@@ -929,7 +929,7 @@ class Game {
 
   _addSolidWaste () {
     // https://threejs.org/docs/#api/en/loaders/TextureLoader
-    const texture =this._load.texture.load("/asset/textures/smoke.png");
+    const texture =this._load.texture.load("/assets/textures/smoke.png");
     const wasteGeo = new THREE.PlaneBufferGeometry(40, 40);
     const wasteMaterial = new THREE.MeshLambertMaterial({
       map: texture,
