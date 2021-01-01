@@ -6,8 +6,8 @@
   "scripts": {
     "clean": "rm -rf dist/**/* sw.js",
     "watch": "node rollup/watch.js",
-    "test":  "node rollup/pack.js v0.0 --test",
-    "anti-test":  "node rollup/pack.js v0.0",
+    "test": "node rollup/pack.js v0.0 --test",
+    "anti-test": "node rollup/pack.js v0.0",
     "pack": "node rollup/pack.js",
     "build": "node rollup/pack.js --build-only"
   },
@@ -32,10 +32,10 @@
     "rollup": "^2.35.1",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-terser": "^7.0.2",
-    "rw-stream": "^0.3.3",
     "stylus": "^0.54.8",
     "terser": "^5.5.1",
-    "three": "^0.124.0"
+    "three": "^0.124.0",
+    "update-file-content": "^1.5.0"
   },
   "dependencies": {}
 }
