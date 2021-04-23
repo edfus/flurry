@@ -4,7 +4,7 @@ import { buildAll } from "./builder.config.js";
 import { processFiles } from "./helpers/copy.js";
 import notify from './helpers/notify.js';
 import __dirname from "./helpers/__dirname.js";
-import { updateFileContent } from "update-file-content";
+import { streamEdit } from "stream-editor";
 
 const args = process.argv.slice(2);
 const root_directory = join(__dirname, '/..');
@@ -84,7 +84,7 @@ function decode (filename) {
 }
   
 async function _updateCache(filename, replacement) {
-    return updateFileContent({
+    return streamEdit({
         file: join(root_directory, "./src/service-worker/", filename),
         search: /export\s+default\s+\[((.|\n)*?)\];/,
         replacement,
@@ -93,13 +93,13 @@ async function _updateCache(filename, replacement) {
 }
 
 async function resolveNodeDependencies (from, to) {
-    const handler = file => updateFileContent({
+    const handler = file => streamEdit({
         file,
         search: new RegExp(
           `${/\s*from\s*['"]/.source}(${from.replace(/\//g, "\/")})${/['"]/.source}`
         ),
         replacement: to,
-        limit: 1
+        maxTimes: 1
     });
 
     await processFiles(join(root_directory, "./src/"), handler);
@@ -126,31 +126,31 @@ async function adoptVersion () {
 
     console.info("Version:", newVersion);
 
-    await updateFileContent({
+    await streamEdit({
         file: join(root_directory, './package.json'),
         search: /"version":\s*"(.*?)",?/,
         replacement: newVersion
     });
 
-    await updateFileContent({
+    await streamEdit({
         file: join(root_directory, './rollup/builder.config.js'),
         search: /const\s+version\s*=\s*"(.*?)";?/,
         replacement: newVersion
     });
 
-    await updateFileContent({
+    await streamEdit({
         file: join(root_directory, './src/config/config.js'),
         search: /Version\s*=\s*"(.*?)",?/,
         replacement: newVersion
     });
 
-    await updateFileContent({
+    await streamEdit({
         file: join(root_directory, './www/index.html'),
         search: /href="\/dist\/main@(.*?)\.min\.js"/,
         replacement: newVersion
     });
 
-    await updateFileContent({
+    await streamEdit({
         file: join(root_directory, 'src/service-worker.js'),
         search: /const\s+version\s*=\s*"(.*?)";?/,
         replacement: newVersion
