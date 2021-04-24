@@ -19,7 +19,7 @@
   },
   "type": "module",
   "optionalDependencies": {
-    "node-notifier": "^5.4.0"
+    "node-notifier": "^9.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.12.10",
